@@ -14,7 +14,7 @@ export const Hero = () => {
   const bullets = [
     "Món Việt + ước lượng khẩu phần sát thực tế",
     "Hỏi \"còn lại?\" ra ngay ngân sách kcal trong ngày",
-    "21:00 tổng kết & nhắc nhẹ theo thói quen",
+    { text: "Tỉ lệ chuẩn xác lên tới ", highlight: "98%" },
   ];
 
   return (
@@ -52,7 +52,14 @@ export const Hero = () => {
                   <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center mt-0.5">
                     <Check className="w-3 h-3 text-primary" />
                   </span>
-                  <span className="text-muted-foreground">{bullet}</span>
+                  <span className="text-muted-foreground">
+                    {typeof bullet === "string" ? bullet : (
+                      <>
+                        {bullet.text}
+                        <span className="text-primary text-xl font-bold">{bullet.highlight}</span>
+                      </>
+                    )}
+                  </span>
                 </motion.li>
               ))}
             </ul>
