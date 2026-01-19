@@ -1,8 +1,11 @@
+"use client";
+
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { MessageCircle, Play, Check, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logo3d from "@/assets/logo-3d.png";
+
+const logo3d = "/logo-3d.png";
 
 export const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);

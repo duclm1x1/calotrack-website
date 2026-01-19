@@ -1,8 +1,11 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoSquare from "@/assets/logo-square.jpg";
+
+const logoSquare = "/logo-square.jpg";
 
 const navLinks = [
   { label: "Cách hoạt động", href: "#how-it-works" },

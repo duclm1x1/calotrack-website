@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Check, Zap, Crown, Gem, Clock, Bell } from "lucide-react";

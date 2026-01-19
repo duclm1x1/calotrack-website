@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Briefcase, Scale, Dumbbell, Users } from "lucide-react";
