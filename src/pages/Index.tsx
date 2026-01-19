@@ -1,11 +1,12 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
+import { Demo } from "@/components/landing/Demo";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { Features } from "@/components/landing/Features";
-import { Mission } from "@/components/landing/Mission";
+import { Benefits } from "@/components/landing/Benefits";
+import { UseCases } from "@/components/landing/UseCases";
 import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
-import { Contact } from "@/components/landing/Contact";
+import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 
 const Index = () => {
@@ -14,12 +15,13 @@ const Index = () => {
       <Navbar />
       <main>
         <Hero />
+        <Demo />
         <HowItWorks />
-        <Features />
-        <Mission />
+        <Benefits />
+        <UseCases />
         <Pricing />
         <FAQ />
-        <Contact />
+        <FinalCTA />
       </main>
       <Footer />
     </div>

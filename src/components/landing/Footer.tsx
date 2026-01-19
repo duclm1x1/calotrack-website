@@ -1,113 +1,27 @@
 import { motion } from "framer-motion";
-import logo3D from "@/assets/logo-3d.png";
+import logoSquare from "@/assets/logo-square.jpg";
 
-const footerLinks = {
-  product: {
-    title: "Sản phẩm",
-    links: [
-      { label: "Tính năng", href: "#features" },
-      { label: "Bảng giá", href: "#pricing" },
-      { label: "Dashboard", href: "#" },
-      { label: "Mobile App", href: "#" },
-    ],
-  },
-  company: {
-    title: "Công ty",
-    links: [
-      { label: "Về chúng tôi", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Liên hệ", href: "#contact" },
-    ],
-  },
-  support: {
-    title: "Hỗ trợ",
-    links: [
-      { label: "FAQ", href: "#faq" },
-      { label: "Help Center", href: "#" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
-    ],
-  },
-};
+const footerLinks = [
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Contact", href: "mailto:support@calotrack.vn" },
+];
 
 export const Footer = () => {
   return (
-    <footer className="bg-ink text-white py-16 md:py-20">
-      <div className="container-wide mx-auto px-4 md:px-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8">
-          {/* Brand */}
-          <div className="lg:col-span-2">
-            <motion.a
-              href="#"
-              className="flex items-center gap-3 mb-6"
-              whileHover={{ scale: 1.02 }}
-            >
-              <img src={logo3D} alt="CaloTrack" className="h-12 w-12" />
-              <span className="text-2xl font-bold">
-                <span className="text-teal-light">Calo</span>
-                <span className="text-flame-start">Track</span>
-              </span>
-            </motion.a>
-            <p className="text-white/60 mb-6 max-w-sm">
-              AI nutrition assistant giúp bạn kiểm soát calo, làm chủ bữa ăn —
-              thông qua chat và dashboard thông minh.
-            </p>
-            <p className="text-white/40 text-sm">
-              © {new Date().getFullYear()} Calo Track. All rights reserved.
-            </p>
-          </div>
-
-          {/* Links */}
-          {Object.values(footerLinks).map((section) => (
-            <div key={section.title}>
-              <h4 className="font-semibold mb-4 text-white/90">
-                {section.title}
-              </h4>
-              <ul className="space-y-3">
-                {section.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-white/50 hover:text-white transition-colors text-sm"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer className="bg-muted/50 border-t border-border">
+      <div className="container mx-auto px-4 lg:px-8 py-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <motion.a href="#" className="flex items-center gap-3" whileHover={{ scale: 1.02 }}>
+            <img src={logoSquare} alt="CaloTrack" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-lg font-bold text-foreground">CaloTrack</span>
+          </motion.a>
           <div className="flex items-center gap-6">
-            <a
-              href="#"
-              className="text-white/50 hover:text-white transition-colors text-sm"
-            >
-              Privacy
-            </a>
-            <a
-              href="#"
-              className="text-white/50 hover:text-white transition-colors text-sm"
-            >
-              Terms
-            </a>
-            <a
-              href="#"
-              className="text-white/50 hover:text-white transition-colors text-sm"
-            >
-              Cookies
-            </a>
+            {footerLinks.map((link) => (
+              <a key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{link.label}</a>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            {/* Social icons placeholder */}
-            <span className="text-white/40 text-sm">
-              Made with 💚 in Vietnam
-            </span>
-          </div>
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} CaloTrack</p>
         </div>
       </div>
     </footer>

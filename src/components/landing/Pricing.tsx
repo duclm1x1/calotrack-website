@@ -1,199 +1,67 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Check, Zap, Crown, Infinity } from "lucide-react";
+import { Check, Zap, Crown, Gem, Clock, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const plans = [
-  {
-    name: "Free",
-    price: "0đ",
-    period: "mãi mãi",
-    description: "Dùng thử không giới hạn thời gian",
-    icon: Zap,
-    features: [
-      "3 ảnh/ngày",
-      "Theo dõi calo cơ bản",
-      "Streak & badge",
-      "Hỗ trợ qua chat",
-    ],
-    cta: "Bắt đầu miễn phí",
-    popular: false,
-    gradient: false,
-  },
-  {
-    name: "Pro",
-    price: "99.000đ",
-    period: "/tháng",
-    description: "Dành cho người nghiêm túc với mục tiêu",
-    icon: Crown,
-    features: [
-      "Ảnh không giới hạn",
-      "Dashboard chuyên sâu",
-      "Macro breakdown chi tiết",
-      "Export báo cáo PDF",
-      "Insight AI cá nhân hóa",
-      "Ưu tiên hỗ trợ",
-    ],
-    cta: "Nâng cấp Pro",
-    popular: true,
-    gradient: true,
-  },
-  {
-    name: "Lifetime",
-    price: "990.000đ",
-    period: "một lần",
-    description: "Trả một lần, dùng vĩnh viễn",
-    icon: Infinity,
-    features: [
-      "Tất cả tính năng Pro",
-      "Không phí hàng tháng",
-      "Tính năng mới miễn phí",
-      "Hỗ trợ VIP 1-1",
-      "Badge đặc biệt",
-    ],
-    cta: "Mua Lifetime",
-    popular: false,
-    gradient: false,
-  },
+  { name: "Day Pass", price: "15.000đ", period: "/ngày", description: "Dùng nhanh khi cần \"quay lại kỷ luật\".", icon: Clock, features: ["AI phân tích ảnh", "Theo dõi kcal/macro", "Còn lại hôm nay"], cta: "Mua Day Pass", popular: false },
+  { name: "Weekly", price: "49.000đ", period: "/tuần", description: "Hợp để thử nghiêm túc 7 ngày.", icon: Zap, features: ["AI phân tích ảnh", "Theo dõi kcal/macro", "Còn lại hôm nay", "Tổng kết hàng ngày"], cta: "Mua Weekly", popular: false },
+  { name: "Monthly", price: "89.000đ", period: "/tháng", description: "AI ảnh + macro + gợi ý bữa + báo cáo nâng cao.", icon: Crown, features: ["AI phân tích ảnh không giới hạn", "Theo dõi kcal/macro chi tiết", "Còn lại hôm nay + gợi ý bữa", "Tổng kết 21:00 hàng ngày", "Báo cáo tuần/tháng", "Ưu tiên hỗ trợ"], cta: "Nâng cấp Monthly", popular: true },
+  { name: "Yearly", price: "799.000đ", period: "/năm", description: "Tiết kiệm ~25% so với trả theo tháng (~66.000đ/tháng).", icon: Gem, features: ["Tất cả tính năng Monthly", "Tiết kiệm 25%", "Ưu tiên tính năng mới", "Hỗ trợ VIP"], cta: "Nâng cấp Yearly", popular: false, badge: "Best value" },
+  { name: "Lifetime", price: "1.899.000đ", period: "", description: "Mở theo đợt. Phù hợp nếu bạn muốn dùng lâu dài.", icon: Bell, features: ["Tất cả tính năng Pro", "Truy cập vĩnh viễn", "Mọi cập nhật tương lai", "Limited slots"], cta: "Nhận thông báo đợt mở", popular: false, badge: "Limited drop", disabled: true },
 ];
 
 export const Pricing = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true, margin: "-100px" });
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section ref={containerRef} id="pricing" className="section-padding bg-mesh">
-      <div className="container-wide mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <p className="tagline mb-4">Bảng giá</p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            Chọn gói phù hợp{" "}
-            <span className="text-gradient-flame">với bạn</span>
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Bắt đầu miễn phí, nâng cấp khi bạn sẵn sàng. Hỗ trợ VietQR &
-            chuyển khoản ngân hàng.
-          </p>
+    <section id="pricing" className="section-padding bg-muted/30">
+      <div className="container mx-auto px-4 lg:px-8">
+        <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Chọn gói <span className="text-gradient-primary">phù hợp</span></h2>
         </motion.div>
 
-        {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 40 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: index * 0.15 }}
-              className={`relative ${plan.popular ? "md:-mt-4 md:mb-4" : ""}`}
-            >
-              {/* Popular badge */}
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                  <span className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full bg-gradient-to-r from-flame-start to-flame-end text-white shadow-glow-flame">
-                    Phổ biến nhất
-                  </span>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+          {plans.map((plan, index) => {
+            const Icon = plan.icon;
+            return (
+              <motion.div key={plan.name} initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: index * 0.1 }} className={`relative rounded-2xl p-6 transition-all hover:-translate-y-1 ${plan.popular ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-elegant scale-105" : "card-base hover:shadow-elegant"}`}>
+                {(plan.popular || plan.badge) && <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold ${plan.popular ? "bg-flame text-white" : "bg-primary/20 text-primary"}`}>{plan.popular ? "Phổ biến nhất" : plan.badge}</div>}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${plan.popular ? "bg-white/20" : "bg-primary/10"}`}>
+                  <Icon className={`w-6 h-6 ${plan.popular ? "text-white" : "text-primary"}`} />
                 </div>
-              )}
-
-              <div
-                className={`relative h-full rounded-3xl p-8 transition-all duration-300 hover:-translate-y-2 ${
-                  plan.gradient
-                    ? "bg-gradient-to-br from-teal to-teal-dark text-white shadow-glow-teal"
-                    : "bg-card border border-border shadow-sm hover:shadow-lg"
-                }`}
-              >
-                {/* Icon & Name */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      plan.gradient ? "bg-white/20" : "bg-primary/10"
-                    }`}
-                  >
-                    <plan.icon
-                      className={`w-5 h-5 ${
-                        plan.gradient ? "text-white" : "text-primary"
-                      }`}
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold">{plan.name}</h3>
+                <h3 className={`text-xl font-bold mb-1 ${plan.popular ? "text-white" : "text-foreground"}`}>{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span className={`text-2xl font-bold ${plan.popular ? "text-white" : "text-foreground"}`}>{plan.price}</span>
+                  {plan.period && <span className={`text-sm ${plan.popular ? "text-white/70" : "text-muted-foreground"}`}>{plan.period}</span>}
                 </div>
-
-                {/* Price */}
-                <div className="mb-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span
-                    className={`text-sm ${
-                      plan.gradient ? "text-white/80" : "text-muted-foreground"
-                    }`}
-                  >
-                    {plan.period}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p
-                  className={`text-sm mb-6 ${
-                    plan.gradient ? "text-white/80" : "text-muted-foreground"
-                  }`}
-                >
-                  {plan.description}
-                </p>
-
-                {/* Features */}
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check
-                        className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                          plan.gradient ? "text-white" : "text-teal"
-                        }`}
-                      />
-                      <span
-                        className={`text-sm ${
-                          plan.gradient ? "text-white/90" : ""
-                        }`}
-                      >
-                        {feature}
-                      </span>
+                <p className={`text-sm mb-4 ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>{plan.description}</p>
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.popular ? "text-white" : "text-primary"}`} />
+                      <span className={plan.popular ? "text-white/90" : "text-muted-foreground"}>{feature}</span>
                     </li>
                   ))}
                 </ul>
-
-                {/* CTA */}
-                <button
-                  className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                    plan.gradient
-                      ? "bg-white text-teal-dark hover:bg-white/90"
-                      : plan.popular
-                      ? "btn-flame"
-                      : "btn-secondary"
-                  }`}
-                >
-                  {plan.cta}
-                </button>
-              </div>
-            </motion.div>
-          ))}
+                <Button className={`w-full ${plan.popular ? "bg-white text-primary hover:bg-white/90" : plan.disabled ? "bg-muted text-muted-foreground" : ""}`} variant={plan.popular ? "default" : "outline"} disabled={plan.disabled}>{plan.cta}</Button>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Payment methods */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-12 text-center"
-        >
-          <p className="text-sm text-muted-foreground">
-            Hỗ trợ thanh toán:{" "}
-            <span className="font-medium text-foreground">
-              VietQR • Chuyển khoản • Stripe
-            </span>
-          </p>
+        <motion.div initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ delay: 0.8 }} className="text-center space-y-2">
+          <p className="text-xs text-muted-foreground">AI có thể sai — bạn luôn xác nhận/sửa trước khi lưu.</p>
+          <p className="text-xs text-muted-foreground">CaloTrack không thay thế tư vấn y khoa/dinh dưỡng.</p>
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <span className="text-xs text-muted-foreground">Thanh toán:</span>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-muted rounded text-xs font-medium">VietQR</span>
+              <span className="px-3 py-1 bg-muted rounded text-xs font-medium">Bank Transfer</span>
+              <span className="px-3 py-1 bg-muted rounded text-xs font-medium">Stripe</span>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>
