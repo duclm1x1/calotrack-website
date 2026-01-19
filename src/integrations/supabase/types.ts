@@ -14,16 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      daily_goals: {
+        Row: {
+          calorie_goal: number | null
+          carbs_goal: number | null
+          created_at: string | null
+          fat_goal: number | null
+          id: string
+          protein_goal: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          calorie_goal?: number | null
+          carbs_goal?: number | null
+          created_at?: string | null
+          fat_goal?: number | null
+          id?: string
+          protein_goal?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          calorie_goal?: number | null
+          carbs_goal?: number | null
+          created_at?: string | null
+          fat_goal?: number | null
+          id?: string
+          protein_goal?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      food_logs: {
+        Row: {
+          calories: number
+          carbs: number | null
+          created_at: string | null
+          fat: number | null
+          food_name: string
+          id: string
+          logged_at: string | null
+          meal_type: string | null
+          notes: string | null
+          protein: number | null
+          serving_size: string | null
+          user_id: string
+        }
+        Insert: {
+          calories?: number
+          carbs?: number | null
+          created_at?: string | null
+          fat?: number | null
+          food_name: string
+          id?: string
+          logged_at?: string | null
+          meal_type?: string | null
+          notes?: string | null
+          protein?: number | null
+          serving_size?: string | null
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          carbs?: number | null
+          created_at?: string | null
+          fat?: number | null
+          food_name?: string
+          id?: string
+          logged_at?: string | null
+          meal_type?: string | null
+          notes?: string | null
+          protein?: number | null
+          serving_size?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          credits: number | null
+          email: string
+          expiry_date: string | null
+          id: string
+          name: string
+          plan: string | null
+          status: string | null
+          streak: number | null
+          stripe_customer_id: string | null
+          telegram_id: string | null
+          telegram_username: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          credits?: number | null
+          email: string
+          expiry_date?: string | null
+          id: string
+          name: string
+          plan?: string | null
+          status?: string | null
+          streak?: number | null
+          stripe_customer_id?: string | null
+          telegram_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          credits?: number | null
+          email?: string
+          expiry_date?: string | null
+          id?: string
+          name?: string
+          plan?: string | null
+          status?: string | null
+          streak?: number | null
+          stripe_customer_id?: string | null
+          telegram_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +305,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
