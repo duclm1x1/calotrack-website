@@ -21,15 +21,23 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
     
-    // TODO: Integrate with Supabase Auth
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // TODO: Implement actual login with Supabase
-      // Redirect to dashboard after successful login
-      window.location.href = ROUTES.DASHBOARD;
-    } catch (err) {
-      setError("Email hoặc mật khẩu không đúng");
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        // Redirect to dashboard after successful login
+        window.location.href = ROUTES.DASHBOARD;
+      } else {
+        setError(data.error || "Email hoặc mật khẩu không đúng");
+      }
+    } catch {
+      setError("Không thể kết nối server");
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +100,7 @@ export default function LoginPage() {
             </div>
             
             <div className="flex justify-end">
-              <Link href="#" className="text-sm text-primary hover:underline">
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
                 Quên mật khẩu?
               </Link>
             </div>

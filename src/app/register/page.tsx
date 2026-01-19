@@ -36,15 +36,23 @@ export default function RegisterPage() {
       return;
     }
     
-    // TODO: Integrate with Supabase Auth
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // TODO: Implement actual registration with Supabase
-      // Redirect to dashboard after successful registration
-      window.location.href = ROUTES.DASHBOARD;
-    } catch (err) {
-      setError("Có lỗi xảy ra. Vui lòng thử lại.");
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        // Redirect to dashboard after successful registration
+        window.location.href = ROUTES.DASHBOARD;
+      } else {
+        setError(data.error || "Có lỗi xảy ra. Vui lòng thử lại.");
+      }
+    } catch {
+      setError("Không thể kết nối server");
     } finally {
       setIsLoading(false);
     }
