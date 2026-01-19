@@ -35,9 +35,10 @@ export const Hero = () => {
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6">
               <span className="text-foreground">Gửi ảnh món ăn → biết </span>
               <span className="text-gradient-primary">kcal/macro</span>
-              <span className="text-foreground"> + còn lại hôm nay trong </span>
-              <span className="text-flame">10 giây</span>
-              <span className="text-foreground">.</span>
+              <span className="text-foreground"> trong </span>
+              <span className="text-flame">20 giây</span>
+              <span className="text-foreground"> — ngay trên </span>
+              <span className="text-[#0068FF]">Zalo</span>
             </h1>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
