@@ -14,7 +14,7 @@ export const Hero = () => {
   const bullets = [
     "Món Việt + ước lượng khẩu phần sát thực tế",
     "Hỏi \"còn lại?\" ra ngay ngân sách kcal trong ngày",
-    { text: "Tỉ lệ chuẩn xác lên tới ", highlight: "98%" },
+    { text: "Tỉ lệ chuẩn xác lên tới ", highlight: ">90%" },
   ];
 
   return (
