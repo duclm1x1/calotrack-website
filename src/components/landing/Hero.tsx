@@ -37,8 +37,20 @@ export const Hero = () => {
               <span className="text-gradient-primary">kcal/macro</span>
               <span className="text-foreground"> trong </span>
               <span className="text-flame">20 giây</span>
-              <span className="text-foreground"> — ngay trên </span>
-              <span className="text-[#0068FF]">Zalo</span>
+              <br />
+              <span className="inline-flex items-center gap-3 mt-2">
+                <span className="text-foreground">ngay trên</span>
+                <span className="inline-flex items-center gap-2 text-[#0068FF]">
+                  <svg className="w-10 h-10 lg:w-12 lg:h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 4C12.954 4 4 12.954 4 24C4 35.046 12.954 44 24 44C35.046 44 44 35.046 44 24C44 12.954 35.046 4 24 4Z" fill="#0068FF"/>
+                    <path d="M33.5 18.5C33.5 14.358 29.194 11 24 11C18.806 11 14.5 14.358 14.5 18.5C14.5 22.194 17.888 25.278 22.5 25.875V28.5L25.5 25.5C29.806 25.028 33.5 22.028 33.5 18.5Z" fill="white"/>
+                    <path d="M24 32C27.314 32 30 30.657 30 29C30 27.343 27.314 26 24 26C20.686 26 18 27.343 18 29C18 30.657 20.686 32 24 32Z" fill="white"/>
+                    <path d="M18.5 21.5L21 19L19 17L21.5 15" stroke="#0068FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M26.5 15L29 17L27 19L29.5 21.5" stroke="#0068FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Zalo
+                </span>
+              </span>
             </h1>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
