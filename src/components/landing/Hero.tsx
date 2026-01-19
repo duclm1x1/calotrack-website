@@ -72,12 +72,76 @@ export const Hero = () => {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }} className="relative flex items-center justify-center">
+            {/* Background glow */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-80 h-80 md:w-96 md:h-96 bg-gradient-to-br from-primary/30 to-flame/20 rounded-full blur-3xl" />
+              <motion.div 
+                className="w-80 h-80 md:w-96 md:h-96 bg-gradient-to-br from-primary/40 to-flame/30 rounded-full blur-3xl"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              />
             </div>
-            <motion.div className="absolute w-[22rem] h-[22rem] md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] rounded-full border-2 border-dashed border-primary/20" animate={{ rotate: 360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} />
+
+            {/* Gradient flow ring */}
+            <div className="absolute w-[22rem] h-[22rem] md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem]">
+              <svg className="w-full h-full" viewBox="0 0 200 200">
+                <defs>
+                  <linearGradient id="gradient-flow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="1">
+                      <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="50%" stopColor="hsl(var(--flame))" stopOpacity="1">
+                      <animate attributeName="offset" values="0.5;1.5;0.5" dur="3s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1">
+                      <animate attributeName="offset" values="1;2;1" dur="3s" repeatCount="indefinite" />
+                    </stop>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <motion.circle
+                  cx="100"
+                  cy="100"
+                  r="95"
+                  fill="none"
+                  stroke="url(#gradient-flow)"
+                  strokeWidth="2"
+                  strokeDasharray="15 10"
+                  filter="url(#glow)"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  style={{ transformOrigin: "center" }}
+                />
+              </svg>
+            </div>
+
+            {/* Secondary spinning ring */}
+            <motion.div 
+              className="absolute w-[20rem] h-[20rem] md:w-[24rem] md:h-[24rem] lg:w-[28rem] lg:h-[28rem] rounded-full border border-primary/10"
+              animate={{ rotate: -360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Logo with shimmer effect */}
             <motion.div style={{ rotate: logoRotate, scale: logoScale }} className="relative z-10">
-              <motion.img src={logo3d} alt="CaloTrack Logo" className="w-80 h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] object-contain drop-shadow-2xl" animate={{ y: [0, -15, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+                animate={{ x: ["-200%", "200%"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
+              />
+              <motion.img 
+                src={logo3d} 
+                alt="CaloTrack Logo" 
+                className="w-80 h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] object-contain drop-shadow-2xl"
+                animate={{ y: [0, -15, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                style={{ filter: "drop-shadow(0 0 30px hsl(var(--primary) / 0.4))" }}
+              />
             </motion.div>
           </motion.div>
         </div>
