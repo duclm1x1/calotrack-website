@@ -33,16 +33,12 @@ export const Hero = () => {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6">
-              <span className="text-foreground">Gửi ảnh món ăn →</span>
-              <br />
-              <span className="text-foreground">biết </span>
+              <span className="text-foreground">Gửi ảnh món ăn → biết </span>
               <span className="text-gradient-primary">kcal/macro</span>
-              <br />
-              <span className="text-foreground">trong </span>
+              <span className="text-foreground"> trong </span>
               <span className="text-flame">20 giây</span>
-              <span className="text-foreground"> — ngay</span>
               <br />
-              <span className="text-foreground">trên </span>
+              <span className="text-foreground">— ngay trên </span>
               <span className="text-[#0068FF]">Zalo</span>
             </h1>
 
