@@ -43,7 +43,56 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log("Authenticated user:", userId);
 
-    const { messages, prompt } = await req.json();
+    const body = await req.json();
+    
+    // Input validation
+    const { messages, prompt } = body;
+    
+    if (!messages && !prompt) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: 'messages' or 'prompt'" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate messages array structure
+    if (messages && !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid 'messages': must be an array" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (messages) {
+      for (const msg of messages) {
+        if (!msg.role || !msg.content || typeof msg.content !== "string") {
+          return new Response(
+            JSON.stringify({ error: "Invalid message format: each message must have 'role' and 'content' string" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (!["user", "assistant", "system"].includes(msg.role)) {
+          return new Response(
+            JSON.stringify({ error: "Invalid message role: must be 'user', 'assistant', or 'system'" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        // Limit content length to prevent abuse
+        if (msg.content.length > 32000) {
+          return new Response(
+            JSON.stringify({ error: "Message content too long: max 32000 characters" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+    
+    if (prompt && (typeof prompt !== "string" || prompt.length > 32000)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid 'prompt': must be a string under 32000 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -52,7 +101,7 @@ serve(async (req) => {
 
     // Support both 'messages' array and simple 'prompt' string
     const chatMessages = messages || [
-      { role: "user", content: prompt || "Hello" }
+      { role: "user", content: prompt }
     ];
 
     console.log("Sending request to Lovable AI Gateway with messages:", JSON.stringify(chatMessages));

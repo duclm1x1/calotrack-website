@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       message: "Expiry check completed",
-      processed: expiredUsers.length,
-      expiredUsers: expiredUsers.map(u => u.email)
+      processed: expiredUsers.length
+      // Email addresses removed from response for security
     });
   } catch (error) {
     console.error("Cron error:", error);
