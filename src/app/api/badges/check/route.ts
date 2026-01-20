@@ -15,9 +15,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user stats
+    // Get user stats from profiles table
     const { data: userData } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("streak, credits")
       .eq("id", user.id)
       .single();

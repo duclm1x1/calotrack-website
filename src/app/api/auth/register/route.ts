@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create user_management record (trigger should handle this, but fallback)
+    // Create profiles record (trigger should handle this, but fallback)
     if (data.user) {
-      await supabase.from("user_management").upsert({
+      await supabase.from("profiles").upsert({
         id: data.user.id,
         email,
         name,
@@ -53,6 +53,11 @@ export async function POST(request: NextRequest) {
         status: "pending",
         credits: 0,
         streak: 0,
+      });
+      
+      // Create user_roles record
+      await supabase.from("user_roles").upsert({
+        user_id: data.user.id,
         role: "user",
       });
     }

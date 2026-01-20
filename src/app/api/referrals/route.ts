@@ -14,9 +14,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get referral code
+    // Get referral code from profiles table
     const { data: userData } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("id")
       .eq("id", user.id)
       .single();
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Find referrer by code (code = first 8 chars of user ID)
+    // Find referrer by code (code = first 8 chars of user ID) from profiles table
     const { data: users } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("id")
       .ilike("id", `${referralCode.toLowerCase()}%`);
 

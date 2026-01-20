@@ -48,13 +48,14 @@ export async function middleware(request: NextRequest) {
     }
     
     // Check if user is admin
-    const { data: userData } = await supabase
-      .from('user_management')
+    // Check admin role from user_roles table
+    const { data: roleData } = await supabase
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (userData?.role !== 'admin') {
+    if (roleData?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

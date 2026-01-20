@@ -21,12 +21,12 @@ export default function DashboardPage() {
 
       if (user) {
         const { data } = await supabase
-          .from("user_management")
+          .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
         
-        setProfile(data);
+        setProfile(data as User | null);
       }
       setIsLoading(false);
     };
