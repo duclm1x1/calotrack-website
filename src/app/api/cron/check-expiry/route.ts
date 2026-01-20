@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Find users with expired plans
+    // Find users with expired plans from profiles table
     const now = new Date().toISOString();
     const { data: expiredUsers, error: selectError } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("id, email, plan, expiry_date")
       .eq("status", "active")
       .not("expiry_date", "is", null)
@@ -44,10 +44,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Update expired users
+    // Update expired users in profiles table
     const userIds = expiredUsers.map(u => u.id);
     const { error: updateError } = await supabase
-      .from("user_management")
+      .from("profiles")
       .update({ 
         status: "expired",
         credits: 0,

@@ -27,13 +27,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         return;
       }
 
-      const { data: userData } = await supabase
-        .from("user_management")
+      // Check admin role from user_roles table
+      const { data: roleData } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single();
 
-      if (userData?.role !== "admin") {
+      if (roleData?.role !== "admin") {
         router.push("/dashboard");
         return;
       }

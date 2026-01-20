@@ -8,16 +8,19 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  telegram_id?: string;
-  telegram_username?: string;
-  plan: 'trial' | 'pro' | 'lifetime' | 'free';
-  status: 'pending' | 'active' | 'expired' | 'banned';
-  expiry_date?: string;
-  credits: number;
-  streak: number;
-  role: 'user' | 'admin';
-  created_at: string;
-  updated_at: string;
+  avatar_url?: string | null;
+  telegram_id?: string | null;
+  telegram_username?: string | null;
+  plan?: string | null;
+  status?: string | null;
+  expiry_date?: string | null;
+  credits?: number | null;
+  streak?: number | null;
+  stripe_customer_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  // Joined from user_roles table
+  role?: 'user' | 'admin';
 }
 
 export interface Transaction {

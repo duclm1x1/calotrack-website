@@ -24,12 +24,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
     
-    setProfile(data);
+    // Map profiles table to User type (add role from user_roles if needed)
+    if (data) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+      
+      setProfile({
+        ...data,
+        role: roleData?.role || "user",
+      } as User);
+    } else {
+      setProfile(null);
+    }
   };
 
   const refreshProfile = async () => {

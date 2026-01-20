@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get current plan
+    // Get current plan from profiles table
     const { data: userData } = await supabase
-      .from("user_management")
+      .from("profiles")
       .select("plan, status")
       .eq("id", user.id)
       .single();

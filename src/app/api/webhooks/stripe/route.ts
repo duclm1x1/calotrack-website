@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
           expiryDate.setDate(expiryDate.getDate() + planConfig.duration);
         }
 
-        // Update user plan
+        // Update user plan in profiles table
         await supabase
-          .from("user_management")
+          .from("profiles")
           .update({
             plan: plan.toLowerCase(),
             status: "active",
