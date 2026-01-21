@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     // Get referral code from profiles table
-    const { data: userData } = await supabase
+    await supabase
       .from("profiles")
       .select("id")
       .eq("id", user.id)
