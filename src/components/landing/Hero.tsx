@@ -2,100 +2,149 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import { MessageCircle, Play, Check, ArrowDown } from "lucide-react";
+import { ArrowDown, Check, MessageCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const logo3d = "/logo-3d.png";
 
+const bullets = [
+  "Mon Viet + uoc luong khau phan sat thuc te.",
+  'Hoi "con lai?" de ra ngay moc kcal trong ngay.',
+  "Website dung cho bang gia, thanh toan va admin; san pham chinh chay tren Telegram.",
+];
+
 export const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
   const logoRotate = useTransform(scrollYProgress, [0, 1], [0, 15]);
   const logoScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
-  const bullets = [
-    "Món Việt + ước lượng khẩu phần sát thực tế",
-    "Hỏi \"còn lại?\" ra ngay ngân sách kcal trong ngày",
-    { text: "Tỉ lệ chuẩn xác lên tới ", highlight: ">90%" },
-  ];
-
   return (
-    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section
+      ref={containerRef}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20"
+    >
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-      <motion.div className="absolute top-1/4 left-[10%] w-64 h-64 bg-primary/10 rounded-full blur-3xl" animate={{ y: [0, 30, 0], x: [0, 15, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute bottom-1/4 right-[10%] w-80 h-80 bg-flame/10 rounded-full blur-3xl" animate={{ y: [0, -25, 0], x: [0, -20, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, ease: "easeOut" }} className="text-center lg:text-left">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-sm font-medium text-primary">Trợ lý dinh dưỡng AI qua chat</span>
+      <motion.div
+        className="absolute left-[10%] top-1/4 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
+        animate={{ y: [0, 30, 0], x: [0, 15, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-[10%] h-80 w-80 rounded-full bg-flame/10 blur-3xl"
+        animate={{ y: [0, -25, 0], x: [0, -20, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="container relative z-10 mx-auto px-4 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-center lg:text-left"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
+            >
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              <span className="text-sm font-medium text-primary">
+                Telegram-first nutrition SaaS for Vietnam
+              </span>
             </motion.div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6">
-              <span className="text-foreground">Gửi ảnh món ăn → biết </span>
-              <span className="text-gradient-primary">kcal/macro</span>
+            <h1 className="mb-6 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl xl:text-6xl">
+              <span className="text-foreground">Gui anh mon an → biet </span>
+              <span className="text-gradient-primary">kcal / macro</span>
               <span className="text-foreground"> trong </span>
-              <span className="text-flame">20 giây</span>
+              <span className="text-flame">20 giay</span>
               <br />
-              <span className="text-foreground">— ngay trên </span>
-              <span className="text-[#0068FF]">Zalo</span>
+              <span className="text-foreground">ngay tren </span>
+              <span className="text-[#229ED9]">Telegram</span>
             </h1>
 
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
-              CaloTrack là trợ lý dinh dưỡng qua chat (Zalo/Telegram). Nhắn ảnh hoặc "món + gram" để theo dõi calo chuẩn món Việt — không cần đếm tay.
+            <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground lg:mx-0">
+              CaloTrack la tro ly dinh duong chat-first. Ban gui anh hoac nhan
+              kieu &quot;mon + gram&quot; de theo doi calo mon Viet, con website dung
+              de acquisition, pricing, thanh toan va admin.
             </p>
 
-            <ul className="space-y-3 mb-8">
+            <ul className="mb-8 space-y-3">
               {bullets.map((bullet, index) => (
-                <motion.li key={index} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + index * 0.1 }} className="flex items-start gap-3 text-left">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center mt-0.5">
-                    <Check className="w-3 h-3 text-primary" />
+                <motion.li
+                  key={bullet}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                  className="flex items-start gap-3 text-left"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
+                    <Check className="h-3 w-3 text-primary" />
                   </span>
-                  <span className="text-muted-foreground">
-                    {typeof bullet === "string" ? bullet : (
-                      <>
-                        {bullet.text}
-                        <span className="text-primary text-xl font-bold">{bullet.highlight}</span>
-                      </>
-                    )}
-                  </span>
+                  <span className="text-muted-foreground">{bullet}</span>
                 </motion.li>
               ))}
             </ul>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-              <Button size="lg" asChild className="w-full sm:w-auto bg-[#0068FF] hover:bg-[#0052CC] text-white gap-2 text-base px-8 py-6">
-                <a href="https://zalo.me/your-oa-id" target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="w-5 h-5" />
-                  Chat trên Zalo
+            <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row">
+              <Button
+                size="lg"
+                asChild
+                className="w-full gap-2 bg-[#229ED9] px-8 py-6 text-base text-white hover:bg-[#1d90c4] sm:w-auto"
+              >
+                <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-5 w-5" />
+                  Dung tren Telegram
                 </a>
               </Button>
-              <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2 text-base px-8 py-6" asChild>
-                <a href="#demo"><Play className="w-4 h-4" />Xem demo chat 20s</a>
+              <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto" asChild>
+                <a href={SITE_CONFIG.pricingAnchor}>Xem bang gia</a>
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground mb-4">Mở Zalo → tìm "CaloTrack OA" → gửi "bắt đầu" hoặc gửi ảnh bữa ăn</p>
-            <p className="text-xs text-muted-foreground/70 italic">Không thay thế tư vấn y khoa. Bạn luôn có thể sửa và xóa dữ liệu bất cứ lúc nào.</p>
+            <div className="mb-6 rounded-xl border border-zinc-200/70 bg-white/70 px-4 py-3 text-sm text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/60">
+              <span className="font-medium text-foreground">Phase 1:</span> Telegram la kenh chinh.
+              {" "}
+              {SITE_CONFIG.secondaryChannelLabel} dang o trang thai{" "}
+              <span className="font-medium">{SITE_CONFIG.secondaryChannelStatus}</span>.
+            </div>
+
+            <p className="mb-4 text-sm text-muted-foreground">
+              Mo Telegram → tim &quot;CaloTrack&quot; → gui &quot;bat dau&quot; hoac gui anh bua an de dung ngay.
+            </p>
+            <p className="text-xs italic text-muted-foreground/70">
+              Portal khach hang van la beta scaffold. CaloTrack khong thay the tu
+              van y khoa hay dinh duong lam sang.
+            </p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }} className="relative flex items-center justify-center">
-            {/* Background glow */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            className="relative flex items-center justify-center"
+          >
             <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div 
-                className="w-80 h-80 md:w-96 md:h-96 bg-gradient-to-br from-primary/40 to-flame/30 rounded-full blur-3xl"
+              <motion.div
+                className="h-80 w-80 rounded-full bg-gradient-to-br from-primary/40 to-flame/30 blur-3xl md:h-96 md:w-96"
                 animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
             </div>
 
-            {/* Gradient flow ring */}
-            <div className="absolute w-[22rem] h-[22rem] md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem]">
-              <svg className="w-full h-full" viewBox="0 0 200 200">
+            <div className="absolute h-[22rem] w-[22rem] md:h-[26rem] md:w-[26rem] lg:h-[30rem] lg:w-[30rem]">
+              <svg className="h-full w-full" viewBox="0 0 200 200">
                 <defs>
                   <linearGradient id="gradient-flow" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="1">
@@ -109,10 +158,10 @@ export const Hero = () => {
                     </stop>
                   </linearGradient>
                   <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
                     <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
                 </defs>
@@ -132,24 +181,22 @@ export const Hero = () => {
               </svg>
             </div>
 
-            {/* Secondary spinning ring */}
-            <motion.div 
-              className="absolute w-[20rem] h-[20rem] md:w-[24rem] md:h-[24rem] lg:w-[28rem] lg:h-[28rem] rounded-full border border-primary/10"
+            <motion.div
+              className="absolute h-[20rem] w-[20rem] rounded-full border border-primary/10 md:h-[24rem] md:w-[24rem] lg:h-[28rem] lg:w-[28rem]"
               animate={{ rotate: -360 }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             />
 
-            {/* Logo with shimmer effect */}
             <motion.div style={{ rotate: logoRotate, scale: logoScale }} className="relative z-10">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+                className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                 animate={{ x: ["-200%", "200%"] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
               />
-              <motion.img 
-                src={logo3d} 
-                alt="CaloTrack Logo" 
-                className="w-80 h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] object-contain drop-shadow-2xl"
+              <motion.img
+                src={logo3d}
+                alt="CaloTrack Logo"
+                className="h-80 w-80 object-contain drop-shadow-2xl md:h-96 md:w-96 lg:h-[28rem] lg:w-[28rem]"
                 animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 style={{ filter: "drop-shadow(0 0 30px hsl(var(--primary) / 0.4))" }}
@@ -159,10 +206,13 @@ export const Hero = () => {
         </div>
       </div>
 
-      <motion.div style={{ opacity }} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-        <span className="text-sm text-muted-foreground">Cuộn xuống</span>
+      <motion.div
+        style={{ opacity }}
+        className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
+      >
+        <span className="text-sm text-muted-foreground">Cuon xuong</span>
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-          <ArrowDown className="w-5 h-5 text-primary" />
+          <ArrowDown className="h-5 w-5 text-primary" />
         </motion.div>
       </motion.div>
     </section>

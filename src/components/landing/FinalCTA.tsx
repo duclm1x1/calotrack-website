@@ -3,7 +3,9 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { MessageCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { SITE_CONFIG } from "@/lib/siteConfig";
 
 export const FinalCTA = () => {
   const ref = useRef(null);
@@ -17,30 +19,36 @@ export const FinalCTA = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto"
+          className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Bắt đầu ngay với{" "}
-            <span className="text-gradient-primary">bữa ăn gần nhất</span>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+            Bat dau ngay voi <span className="text-gradient-primary">bua an gan nhat</span>
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Mở Zalo → tìm "CaloTrack OA" → gửi "bắt đầu" hoặc gửi ảnh bữa ăn.
+          <p className="mb-8 text-lg text-muted-foreground">
+            Mo Telegram, tim CaloTrack, gui &quot;bat dau&quot; hoac gui anh bua an.
+            Website nay giup ban xem bang gia, thanh toan va quan ly van hanh.
           </p>
 
-          <Button
-            size="lg"
-            asChild
-            className="bg-[#0068FF] hover:bg-[#0052CC] text-white gap-2 text-lg px-10 py-7"
-          >
-            <a
-              href="https://zalo.me/your-oa-id"
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button
+              size="lg"
+              asChild
+              className="gap-2 bg-[#229ED9] px-10 py-7 text-lg text-white hover:bg-[#1d90c4]"
             >
-              <MessageCircle className="w-6 h-6" />
-              Chat trên Zalo
-            </a>
-          </Button>
+              <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-6 w-6" />
+                Dung tren Telegram
+              </a>
+            </Button>
+
+            <Button size="lg" variant="outline" asChild className="px-10 py-7 text-lg">
+              <a href={SITE_CONFIG.pricingAnchor}>Xem bang gia</a>
+            </Button>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            {SITE_CONFIG.secondaryChannelLabel} se duoc mo sau khi gateway normalization va SaaS gate Telegram da on dinh.
+          </p>
         </motion.div>
       </div>
     </section>
