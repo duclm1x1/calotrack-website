@@ -1,24 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Menu, MessageCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const logoSquare = "/logo-square.jpg";
+const DEFAULT_ZALO_URL = "https://zalo.me/your-oa-id";
 
 const navLinks = [
-  { label: "Cach hoat dong", href: "#how-it-works" },
-  { label: "Tinh nang", href: "#benefits" },
-  { label: "Bang gia", href: "#pricing" },
+  { label: "Tính năng", href: "#features" },
+  { label: "Cách hoạt động", href: "#how-it-works" },
+  { label: "Bảng giá", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
+  { label: "Liên hệ", href: "#contact" },
 ];
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const primaryExperienceHref =
+    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? SITE_CONFIG.zaloOaUrl : SITE_CONFIG.telegramBotUrl;
+  const primaryExperienceLabel =
+    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? "Trải nghiệm ngay (Zalo)" : "Trải nghiệm ngay";
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -39,7 +46,7 @@ export const Navbar = () => {
         <div className="container mx-auto px-4 lg:px-8">
           <nav className="flex items-center justify-between">
             <motion.a
-              href="#"
+              href="/"
               className="flex items-center gap-3"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -47,7 +54,7 @@ export const Navbar = () => {
               <img src={logoSquare} alt="CaloTrack" className="h-10 w-10 rounded-xl object-cover" />
               <div>
                 <span className="text-xl font-bold text-foreground">CaloTrack</span>
-                <p className="text-xs text-muted-foreground">Telegram-first nutrition SaaS</p>
+                <p className="text-xs text-muted-foreground">AI Nutrition Assistant</p>
               </div>
             </motion.a>
 
@@ -66,12 +73,12 @@ export const Navbar = () => {
 
             <div className="hidden items-center gap-3 md:flex">
               <Button variant="outline" asChild>
-                <a href="/login">Dang nhap</a>
+                <a href="/login">Đăng nhập</a>
               </Button>
               <Button asChild className="gap-2 bg-[#229ED9] text-white hover:bg-[#1d90c4]">
-                <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-4 w-4" />
-                  Dung tren Telegram
+                  {primaryExperienceLabel}
                 </a>
               </Button>
             </div>
@@ -115,16 +122,16 @@ export const Navbar = () => {
 
                 <div className="flex flex-col gap-3 border-t border-border pt-4">
                   <Button asChild variant="outline" className="w-full">
-                    <a href="/login">Dang nhap</a>
+                    <a href="/login">Đăng nhập</a>
                   </Button>
                   <Button asChild className="w-full gap-2 bg-[#229ED9] text-white hover:bg-[#1d90c4]">
-                    <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="h-4 w-4" />
-                      Dung tren Telegram
+                      {primaryExperienceLabel}
                     </a>
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
-                    {SITE_CONFIG.secondaryChannelLabel} dang o {SITE_CONFIG.secondaryChannelStatus.toLowerCase()}.
+                    Theo dõi bữa ăn nhanh qua các kênh chat quen thuộc của bạn.
                   </p>
                 </div>
               </div>

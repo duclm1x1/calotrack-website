@@ -1,18 +1,19 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown, Check, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const logo3d = "/logo-3d.png";
+const DEFAULT_ZALO_URL = "https://zalo.me/your-oa-id";
 
 const bullets = [
-  "Mon Viet + uoc luong khau phan sat thuc te.",
-  'Hoi "con lai?" de ra ngay moc kcal trong ngay.',
-  "Website dung cho bang gia, thanh toan va admin; san pham chinh chay tren Telegram.",
+  "Hoàn toàn miễn phí để bắt đầu.",
+  "Hỗ trợ món Việt và khẩu phần thường gặp.",
+  "Theo dõi calories, macro và tiến độ ngay trong chat.",
 ];
 
 export const Hero = () => {
@@ -21,9 +22,15 @@ export const Hero = () => {
     target: containerRef,
     offset: ["start start", "end start"],
   });
+
   const logoRotate = useTransform(scrollYProgress, [0, 1], [0, 15]);
   const logoScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+
+  const primaryExperienceHref =
+    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? SITE_CONFIG.zaloOaUrl : SITE_CONFIG.telegramBotUrl;
+  const primaryExperienceLabel =
+    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? "Trải nghiệm ngay (Zalo)" : "Trải nghiệm ngay";
 
   return (
     <section
@@ -59,25 +66,20 @@ export const Hero = () => {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
             >
               <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-              <span className="text-sm font-medium text-primary">
-                Telegram-first nutrition SaaS for Vietnam
-              </span>
+              <span className="text-sm font-medium text-primary">AI Nutrition Assistant</span>
             </motion.div>
 
             <h1 className="mb-6 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl xl:text-6xl">
-              <span className="text-foreground">Gui anh mon an → biet </span>
-              <span className="text-gradient-primary">kcal / macro</span>
-              <span className="text-foreground"> trong </span>
-              <span className="text-flame">20 giay</span>
-              <br />
-              <span className="text-foreground">ngay tren </span>
-              <span className="text-[#229ED9]">Telegram</span>
+              <span className="text-foreground">Gửi ảnh bữa ăn → </span>
+              <span className="text-gradient-primary">track calo</span>
+              <span className="text-foreground"> ngay trong </span>
+              <span className="text-flame">khung chat</span>
             </h1>
 
             <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground lg:mx-0">
-              CaloTrack la tro ly dinh duong chat-first. Ban gui anh hoac nhan
-              kieu &quot;mon + gram&quot; de theo doi calo mon Viet, con website dung
-              de acquisition, pricing, thanh toan va admin.
+              Không cần tự tính toán phức tạp. CaloTrack giúp bạn ước tính calories và macro,
+              theo dõi tiến độ mỗi ngày và giữ nhịp ăn uống lành mạnh qua Zalo, Telegram
+              hoặc các kênh chat quen thuộc.
             </p>
 
             <ul className="mb-8 space-y-3">
@@ -103,29 +105,30 @@ export const Hero = () => {
                 asChild
                 className="w-full gap-2 bg-[#229ED9] px-8 py-6 text-base text-white hover:bg-[#1d90c4] sm:w-auto"
               >
-                <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-5 w-5" />
-                  Dung tren Telegram
+                  {primaryExperienceLabel}
                 </a>
               </Button>
               <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto" asChild>
-                <a href={SITE_CONFIG.pricingAnchor}>Xem bang gia</a>
+                <a href="#demo">Xem demo Dashboard</a>
               </Button>
             </div>
 
-            <div className="mb-6 rounded-xl border border-zinc-200/70 bg-white/70 px-4 py-3 text-sm text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/60">
-              <span className="font-medium text-foreground">Phase 1:</span> Telegram la kenh chinh.
-              {" "}
-              {SITE_CONFIG.secondaryChannelLabel} dang o trang thai{" "}
-              <span className="font-medium">{SITE_CONFIG.secondaryChannelStatus}</span>.
+            <div className="mb-6 flex flex-wrap gap-3">
+              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+                Hoàn toàn miễn phí để bắt đầu
+              </span>
+              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+                Hỗ trợ món Việt
+              </span>
+              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+                Theo dõi macro mỗi ngày
+              </span>
             </div>
 
-            <p className="mb-4 text-sm text-muted-foreground">
-              Mo Telegram → tim &quot;CaloTrack&quot; → gui &quot;bat dau&quot; hoac gui anh bua an de dung ngay.
-            </p>
-            <p className="text-xs italic text-muted-foreground/70">
-              Portal khach hang van la beta scaffold. CaloTrack khong thay the tu
-              van y khoa hay dinh duong lam sang.
+            <p className="text-sm text-muted-foreground">
+              Bạn có thể bắt đầu bằng một ảnh bữa ăn, một câu hỏi về calories, hoặc nhảy thẳng vào dashboard để xem lớp tổng hợp dữ liệu hoạt động như thế nào.
             </p>
           </motion.div>
 
@@ -157,13 +160,6 @@ export const Hero = () => {
                       <animate attributeName="offset" values="1;2;1" dur="3s" repeatCount="indefinite" />
                     </stop>
                   </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
                 </defs>
                 <motion.circle
                   cx="100"
@@ -173,7 +169,6 @@ export const Hero = () => {
                   stroke="url(#gradient-flow)"
                   strokeWidth="2"
                   strokeDasharray="15 10"
-                  filter="url(#glow)"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                   style={{ transformOrigin: "center" }}
@@ -188,11 +183,6 @@ export const Hero = () => {
             />
 
             <motion.div style={{ rotate: logoRotate, scale: logoScale }} className="relative z-10">
-              <motion.div
-                className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                animate={{ x: ["-200%", "200%"] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
-              />
               <motion.img
                 src={logo3d}
                 alt="CaloTrack Logo"
@@ -201,6 +191,16 @@ export const Hero = () => {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 style={{ filter: "drop-shadow(0 0 30px hsl(var(--primary) / 0.4))" }}
               />
+              <div className="absolute -left-8 top-8 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+                <p className="text-xs uppercase tracking-[0.2em] text-primary">Hôm nay</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">1.420 kcal</p>
+                <p className="text-xs text-muted-foreground">P 96g • C 130g • F 42g</p>
+              </div>
+              <div className="absolute -bottom-2 right-0 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+                <p className="text-xs uppercase tracking-[0.2em] text-flame">AI note</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">Bạn còn khoảng 520 kcal cho hôm nay</p>
+                <p className="text-xs text-muted-foreground">Gợi ý thêm protein nạc và rau xanh.</p>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -210,7 +210,7 @@ export const Hero = () => {
         style={{ opacity }}
         className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
       >
-        <span className="text-sm text-muted-foreground">Cuon xuong</span>
+        <span className="text-sm text-muted-foreground">Cuộn xuống</span>
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
           <ArrowDown className="h-5 w-5 text-primary" />
         </motion.div>

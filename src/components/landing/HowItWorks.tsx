@@ -1,39 +1,34 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Camera, MessageSquare, PieChart } from "lucide-react";
+import { motion, useInView } from "framer-motion";
+import { BarChart3, BrainCircuit, Camera } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    icon: MessageSquare,
-    title: 'Nhan "bat dau"',
-    description: "Nhan \"bat dau\" tren Telegram de hoan tat onboarding va lay BMR / TDEE lam moc theo doi.",
+    icon: Camera,
+    title: "Chụp & Gửi",
+    description:
+      "Gửi ảnh bữa ăn hoặc nhắn món theo cách tự nhiên nhất, giống như bạn đang nhắn tin cho một người đồng hành theo dõi ăn uống.",
     color: "primary",
   },
   {
     number: "02",
-    icon: Camera,
-    title: "Gui anh hoac nhap nhanh",
-    description: 'Gui anh bua an hoac nhap nhanh kieu "com tam 250g", "1 lon bia Sai Gon", "200g uc ga".',
+    icon: BrainCircuit,
+    title: "AI Phân Tích",
+    description:
+      "CaloTrack ước tính calories, macro và khẩu phần để bạn có một bức tranh đủ rõ về bữa ăn mà không phải đo đếm quá nhiều.",
     color: "flame",
   },
   {
     number: "03",
-    icon: PieChart,
-    title: "Nhan ket qua va log",
-    description: 'Bot tinh kcal / macro, cho sua nhanh neu can, sau do tra loi theo context nhu "con lai hom nay".',
+    icon: BarChart3,
+    title: "Theo Dõi & Báo Cáo",
+    description:
+      "Xem tổng nạp trong ngày, tiến độ tuần và những gợi ý ngắn gọn để bám sát mục tiêu của bạn dễ hơn.",
     color: "primary",
   },
-];
-
-const commands = [
-  "pho bo 1 to",
-  "1 lon bia Sai Gon",
-  "con lai hom nay",
-  "/mode giam mo",
-  "/clear",
 ];
 
 export const HowItWorks = () => {
@@ -51,11 +46,11 @@ export const HowItWorks = () => {
           className="mb-16 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Chi <span className="text-gradient-primary">3 buoc</span> la bat dau
+            Chỉ <span className="text-gradient-primary">3 bước</span> để kiểm soát calo
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Phase 1 cua CaloTrack la Telegram-first: bot la san pham chinh, web la
-            lop acquisition, pricing, payment va admin.
+            Không cần mở một ứng dụng phức tạp hay tự nhập quá nhiều trường dữ liệu.
+            Bạn chỉ cần bắt đầu bằng bữa ăn gần nhất, CaloTrack sẽ lo phần còn lại.
           </p>
         </motion.div>
 
@@ -100,22 +95,9 @@ export const HowItWorks = () => {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="text-center"
         >
-          <p className="mb-4 text-sm text-muted-foreground">Lenh nhanh thuong dung:</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {commands.map((cmd, index) => (
-              <motion.span
-                key={cmd}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: 0.6 + index * 0.1 }}
-                className="rounded-full bg-muted px-4 py-2 font-mono text-sm text-foreground"
-              >
-                {cmd}
-              </motion.span>
-            ))}
-          </div>
-          <p className="mt-6 text-xs italic text-muted-foreground">
-            Sai mon? Ban sua nhanh trong chat. Bot uu tien follow-up intent va context gan nhat.
+          <p className="mx-auto max-w-3xl text-sm text-muted-foreground">
+            Mục tiêu của CaloTrack là làm cho việc theo dõi ăn uống trở nên nhẹ nhàng hơn:
+            ít ma sát hơn, hiểu bữa ăn nhanh hơn và nhìn tiến độ rõ hơn theo từng ngày.
           </p>
         </motion.div>
       </div>

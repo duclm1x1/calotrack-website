@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import { Check, Clock, Crown, Gem } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,46 +12,49 @@ const plans = [
   {
     name: "Free",
     price: "0đ",
-    period: "/bat dau",
-    description: "Phu hop de bat dau voi bot va test logging / stats tren Telegram.",
+    period: "mãi mãi",
+    description:
+      "Phù hợp để bắt đầu theo dõi bữa ăn, làm quen với chat flow và kiểm chứng xem CaloTrack có hợp với mình không.",
     icon: Clock,
     features: [
-      `Toi da ${SITE_CONFIG.freeDailyLimit} luot AI/ngay`,
-      "Log mon bang text, image va follow-up context co ban",
-      "Mode, clear, stats va onboarding day du",
+      `Tối đa ${SITE_CONFIG.freeDailyLimit} lượt AI mỗi ngày`,
+      "Ghi món bằng text, ảnh và các follow-up cơ bản",
+      "Xem thống kê hằng ngày và theo dõi tiến độ nền tảng",
     ],
-    cta: "Dung thu tren Telegram",
+    cta: "Bắt đầu miễn phí",
     popular: false,
   },
   {
     name: "Pro",
     price: formatVnd(BILLING_OFFERS.monthly.priceVnd),
-    period: "/thang",
-    description: "Goi chinh cho nguoi dung ca nhan can dung bot hang ngay.",
+    period: "/ tháng",
+    description:
+      "Gói chính dành cho người dùng thường xuyên muốn theo dõi bữa ăn mỗi ngày, dùng AI nhiều hơn và có trải nghiệm mượt hơn.",
     icon: Crown,
     features: [
-      "Han muc AI cao hon hoac khong gioi han theo chinh sach fair-use",
-      "Phan tich anh mon an va follow-up context uu tien hon",
-      "Tu dong kich hoat sau thanh toan + admin fallback khi webhook loi",
+      "Hạn mức AI cao hơn theo chính sách fair-use",
+      "Ưu tiên các flow phân tích ảnh, search và follow-up nhiều bước",
+      "Tự động kích hoạt sau thanh toán, có lớp admin fallback khi cần",
     ],
-    cta: "Nhan link thanh toan",
+    cta: "Chọn gói Pro",
     popular: true,
-    note: "Co the ban theo week / month / quarter / year, nhung entitlement tier van la Pro.",
+    note: "Ngoài gói tháng, CaloTrack hiện còn có tùy chọn weekly, quarterly và yearly.",
   },
   {
     name: "Lifetime",
     price: formatVnd(BILLING_OFFERS.lifetime.priceVnd),
-    period: "/1 lan",
-    description: "Danh cho nguoi dung dai han muon co mot tier on dinh ve entitlement.",
+    period: "một lần",
+    description:
+      "Dành cho người muốn dùng lâu dài với một entitlement ổn định và không phải bận tâm chuyện gia hạn định kỳ.",
     icon: Gem,
     features: [
-      "Tier Lifetime khong phu thuoc chu ky gia han",
-      "Uu tien nhan cap nhat AI va tinh nang khach hang tra phi",
-      "Phu hop neu ban dung bot la kenh theo doi dinh duong chinh",
+      "Một lần thanh toán, không cần theo dõi chu kỳ gia hạn",
+      "Ưu tiên nhận các cải tiến dành cho khách hàng trả phí",
+      "Phù hợp nếu CaloTrack là trợ lý dinh dưỡng bạn dùng hằng ngày",
     ],
-    cta: "Trao doi goi Lifetime",
+    cta: "Mở Lifetime",
     popular: false,
-    badge: "Best value",
+    badge: "Giá trị dài hạn",
   },
 ];
 
@@ -70,11 +73,11 @@ export const Pricing = () => {
           className="mb-12 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Chon goi <span className="text-gradient-primary">phu hop</span>
+            Bảng giá <span className="text-gradient-primary">đơn giản, rõ ràng</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Gia tren web la lop acquisition va billing. Entitlement production duoc cap
-            tren bot, khong dua vao mot customer portal phuc tap o v1.
+            Bắt đầu miễn phí, nâng cấp khi cần. CaloTrack ưu tiên trải nghiệm dùng thật trước,
+            rồi mới mở rộng dần các lớp billing và portal xung quanh.
           </p>
         </motion.div>
 
@@ -99,7 +102,7 @@ export const Pricing = () => {
                       plan.popular ? "bg-flame text-white" : "bg-primary/20 text-primary"
                     }`}
                   >
-                    {plan.popular ? "Pho bien nhat" : plan.badge}
+                    {plan.popular ? "Phổ biến nhất" : plan.badge}
                   </div>
                 )}
 
@@ -161,20 +164,10 @@ export const Pricing = () => {
           transition={{ delay: 0.8 }}
           className="space-y-2 text-center"
         >
+          <p className="text-xs text-muted-foreground">Hỗ trợ thanh toán: VietQR • Chuyển khoản • Stripe</p>
           <p className="text-xs text-muted-foreground">
-            Payment flow v1 la hybrid: thanh toan online, kich hoat tu dong, va co admin fallback neu webhook bi loi.
+            Nếu bạn cần gói phù hợp hơn cho tần suất sử dụng của mình, đội ngũ CaloTrack có thể hỗ trợ thêm qua email hoặc admin flow.
           </p>
-          <p className="text-xs text-muted-foreground">
-            CaloTrack khong thay the tu van y khoa / dinh duong. Website hien tai khong phai customer dashboard day du.
-          </p>
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <span className="text-xs text-muted-foreground">Thanh toan du kien:</span>
-            <div className="flex items-center gap-3">
-              <span className="rounded bg-muted px-3 py-1 text-xs font-medium">PayOS</span>
-              <span className="rounded bg-muted px-3 py-1 text-xs font-medium">SePay</span>
-              <span className="rounded bg-muted px-3 py-1 text-xs font-medium">Bank transfer</span>
-            </div>
-          </div>
         </motion.div>
       </div>
     </section>

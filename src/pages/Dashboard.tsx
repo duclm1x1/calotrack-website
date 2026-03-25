@@ -6,26 +6,26 @@ import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const readinessItems = [
   {
-    title: "Sản phẩm chính",
-    value: "Telegram-first",
-    detail: "Theo dõi dinh dưỡng, ảnh món ăn, /mode, /clear, stats và billing đều đang ưu tiên chạy trên Telegram.",
+    title: "Kênh sử dụng chính",
+    value: "Chat-first",
+    detail: "Theo dõi dinh dưỡng, phân tích ảnh món ăn, xem stats và các flow tracking vẫn được tối ưu quanh trải nghiệm chat.",
   },
   {
     title: "Portal khách hàng",
     value: "Beta",
-    detail: "Web portal chưa là nguồn dữ liệu chính. Identity linking với bot sẽ được mở ở phase sau.",
+    detail: "Website đang là lớp tài khoản, pricing, payment và quản trị. Dashboard sẽ tiếp tục mở rộng dần theo các phase sau.",
   },
   {
     title: "Thanh toán",
     value: "Hybrid",
-    detail: "Nâng cấp gói được thiết kế theo hướng payment online + kích hoạt tự động + admin fallback khi cần.",
+    detail: "Các gói được triển khai theo hướng thanh toán online, kích hoạt entitlement tự động và có lớp admin fallback khi cần.",
   },
 ];
 
 const nextSteps = [
-  "Mở Telegram bot để dùng sản phẩm chính ngay bây giờ.",
-  "Nếu cần nâng cấp Pro hoặc Lifetime, dùng CTA thanh toán hoặc liên hệ support.",
-  "Portal web sẽ được mở rộng sau khi identity linking và SaaS schema production đã ổn định.",
+  "Mở CaloTrack trên Telegram để tiếp tục dùng tracking hằng ngày.",
+  "Nếu cần nâng cấp Pro hoặc Lifetime, bạn có thể đi qua pricing hoặc liên hệ support.",
+  "Dashboard web sẽ tiếp tục được mở rộng khi lớp dữ liệu và đồng bộ tài khoản hoàn thiện hơn.",
 ];
 
 export default function Dashboard() {
@@ -35,7 +35,7 @@ export default function Dashboard() {
   const email = user?.email || "Chưa có email";
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 w-full">
+    <div className="min-h-screen w-full bg-zinc-50 p-6 dark:bg-zinc-950">
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
@@ -46,9 +46,8 @@ export default function Dashboard() {
               Portal web đang ở chế độ beta an toàn
             </h1>
             <p className="max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-              Tài khoản này đã đăng nhập thành công, nhưng CaloTrack hiện vẫn là sản phẩm
-              chat-first. Dữ liệu dinh dưỡng và entitlement production vẫn xoay quanh bot,
-              còn portal web sẽ mở rộng sau khi identity linking hoàn chỉnh.
+              Tài khoản này đã đăng nhập thành công. Hiện tại CaloTrack vẫn là một sản phẩm chat-first,
+              còn portal web đóng vai trò lớp hỗ trợ cho account, billing, admin và các bề mặt dashboard đang mở rộng dần.
             </p>
           </div>
 
@@ -97,9 +96,7 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col gap-1 border-b border-zinc-100 pb-4 dark:border-zinc-800">
                 <dt className="text-zinc-500 dark:text-zinc-400">Nguồn dữ liệu chính</dt>
-                <dd className="font-medium text-zinc-950 dark:text-white">
-                  Bot trên {SITE_CONFIG.primaryChannelLabel}
-                </dd>
+                <dd className="font-medium text-zinc-950 dark:text-white">Bot trên {SITE_CONFIG.primaryChannelLabel}</dd>
               </div>
               <div className="flex flex-col gap-1">
                 <dt className="text-zinc-500 dark:text-zinc-400">Hỗ trợ</dt>

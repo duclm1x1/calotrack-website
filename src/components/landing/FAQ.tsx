@@ -1,42 +1,47 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const faqs = [
   {
-    question: "CaloTrack sai mon thi sao?",
+    question: "CaloTrack hoạt động như thế nào?",
     answer:
-      "Ban xac nhan hoac sua nhanh ngay trong chat. Follow-up context va image route duoc thiet ke de sua estimate truoc khi luu.",
+      "Bạn có thể gửi ảnh bữa ăn, nhắn tên món hoặc khẩu phần, sau đó CaloTrack sẽ ước tính calories và macro để bạn theo dõi ngay trong cuộc trò chuyện.",
   },
   {
-    question: "Website co phai san pham chinh khong?",
+    question: "AI có nhận diện được món Việt không?",
     answer:
-      "Chua. Phase 1 la Telegram-first. Website hien tai dung cho acquisition, pricing, thanh toan, admin va mot portal beta nhe.",
+      "Có. CaloTrack được tối ưu để hiểu tốt hơn các món Việt và những kiểu khẩu phần đời thường, dù bạn vẫn luôn có thể sửa lại nếu muốn chính xác hơn.",
   },
   {
-    question: "Pro co gioi han so anh moi ngay khong?",
+    question: "Tôi có cần cân đồ ăn mỗi lần không?",
     answer:
-      "Free tier co hard daily limit. Pro va Lifetime duoc cap entitlement cao hon, nhung van co fair-use va abuse guardrail o workflow entry.",
+      "Không bắt buộc. Bạn có thể dùng ảnh, mô tả đơn giản hoặc thêm gram nếu muốn chi tiết hơn. CaloTrack được thiết kế để vừa tiện vừa đủ chính xác cho sử dụng hằng ngày.",
   },
   {
-    question: "Portal web da dong bo du lieu voi bot chua?",
+    question: "Tôi có thể dùng CaloTrack trên Zalo hoặc Telegram không?",
     answer:
-      "Moi o muc beta scaffold. Identity linking giua Supabase Auth va bot user se la phase sau, nen data production van uu tien bot.",
+      "Có. CaloTrack được định hướng là một trải nghiệm chat-first đa kênh, với lớp website dùng để giới thiệu sản phẩm, quản lý tài khoản và vận hành hệ thống.",
   },
   {
-    question: "Ho tro thanh toan / hoan tien nhu the nao?",
-    answer: `Ban lien he ${SITE_CONFIG.supportEmail} hoac support qua Telegram. Payment se duoc audit qua transaction history va subscription events.`,
+    question: "Dữ liệu của tôi có an toàn không?",
+    answer:
+      "CaloTrack xây theo hướng dữ liệu có cấu trúc, có lớp quản trị và khả năng kiểm soát tốt hơn theo thời gian. Đây là nền tảng để sản phẩm trở nên đáng tin cậy khi dùng lâu dài.",
+  },
+  {
+    question: "Khi nào tôi nên nâng cấp Pro?",
+    answer: `Nếu bạn dùng CaloTrack thường xuyên, cần AI nhiều hơn hoặc muốn trải nghiệm mượt hơn cho các flow phân tích ảnh và follow-up, gói Pro sẽ hợp lý hơn. Nếu cần hỗ trợ thêm, bạn có thể liên hệ ${SITE_CONFIG.supportEmail}.`,
   },
 ];
 
 export const FAQ = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
     <section id="faq" className="section-padding">
@@ -49,7 +54,7 @@ export const FAQ = () => {
           className="mb-12 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Cau hoi <span className="text-gradient-primary">thuong gap</span>
+            Câu hỏi <span className="text-gradient-primary">thường gặp</span>
           </h2>
         </motion.div>
 
@@ -59,7 +64,7 @@ export const FAQ = () => {
               key={faq.question}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
+              transition={{ duration: 0.4, delay: index * 0.08 }}
               className="card-base overflow-hidden"
             >
               <button

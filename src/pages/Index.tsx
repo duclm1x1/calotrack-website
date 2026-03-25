@@ -1,23 +1,23 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { Hero } from "@/components/landing/Hero";
-import { Demo } from "@/components/landing/Demo";
-import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Benefits } from "@/components/landing/Benefits";
-import { UseCases } from "@/components/landing/UseCases";
-import { Pricing } from "@/components/landing/Pricing";
+import { Demo } from "@/components/landing/Demo";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
+import { Hero } from "@/components/landing/Hero";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Navbar } from "@/components/landing/Navbar";
+import { Pricing } from "@/components/landing/Pricing";
+import { UseCases } from "@/components/landing/UseCases";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       <Navbar />
       <main>
         <Hero />
-        <Demo />
         <HowItWorks />
         <Benefits />
+        <Demo />
         <UseCases />
         <Pricing />
         <FAQ />
