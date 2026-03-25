@@ -85,6 +85,138 @@ export type AdminAccessState = {
   reason: string | null;
 };
 
+export type FoodCatalogRow = {
+  id: number;
+  name: string;
+  category: string | null;
+  food_type: string | null;
+  brand_name: string | null;
+  is_active: boolean;
+  default_serving_grams: number | null;
+  default_portion_label: string | null;
+  primary_source_type: string | null;
+  primary_source_confidence: number | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  alias_count: number;
+  updated_at: string | null;
+};
+
+export type FoodCandidateRow = {
+  id: number;
+  raw_name: string;
+  normalized_name: string | null;
+  raw_portion: string | null;
+  candidate_type: string | null;
+  status: string | null;
+  promotion_status: string | null;
+  usage_count: number;
+  match_food_id: number | null;
+  match_confidence: number | null;
+  suggested_food_name: string | null;
+  suggested_serving_label: string | null;
+  created_at: string | null;
+  last_seen_at: string | null;
+};
+
+export type FoodDraft = {
+  id?: number | null;
+  name: string;
+  category?: string | null;
+  foodType?: string | null;
+  brandName?: string | null;
+  defaultServingGrams?: number | null;
+  defaultPortionLabel?: string | null;
+  primarySourceType?: string | null;
+  primarySourceConfidence?: number | null;
+  editorNotes?: string | null;
+  isActive?: boolean;
+};
+
+export type FoodAliasDraft = {
+  foodId: number;
+  alias: string;
+  aliasType?: string | null;
+  isPrimary?: boolean;
+  sourceType?: string | null;
+  confidence?: number | null;
+};
+
+export type FoodNutritionDraft = {
+  foodId: number;
+  servingLabel?: string | null;
+  servingGrams?: number | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  fiber?: number | null;
+  sourceType?: string | null;
+  sourceRef?: string | null;
+  confidence?: number | null;
+  isPrimary?: boolean;
+};
+
+export type FoodPortionDraft = {
+  foodId: number;
+  label: string;
+  grams: number;
+  quantityValue?: number | null;
+  quantityUnit?: string | null;
+  portionType?: string | null;
+  sourceType?: string | null;
+  confidence?: number | null;
+  isDefault?: boolean;
+};
+
+export type PromoteFoodCandidateDraft = {
+  candidateId: number;
+  name?: string | null;
+  category?: string | null;
+  foodType?: string | null;
+  brandName?: string | null;
+  servingLabel?: string | null;
+  servingGrams?: number | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  aliases?: string[];
+};
+
+export type FoodCsvRow = {
+  food_name: string;
+  alias_list?: string;
+  brand_name?: string;
+  category?: string;
+  serving_label?: string;
+  serving_grams?: number | string;
+  calories?: number | string;
+  protein?: number | string;
+  carbs?: number | string;
+  fat?: number | string;
+  source_type?: string;
+  confidence?: number | string;
+};
+
+export type FoodCsvDryRunResult = {
+  totalRows: number;
+  validCount: number;
+  errorCount: number;
+  duplicateCount: number;
+  newCount: number;
+  preview: Record<string, unknown>[];
+};
+
+export type FoodCsvCommitResult = {
+  totalRows: number;
+  insertedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+};
+
 function describeError(error: MaybeError): string {
   return String(error?.message || error?.details || error?.hint || error?.code || "Unknown error");
 }
@@ -166,6 +298,46 @@ function toSystemStats(row: Record<string, unknown>): SystemStats {
     monthRevenue: Number(row.month_revenue ?? 0),
     totalRevenue: Number(row.total_revenue ?? 0),
     expiringIn7Days: Number(row.expiring_in_7_days ?? 0),
+  };
+}
+
+function toFoodCatalogRow(row: Record<string, unknown>): FoodCatalogRow {
+  return {
+    id: Number(row.id),
+    name: String(row.name ?? ""),
+    category: (row.category as string | null) ?? null,
+    food_type: (row.food_type as string | null) ?? null,
+    brand_name: (row.brand_name as string | null) ?? null,
+    is_active: row.is_active !== false,
+    default_serving_grams: row.default_serving_grams == null ? null : Number(row.default_serving_grams),
+    default_portion_label: (row.default_portion_label as string | null) ?? null,
+    primary_source_type: (row.primary_source_type as string | null) ?? null,
+    primary_source_confidence: row.primary_source_confidence == null ? null : Number(row.primary_source_confidence),
+    calories: row.calories == null ? null : Number(row.calories),
+    protein: row.protein == null ? null : Number(row.protein),
+    carbs: row.carbs == null ? null : Number(row.carbs),
+    fat: row.fat == null ? null : Number(row.fat),
+    alias_count: Number(row.alias_count ?? 0),
+    updated_at: (row.updated_at as string | null) ?? null,
+  };
+}
+
+function toFoodCandidateRow(row: Record<string, unknown>): FoodCandidateRow {
+  return {
+    id: Number(row.id),
+    raw_name: String(row.raw_name ?? ""),
+    normalized_name: (row.normalized_name as string | null) ?? null,
+    raw_portion: (row.raw_portion as string | null) ?? null,
+    candidate_type: (row.candidate_type as string | null) ?? null,
+    status: (row.status as string | null) ?? null,
+    promotion_status: (row.promotion_status as string | null) ?? null,
+    usage_count: Number(row.usage_count ?? 0),
+    match_food_id: row.match_food_id == null ? null : Number(row.match_food_id),
+    match_confidence: row.match_confidence == null ? null : Number(row.match_confidence),
+    suggested_food_name: (row.suggested_food_name as string | null) ?? null,
+    suggested_serving_label: (row.suggested_serving_label as string | null) ?? null,
+    created_at: (row.created_at as string | null) ?? null,
+    last_seen_at: (row.last_seen_at as string | null) ?? null,
   };
 }
 
@@ -293,6 +465,134 @@ export async function getSubscriptionEvents(userId: number): Promise<Subscriptio
 export async function getSystemStats(): Promise<SystemStats> {
   const data = await callRpc<Record<string, unknown>>("admin_get_overview");
   return toSystemStats(data ?? {});
+}
+
+export async function fetchFoodCatalog(search = ""): Promise<FoodCatalogRow[]> {
+  await assertSaasSchemaReady();
+  const data = await callRpc<Record<string, unknown>[]>("admin_food_list", {
+    p_search: search || null,
+  });
+  return (data ?? []).map(toFoodCatalogRow);
+}
+
+export async function fetchFoodCandidates(status = ""): Promise<FoodCandidateRow[]> {
+  await assertSaasSchemaReady();
+  const data = await callRpc<Record<string, unknown>[]>("admin_food_candidates_list", {
+    p_status: status || null,
+  });
+  return (data ?? []).map(toFoodCandidateRow);
+}
+
+export async function upsertFood(input: FoodDraft): Promise<number> {
+  await assertSaasSchemaReady();
+  const id = await callRpc<number>("admin_food_upsert", {
+    p_id: input.id ?? null,
+    p_name: input.name,
+    p_category: input.category ?? null,
+    p_food_type: input.foodType ?? null,
+    p_brand_name: input.brandName ?? null,
+    p_default_serving_grams: input.defaultServingGrams ?? null,
+    p_default_portion_label: input.defaultPortionLabel ?? null,
+    p_primary_source_type: input.primarySourceType ?? "manual",
+    p_primary_source_confidence: input.primarySourceConfidence ?? 1,
+    p_editor_notes: input.editorNotes ?? null,
+    p_is_active: input.isActive ?? true,
+  });
+  return Number(id);
+}
+
+export async function upsertFoodAlias(input: FoodAliasDraft): Promise<number> {
+  await assertSaasSchemaReady();
+  const id = await callRpc<number>("admin_food_alias_upsert", {
+    p_food_id: input.foodId,
+    p_alias: input.alias,
+    p_alias_type: input.aliasType ?? "common_name",
+    p_is_primary: input.isPrimary ?? false,
+    p_source_type: input.sourceType ?? "manual",
+    p_confidence: input.confidence ?? 1,
+  });
+  return Number(id);
+}
+
+export async function upsertFoodNutrition(input: FoodNutritionDraft): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_food_nutrition_upsert", {
+    p_food_id: input.foodId,
+    p_serving_label: input.servingLabel ?? "100g",
+    p_serving_grams: input.servingGrams ?? 100,
+    p_calories: input.calories ?? 0,
+    p_protein: input.protein ?? 0,
+    p_carbs: input.carbs ?? 0,
+    p_fat: input.fat ?? 0,
+    p_fiber: input.fiber ?? null,
+    p_source_type: input.sourceType ?? "manual",
+    p_source_ref: input.sourceRef ?? null,
+    p_confidence: input.confidence ?? 1,
+    p_is_primary: input.isPrimary ?? true,
+  });
+}
+
+export async function upsertFoodPortion(input: FoodPortionDraft): Promise<number> {
+  await assertSaasSchemaReady();
+  const id = await callRpc<number>("admin_food_portion_upsert", {
+    p_food_id: input.foodId,
+    p_label: input.label,
+    p_grams: input.grams,
+    p_quantity_value: input.quantityValue ?? 1,
+    p_quantity_unit: input.quantityUnit ?? null,
+    p_portion_type: input.portionType ?? "serving",
+    p_source_type: input.sourceType ?? "manual",
+    p_confidence: input.confidence ?? 1,
+    p_is_default: input.isDefault ?? false,
+  });
+  return Number(id);
+}
+
+export async function promoteFoodCandidate(input: PromoteFoodCandidateDraft): Promise<number> {
+  await assertSaasSchemaReady();
+  const id = await callRpc<number>("admin_food_candidate_promote", {
+    p_candidate_id: input.candidateId,
+    p_name: input.name ?? null,
+    p_category: input.category ?? null,
+    p_food_type: input.foodType ?? null,
+    p_brand_name: input.brandName ?? null,
+    p_serving_label: input.servingLabel ?? "100g",
+    p_serving_grams: input.servingGrams ?? 100,
+    p_calories: input.calories ?? 0,
+    p_protein: input.protein ?? 0,
+    p_carbs: input.carbs ?? 0,
+    p_fat: input.fat ?? 0,
+    p_aliases: input.aliases ?? [],
+  });
+  return Number(id);
+}
+
+export async function dryRunFoodCsvImport(rows: FoodCsvRow[]): Promise<FoodCsvDryRunResult> {
+  await assertSaasSchemaReady();
+  const data = await callRpc<Record<string, unknown>>("admin_food_csv_import_dry_run", {
+    p_rows: rows,
+  });
+  return {
+    totalRows: Number(data.total_rows ?? 0),
+    validCount: Number(data.valid_count ?? 0),
+    errorCount: Number(data.error_count ?? 0),
+    duplicateCount: Number(data.duplicate_count ?? 0),
+    newCount: Number(data.new_count ?? 0),
+    preview: Array.isArray(data.preview) ? (data.preview as Record<string, unknown>[]) : [],
+  };
+}
+
+export async function commitFoodCsvImport(rows: FoodCsvRow[]): Promise<FoodCsvCommitResult> {
+  await assertSaasSchemaReady();
+  const data = await callRpc<Record<string, unknown>>("admin_food_csv_import_commit", {
+    p_rows: rows,
+  });
+  return {
+    totalRows: Number(data.total_rows ?? 0),
+    insertedCount: Number(data.inserted_count ?? 0),
+    updatedCount: Number(data.updated_count ?? 0),
+    skippedCount: Number(data.skipped_count ?? 0),
+  };
 }
 
 export function exportUsersCSV(users: Record<string, unknown>[]): void {
