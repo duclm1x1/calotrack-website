@@ -2,59 +2,54 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Check, Clock, Crown, Gem } from "lucide-react";
+import { Check, Clock3, Crown, Gem } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { BILLING_OFFERS } from "@/lib/billing";
-import { formatVnd, SITE_CONFIG } from "@/lib/siteConfig";
+import { SITE_CONFIG, formatVnd } from "@/lib/siteConfig";
 
 const plans = [
   {
     name: "Free",
-    price: "0đ",
+    price: 0,
     period: "mãi mãi",
-    description:
-      "Phù hợp để bắt đầu theo dõi bữa ăn, làm quen với chat flow và kiểm chứng xem CaloTrack có hợp với mình không.",
-    icon: Clock,
+    description: "Bắt đầu hoàn toàn miễn phí để làm quen với cách CaloTrack theo dõi bữa ăn trong chat.",
+    icon: Clock3,
     features: [
       `Tối đa ${SITE_CONFIG.freeDailyLimit} lượt AI mỗi ngày`,
-      "Ghi món bằng text, ảnh và các follow-up cơ bản",
-      "Xem thống kê hằng ngày và theo dõi tiến độ nền tảng",
+      "Gửi ảnh món ăn hoặc nhắn tên món để ước tính calories",
+      "Xem tổng nạp trong ngày và những chỉ số cơ bản",
     ],
     cta: "Bắt đầu miễn phí",
     popular: false,
   },
   {
     name: "Pro",
-    price: formatVnd(BILLING_OFFERS.monthly.priceVnd),
+    price: 99000,
     period: "/ tháng",
-    description:
-      "Gói chính dành cho người dùng thường xuyên muốn theo dõi bữa ăn mỗi ngày, dùng AI nhiều hơn và có trải nghiệm mượt hơn.",
+    description: "Dành cho người dùng thường xuyên muốn track bữa ăn mượt hơn và dùng AI nhiều hơn mỗi ngày.",
     icon: Crown,
     features: [
-      "Hạn mức AI cao hơn theo chính sách fair-use",
-      "Ưu tiên các flow phân tích ảnh, search và follow-up nhiều bước",
-      "Tự động kích hoạt sau thanh toán, có lớp admin fallback khi cần",
+      "Ưu tiên trải nghiệm phân tích ảnh và follow-up nhiều bước",
+      "Hạn mức AI cao hơn để theo dõi đều đặn mỗi ngày",
+      "Phù hợp cho mục tiêu giảm mỡ, giữ cân hoặc tăng cơ",
     ],
     cta: "Chọn gói Pro",
     popular: true,
-    note: "Ngoài gói tháng, CaloTrack hiện còn có tùy chọn weekly, quarterly và yearly.",
   },
   {
     name: "Lifetime",
-    price: formatVnd(BILLING_OFFERS.lifetime.priceVnd),
+    price: 990000,
     period: "một lần",
-    description:
-      "Dành cho người muốn dùng lâu dài với một entitlement ổn định và không phải bận tâm chuyện gia hạn định kỳ.",
+    description: "Một lần thanh toán, dùng lâu dài cho người muốn CaloTrack trở thành trợ lý dinh dưỡng hằng ngày.",
     icon: Gem,
     features: [
-      "Một lần thanh toán, không cần theo dõi chu kỳ gia hạn",
-      "Ưu tiên nhận các cải tiến dành cho khách hàng trả phí",
-      "Phù hợp nếu CaloTrack là trợ lý dinh dưỡng bạn dùng hằng ngày",
+      "Không cần theo dõi chu kỳ gia hạn",
+      "Trải nghiệm trả phí dài hạn với chi phí một lần",
+      "Phù hợp nếu bạn muốn gắn bó lâu dài với hệ thống",
     ],
-    cta: "Mở Lifetime",
+    cta: "Chọn Lifetime",
     popular: false,
-    badge: "Giá trị dài hạn",
+    badge: "Tiết kiệm dài hạn",
   },
 ];
 
@@ -76,8 +71,7 @@ export const Pricing = () => {
             Bảng giá <span className="text-gradient-primary">đơn giản, rõ ràng</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Bắt đầu miễn phí, nâng cấp khi cần. CaloTrack ưu tiên trải nghiệm dùng thật trước,
-            rồi mới mở rộng dần các lớp billing và portal xung quanh.
+            Chọn gói phù hợp với tần suất sử dụng của bạn. Bắt đầu miễn phí, nâng cấp khi đã thấy CaloTrack thực sự hữu ích trong đời sống hằng ngày.
           </p>
         </motion.div>
 
@@ -119,7 +113,7 @@ export const Pricing = () => {
                 </h3>
                 <div className="mb-2 flex items-baseline gap-1">
                   <span className={`text-2xl font-bold ${plan.popular ? "text-white" : "text-foreground"}`}>
-                    {plan.price}
+                    {formatVnd(plan.price)}
                   </span>
                   <span className={`text-sm ${plan.popular ? "text-white/70" : "text-muted-foreground"}`}>
                     {plan.period}
@@ -137,12 +131,6 @@ export const Pricing = () => {
                     </li>
                   ))}
                 </ul>
-
-                {plan.note && (
-                  <p className={`mb-4 text-xs ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>
-                    {plan.note}
-                  </p>
-                )}
 
                 <Button
                   className={`w-full ${plan.popular ? "bg-white text-primary hover:bg-white/90" : ""}`}
@@ -166,7 +154,7 @@ export const Pricing = () => {
         >
           <p className="text-xs text-muted-foreground">Hỗ trợ thanh toán: VietQR • Chuyển khoản • Stripe</p>
           <p className="text-xs text-muted-foreground">
-            Nếu bạn cần gói phù hợp hơn cho tần suất sử dụng của mình, đội ngũ CaloTrack có thể hỗ trợ thêm qua email hoặc admin flow.
+            Nếu bạn cần hỗ trợ thêm về gói dịch vụ hoặc cách nâng cấp, đội ngũ CaloTrack có thể hỗ trợ qua email và admin flow.
           </p>
         </motion.div>
       </div>
