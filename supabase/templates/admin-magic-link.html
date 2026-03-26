@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dang nhap Admin CaloTrack</title>
+  </head>
+  <body style="margin:0;background:#f4fbf8;font-family:Inter,Arial,sans-serif;color:#14213d;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4fbf8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="max-width:640px;background:#ffffff;border:1px solid rgba(15,118,110,0.14);border-radius:28px;overflow:hidden;box-shadow:0 20px 48px rgba(20,33,61,0.08);"
+          >
+            <tr>
+              <td style="padding:32px 32px 12px;">
+                <div
+                  style="display:inline-block;border:1px solid rgba(15,118,110,0.16);background:rgba(15,118,110,0.08);color:#0f766e;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;"
+                >
+                  Admin Auth
+                </div>
+                <h1 style="margin:20px 0 12px;font-size:32px;line-height:1.15;font-weight:800;color:#0f172a;">
+                  Dang nhap vao backoffice CaloTrack
+                </h1>
+                <p style="margin:0;font-size:15px;line-height:1.75;color:#475569;">
+                  Ban vua yeu cau dang nhap vao khu vuc quan tri CaloTrack. Nut ben duoi se mo dung domain va route admin
+                  da duoc cau hinh cho production.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:12px 32px 0;">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="border:1px solid rgba(15,118,110,0.14);border-radius:24px;background:linear-gradient(135deg,rgba(15,118,110,0.08),rgba(249,115,22,0.08));"
+                >
+                  <tr>
+                    <td style="padding:22px 24px;">
+                      <div style="font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#0f766e;">
+                        Backoffice only
+                      </div>
+                      <p style="margin:10px 0 0;font-size:14px;line-height:1.7;color:#475569;">
+                        Day la thu dang nhap cho admin, billing, support va content operations. Customer portal khong dung
+                        email magic link trong flow production.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 32px 0;">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:15px 22px;border-radius:16px;"
+                >
+                  Mo Admin CaloTrack
+                </a>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:16px 32px 0;">
+                <p style="margin:0;font-size:14px;line-height:1.7;color:#475569;">
+                  Neu nut khong mo duoc, hay copy duong dan ben duoi va mo trong trinh duyet cua ban:
+                </p>
+                <p style="margin:10px 0 0;padding:14px 16px;background:#f8fafc;border-radius:16px;font-size:13px;line-height:1.7;color:#0f172a;word-break:break-all;">
+                  {{ .ConfirmationURL }}
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:20px 32px 32px;">
+                <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.8;color:#475569;">
+                  <li>Chi mo link nay neu ban vua chu dong dang nhap vao admin.</li>
+                  <li>Neu khong phai ban, ban co the bo qua email nay.</li>
+                  <li>Domain truong hop binh thuong se bat dau bang {{ .SiteURL }}.</li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -566,7 +566,7 @@ export function SettingsPanel({
         <Input placeholder="Auth user id (optional)" value={memberForm.authUserId} onChange={(event) => onMemberFormChange({ authUserId: event.target.value })} />
         <Input placeholder="Display name" value={memberForm.displayName} onChange={(event) => onMemberFormChange({ displayName: event.target.value })} />
         <div className="flex flex-wrap gap-2">
-          {(["finance", "catalog", "support"] as AdminRole[]).map((role) => {
+          {(["super_admin", "billing_admin", "support_admin", "content_admin", "analyst"] as AdminRole[]).map((role) => {
             const active = memberForm.roles.includes(role);
             return <button key={role} type="button" onClick={() => onMemberFormChange({ roles: active ? memberForm.roles.filter((item) => item !== role) : [...memberForm.roles, role] })} className={`rounded-full border px-3 py-2 text-sm ${active ? "border-primary bg-primary text-primary-foreground" : "border-primary/15 bg-white text-zinc-600"}`}>{role}</button>;
           })}
@@ -583,10 +583,10 @@ export function SettingsPanel({
               <div key={member.id} className={SUBSURFACE}>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div><div className="font-semibold">{member.display_name || member.email || member.username || `Member ${member.id}`}</div><div className="text-sm text-zinc-500">{member.email || member.username || `linked user ${member.linked_user_id ?? "—"}`}</div></div>
-                  <div className="flex flex-wrap gap-2">{member.roles.map((role) => <MiniBadge key={role} tone={role === "catalog" ? "accent" : "primary"}>{role}</MiniBadge>)}{member.is_owner ? <MiniBadge tone="accent">owner</MiniBadge> : null}</div>
+                  <div className="flex flex-wrap gap-2">{member.roles.map((role) => <MiniBadge key={role} tone={role === "content_admin" || role === "super_admin" ? "accent" : "primary"}>{role}</MiniBadge>)}{member.is_owner ? <MiniBadge tone="accent">owner</MiniBadge> : null}</div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(["finance", "catalog", "support"] as AdminRole[]).map((role) => {
+                  {(["super_admin", "billing_admin", "support_admin", "content_admin", "analyst"] as AdminRole[]).map((role) => {
                     const active = member.roles.includes(role);
                     return <button key={role} type="button" onClick={() => onApplyRoles(member, active ? member.roles.filter((item) => item !== role) : [...member.roles, role])} disabled={!canManageMembers} className={`rounded-full border px-3 py-2 text-sm ${active ? "border-primary bg-primary text-primary-foreground" : "border-primary/15 bg-white text-zinc-600"}`}>{role}</button>;
                   })}
@@ -601,7 +601,7 @@ export function SettingsPanel({
         <div className={`${SURFACE} space-y-4`}>
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Readonly billing config</div>
           <div className="grid gap-3 md:grid-cols-2">{skuOptions.map((option) => <div key={option.value} className={SUBSURFACE}><div className="font-semibold">{option.label}</div><div className="mt-1 text-sm text-zinc-500">{option.priceLabel} · {option.helper}</div><div className="mt-3 text-xs uppercase tracking-[0.18em] text-primary">{option.tier}</div></div>)}</div>
-          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Logged in as <strong>{access?.email || "unknown"}</strong>. Role model dùng Finance / Catalog / Support, còn <strong>users.is_admin</strong> giữ làm bootstrap owner gate.</div>
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Logged in as <strong>{access?.email || "unknown"}</strong>. Role model dùng Super / Billing / Support / Content / Analyst, còn <strong>users.is_admin</strong> giữ làm bootstrap owner gate.</div>
         </div>
       </div>
     </div>

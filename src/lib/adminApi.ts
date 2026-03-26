@@ -18,17 +18,23 @@ type MaybeError =
   | null
   | undefined;
 
-export type AdminRole = "finance" | "catalog" | "support";
+export type AdminRole =
+  | "super_admin"
+  | "billing_admin"
+  | "support_admin"
+  | "content_admin"
+  | "analyst";
 export type AdminSection =
   | "overview"
-  | "customers"
-  | "channels"
   | "users"
-  | "payments"
-  | "catalog"
+  | "subscriptions"
+  | "entitlements"
+  | "usage"
+  | "nutrition-data"
   | "support"
+  | "analytics"
   | "system"
-  | "settings";
+  | "security";
 
 export type AdminUser = {
   id: number;
@@ -367,7 +373,13 @@ export type AdminUser360 = {
   } | null;
 };
 
-const ADMIN_ROLES: AdminRole[] = ["finance", "catalog", "support"];
+const ADMIN_ROLES: AdminRole[] = [
+  "super_admin",
+  "billing_admin",
+  "support_admin",
+  "content_admin",
+  "analyst",
+];
 
 function describeError(error: MaybeError): string {
   return String(error?.message || error?.details || error?.hint || error?.code || "Unknown error");
@@ -407,8 +419,20 @@ async function callRpcWithFallback<T>(
 }
 
 function normalizeAdminRole(value: unknown): AdminRole | null {
-  if (value === "finance" || value === "catalog" || value === "support") {
+  if (value === "super_admin" || value === "billing_admin" || value === "support_admin" || value === "content_admin" || value === "analyst") {
     return value;
+  }
+  if (value === "finance") {
+    return "billing_admin";
+  }
+  if (value === "catalog") {
+    return "content_admin";
+  }
+  if (value === "support") {
+    return "support_admin";
+  }
+  if (value === "owner") {
+    return "super_admin";
   }
   return null;
 }

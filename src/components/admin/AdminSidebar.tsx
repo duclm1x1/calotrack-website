@@ -5,8 +5,9 @@ import {
   Database,
   LayoutDashboard,
   LifeBuoy,
-  Link2,
-  Settings,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
   Users,
 } from "lucide-react";
 
@@ -24,14 +25,15 @@ export type AdminNavItem = {
 
 const ICONS: Record<AdminSection, LucideIcon> = {
   overview: LayoutDashboard,
-  customers: Users,
-  channels: Link2,
   users: Users,
-  payments: BadgeDollarSign,
-  catalog: Database,
+  subscriptions: BadgeDollarSign,
+  entitlements: Sparkles,
+  usage: Activity,
+  "nutrition-data": Database,
   support: LifeBuoy,
+  analytics: TrendingUp,
   system: Activity,
-  settings: Settings,
+  security: ShieldCheck,
 };
 
 function getAccentClasses(accent: AdminNavItem["accent"], active: boolean): string {
@@ -52,79 +54,103 @@ export function getAdminNavItems(
   badges?: Partial<Record<AdminSection, string | number | null>>,
 ): AdminNavItem[] {
   const roles = new Set(access?.roles ?? []);
-  const isOwner = access?.isOwner === true;
+  const isOwner = access?.isOwner === true || roles.has("super_admin");
+  const canBilling = isOwner || roles.has("billing_admin");
+  const canSupport = isOwner || roles.has("support_admin");
+  const canContent = isOwner || roles.has("content_admin");
+  const canAnalytics = isOwner || roles.has("analyst") || canBilling;
+
   const items: AdminNavItem[] = [
     {
       key: "overview",
-      label: "Tong quan",
-      description: "KPI, channel mix va canh bao van hanh",
+      label: "Tổng quan",
+      description: "KPI, active users, revenue và issue feed",
       icon: ICONS.overview,
       accent: "primary",
       badge: badges?.overview,
     },
     {
-      key: "customers",
-      label: "Customers",
-      description: "Customer canonical linked by phone",
-      icon: ICONS.customers,
+      key: "users",
+      label: "User management",
+      description: "Customer canonical, identities và support actions",
+      icon: ICONS.users,
       accent: "neutral",
-      badge: badges?.customers ?? badges?.users,
-      hidden: !(isOwner || roles.has("support") || roles.has("finance")),
+      badge: badges?.users,
+      hidden: !(canSupport || canBilling),
     },
     {
-      key: "channels",
-      label: "Channels",
-      description: "Telegram, Zalo, web-linked identities",
-      icon: ICONS.channels,
-      accent: "primary",
-      badge: badges?.channels,
-      hidden: !(isOwner || roles.has("support") || roles.has("finance")),
-    },
-    {
-      key: "payments",
-      label: "Payments",
-      description: "Doanh thu, doi soat va grants",
-      icon: ICONS.payments,
+      key: "subscriptions",
+      label: "Subscriptions",
+      description: "Plans, payments, trial, refunds và billing health",
+      icon: ICONS.subscriptions,
       accent: "accent",
-      badge: badges?.payments,
-      hidden: !(isOwner || roles.has("finance")),
+      badge: badges?.subscriptions,
+      hidden: !canBilling,
     },
     {
-      key: "catalog",
-      label: "Catalog",
-      description: "Foods, aliases, nutrition, portions",
-      icon: ICONS.catalog,
+      key: "entitlements",
+      label: "Entitlements",
+      description: "Feature flags, plan matrix và override logic",
+      icon: ICONS.entitlements,
       accent: "primary",
-      badge: badges?.catalog,
-      hidden: !(isOwner || roles.has("catalog")),
+      badge: badges?.entitlements,
+      hidden: !canBilling,
+    },
+    {
+      key: "usage",
+      label: "Usage & quota",
+      description: "AI calls, scan volume, abuse hotspots và cost",
+      icon: ICONS.usage,
+      accent: "neutral",
+      badge: badges?.usage,
+      hidden: !(canBilling || canSupport || canAnalytics),
+    },
+    {
+      key: "nutrition-data",
+      label: "Nutrition data",
+      description: "Food DB, aliases, portions, candidates và CSV",
+      icon: ICONS["nutrition-data"],
+      accent: "primary",
+      badge: badges?.["nutrition-data"],
+      hidden: !canContent,
     },
     {
       key: "support",
       label: "Support",
-      description: "Customer 360, notes, quota reset, repair",
+      description: "Customer 360, notes, quota reset và repair flows",
       icon: ICONS.support,
       accent: "neutral",
       badge: badges?.support,
-      hidden: !(isOwner || roles.has("support")),
+      hidden: !canSupport,
+    },
+    {
+      key: "analytics",
+      label: "Analytics",
+      description: "Growth, signup, conversion, retention và cohort signals",
+      icon: ICONS.analytics,
+      accent: "accent",
+      badge: badges?.analytics,
+      hidden: !canAnalytics,
     },
     {
       key: "system",
       label: "System",
-      description: "Schema, health, webhook, audit",
+      description: "Schema readiness, webhook, queue và health state",
       icon: ICONS.system,
       accent: "neutral",
       badge: badges?.system,
     },
     {
-      key: "settings",
-      label: "Settings",
-      description: "Admin members, roles, readonly billing config",
-      icon: ICONS.settings,
+      key: "security",
+      label: "Security",
+      description: "Admin roles, audit trail và break-glass owner state",
+      icon: ICONS.security,
       accent: "accent",
-      badge: badges?.settings,
+      badge: badges?.security,
       hidden: !isOwner,
     },
   ];
+
   return items.filter((item) => !item.hidden);
 }
 
@@ -143,13 +169,13 @@ export function AdminSidebar({ items, section, onSelect, access }: AdminSidebarP
           <div className="mb-3 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
             CaloTrack Backoffice
           </div>
-          <h2 className="text-xl font-semibold text-foreground">Admin van hanh da kenh</h2>
+          <h2 className="text-xl font-semibold text-foreground">Admin area cho SaaS đa kênh</h2>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Telegram va Zalo la kenh van hanh chinh. Web giu vai tro portal account, billing va admin.
+            Phone number là customer canonical. Telegram và Zalo là kênh sử dụng, còn web giữ vai trò checkout, activation và admin.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
-            <span className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-primary">Teal Core</span>
-            <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-accent">Flame Accent</span>
+            <span className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-primary">Teal core</span>
+            <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-accent">Flame accent</span>
             <span className="rounded-full border border-zinc-200 bg-white/90 px-3 py-1 text-zinc-500">
               {access?.isOwner ? "Owner" : "Role-aware"}
             </span>
@@ -194,7 +220,7 @@ export function AdminSidebar({ items, section, onSelect, access }: AdminSidebarP
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Admin mobile</div>
-              <div className="text-sm text-zinc-600">Desktop hoac tablet se de van hanh hon.</div>
+              <div className="text-sm text-zinc-600">Backoffice vận hành tốt nhất trên desktop hoặc tablet.</div>
             </div>
             <div className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
               Read-friendly

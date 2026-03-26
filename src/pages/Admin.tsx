@@ -15,6 +15,13 @@ import {
   SettingsPanel,
   SystemPanel,
 } from "@/components/admin/AdminPanels";
+import {
+  AnalyticsPanel,
+  EntitlementsPanel,
+  SecurityPanel,
+  SubscriptionsOverviewPanel,
+  UsagePanel,
+} from "@/components/admin/AdminSaasPanels";
 import { AdminSidebar, getAdminNavItems } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -281,7 +288,7 @@ function defaultMemberForm(): MemberFormState {
     linkedUserId: "",
     authUserId: "",
     displayName: "",
-    roles: ["support"],
+    roles: ["support_admin"],
     isOwner: false,
   };
 }
@@ -349,13 +356,37 @@ export default function Admin() {
 
   const [memberForm, setMemberForm] = useState<MemberFormState>(defaultMemberForm());
 
-  const rawSection = (searchParams.get("section") as AdminSection | null) ?? "overview";
-  const section: AdminSection = rawSection === "users" ? "customers" : rawSection;
+  const rawSection = searchParams.get("section") ?? "overview";
+  const sectionAliasMap: Record<string, AdminSection> = {
+    customers: "users",
+    channels: "users",
+    payments: "subscriptions",
+    catalog: "nutrition-data",
+    settings: "security",
+  };
+  const section = (
+    sectionAliasMap[rawSection] ??
+    ([
+      "overview",
+      "users",
+      "subscriptions",
+      "entitlements",
+      "usage",
+      "nutrition-data",
+      "support",
+      "analytics",
+      "system",
+      "security",
+    ] as string[]).includes(rawSection)
+      ? (rawSection as AdminSection)
+      : "overview"
+  );
   const roles = access?.roles ?? [];
-  const isOwner = access?.isOwner === true;
-  const canFinance = isOwner || roles.includes("finance");
-  const canCatalog = isOwner || roles.includes("catalog");
-  const canSupport = isOwner || roles.includes("support");
+  const isOwner = access?.isOwner === true || roles.includes("super_admin");
+  const canFinance = isOwner || roles.includes("billing_admin");
+  const canCatalog = isOwner || roles.includes("content_admin");
+  const canSupport = isOwner || roles.includes("support_admin");
+  const canAnalytics = isOwner || roles.includes("analyst") || canFinance;
 
   const setSection = useCallback(
     (nextSection: AdminSection) => {
@@ -433,7 +464,7 @@ export default function Admin() {
   }, [fetchBaseData]);
 
   useEffect(() => {
-    if (section === "catalog") {
+    if (section === "nutrition-data") {
       fetchCatalogData();
     }
   }, [section, fetchCatalogData]);
@@ -447,15 +478,17 @@ export default function Admin() {
   const navItems = useMemo(
     () =>
       getAdminNavItems(access, {
-        customers: customers.length,
-        channels: channels.filter((channel) => channel.link_status !== "linked").length,
-        payments: payments.filter((payment) => payment.status === "pending").length,
-        catalog: candidates.length,
+        users: customers.length,
+        subscriptions: payments.filter((payment) => payment.status === "pending").length,
+        entitlements: customers.filter((customer) => customer.plan === "lifetime").length,
+        usage: customers.filter((customer) => customer.quota_used_today >= FREE_DAILY_LIMIT).length,
+        "nutrition-data": candidates.length,
         support: selectedCustomerId ?? null,
+        analytics: canAnalytics ? customers.filter((customer) => customer.plan !== "free").length : null,
         system: health?.schemaReady ? null : "check",
-        settings: members.length,
+        security: members.length,
       }),
-    [access, customers.length, channels, payments, candidates.length, selectedCustomerId, health?.schemaReady, members.length],
+    [access, customers, payments, candidates.length, selectedCustomerId, health?.schemaReady, members.length, canAnalytics],
   );
 
   useEffect(() => {
@@ -647,7 +680,7 @@ export default function Admin() {
 
   const handleLoadCandidateIntoForm = (candidate: FoodCandidateRow) => {
     setPromoteForm(defaultPromoteCandidateForm(candidate));
-    setSection("catalog");
+    setSection("nutrition-data");
   };
 
   const handlePromoteCandidate = async () =>
@@ -851,6 +884,81 @@ export default function Admin() {
       member.is_active ? "Đã deactivate member" : "Đã activate member",
     );
 
+  const sectionMeta = useMemo(() => {
+    switch (section) {
+      case "users":
+        return {
+          eyebrow: "User management",
+          title: "Customer canonical, channel identities và account health",
+          description:
+            "Phone number là tài khoản chính. Màn này gom customer canonical, Telegram/Zalo/web-linked identities và các thao tác support hoặc entitlement ở mức user lifecycle.",
+        };
+      case "subscriptions":
+        return {
+          eyebrow: "Subscriptions & billing",
+          title: "Plans, payments, trial và revenue operations",
+          description:
+            "Finance nhìn được plan mix, manual grants, payment history, provider state, fail/pending queue và các tín hiệu upgrade hay churn ở cùng một nơi.",
+        };
+      case "entitlements":
+        return {
+          eyebrow: "Entitlements",
+          title: "Feature flags và quyền theo tier",
+          description:
+            "Tách rõ feature access khỏi plan display để sau này dễ mở Pro Plus, Coach hoặc Family mà không phải hardcode lại toàn bộ ứng dụng.",
+        };
+      case "usage":
+        return {
+          eyebrow: "Usage & quota",
+          title: "AI calls, meal scans, quota pressure và cost proxy",
+          description:
+            "Phần này giúp nhìn ra free-tier hotspots, abuse risk, chi phí AI ước tính và quota policy theo customer thay vì theo từng channel riêng lẻ.",
+        };
+      case "nutrition-data":
+        return {
+          eyebrow: "Nutrition data",
+          title: "Food database, portions, aliases và candidate curation",
+          description:
+            "Content admin dùng khu vực này để sửa nutrition data, promote candidate, import CSV và làm sạch catalog để AI ưu tiên DB trước estimate.",
+        };
+      case "support":
+        return {
+          eyebrow: "Support & moderation",
+          title: "Customer 360, notes, repair flows và quota reset",
+          description:
+            "Support tập trung vào complaints, link repair, portal auth, merge customer, reset quota và note nội bộ để không mất bối cảnh hỗ trợ.",
+        };
+      case "analytics":
+        return {
+          eyebrow: "Analytics & growth",
+          title: "Signup, conversion, retention và revenue signals",
+          description:
+            "Analyst và business team theo dõi growth funnel, active users, Free → Paid conversion và xu hướng revenue theo cùng token system với landing page.",
+        };
+      case "system":
+        return {
+          eyebrow: "System health",
+          title: "Schema, webhook, queue và vận hành nền",
+          description:
+            "Theo dõi migration readiness, error feed, payment webhook status, audit stream và các tín hiệu backend cần xử lý trước khi nó thành issue cho user.",
+        };
+      case "security":
+        return {
+          eyebrow: "Security & permissions",
+          title: "Admin roles, audit trail và break-glass owner",
+          description:
+            "Tất cả quyền nhạy cảm phải đi qua RPC và audit log. Màn này là nơi nhìn thấy member roles, owner state và các thay đổi cần kiểm toán.",
+        };
+      default:
+        return {
+          eyebrow: "Dashboard tổng quan",
+          title: "CaloTrack Admin Area",
+          description:
+            "Một màn admin duy nhất cho customer canonical theo số điện thoại, channel identities, payments, catalog foods, support operations và system health. Giao diện này bám cùng visual language với main page: teal là primary, flame là accent.",
+        };
+    }
+  }, [section]);
+
   const headerSummary = useMemo(
     () => [
       { label: "free tier", value: `${FREE_DAILY_LIMIT}/ngày`, tone: "neutral" as const },
@@ -873,9 +981,9 @@ export default function Admin() {
 
           <div className="space-y-6">
             <AdminSectionHeader
-              eyebrow="Operator console"
-              title="CaloTrack Admin Backoffice"
-              description="Một màn admin duy nhất cho customer canonical theo số điện thoại, channel identities, payments, catalog foods, support operations và system health. Giao diện này bám cùng visual language với main page: teal là primary, flame là accent."
+              eyebrow={sectionMeta.eyebrow}
+              title={sectionMeta.title}
+              description={sectionMeta.description}
               summary={headerSummary}
               actions={
                 <>
@@ -898,60 +1006,68 @@ export default function Admin() {
               />
             ) : null}
 
-            {section === "customers" ? (
-              <CustomersPanel
-                customers={filteredCustomers}
-                search={customerSearch}
-                onSearchChange={setCustomerSearch}
-                planFilter={planFilter}
-                onPlanFilterChange={setPlanFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                onOpenSupport={handleOpenCustomerSupport}
-                onSetFree={handleSetCustomerFree}
-                onGrantPro={handleGrantCustomerPro}
-                onGrantLifetime={handleGrantCustomerLifetime}
-                canFinance={canFinance}
-              />
+            {section === "users" ? (
+              <div className="space-y-6">
+                <CustomersPanel
+                  customers={filteredCustomers}
+                  search={customerSearch}
+                  onSearchChange={setCustomerSearch}
+                  planFilter={planFilter}
+                  onPlanFilterChange={setPlanFilter}
+                  statusFilter={statusFilter}
+                  onStatusFilterChange={setStatusFilter}
+                  onOpenSupport={handleOpenCustomerSupport}
+                  onSetFree={handleSetCustomerFree}
+                  onGrantPro={handleGrantCustomerPro}
+                  onGrantLifetime={handleGrantCustomerLifetime}
+                  canFinance={canFinance}
+                />
+                <ChannelsPanel
+                  channels={filteredChannels}
+                  linkReviews={linkReviews}
+                  filter={channelFilter}
+                  onFilterChange={setChannelFilter}
+                  targetCustomerId={channelLinkTarget}
+                  onTargetCustomerIdChange={setChannelLinkTarget}
+                  onLink={handleLinkChannel}
+                  onUnlink={handleUnlinkChannel}
+                  canSupport={canSupport}
+                />
+              </div>
             ) : null}
 
-            {section === "channels" ? (
-              <ChannelsPanel
-                channels={filteredChannels}
-                linkReviews={linkReviews}
-                filter={channelFilter}
-                onFilterChange={setChannelFilter}
-                targetCustomerId={channelLinkTarget}
-                onTargetCustomerIdChange={setChannelLinkTarget}
-                onLink={handleLinkChannel}
-                onUnlink={handleUnlinkChannel}
-                canSupport={canSupport}
-              />
+            {section === "subscriptions" ? (
+              <div className="space-y-6">
+                <SubscriptionsOverviewPanel customers={customers} payments={payments} stats={stats} />
+                <PaymentsPanel
+                  filteredPayments={filteredPayments}
+                  query={payFilters.query}
+                  onQueryChange={(value) => setPayFilters((prev) => ({ ...prev, query: value }))}
+                  statusFilter={payFilters.status}
+                  onStatusFilterChange={(value) => setPayFilters((prev) => ({ ...prev, status: value }))}
+                  providerFilter={payFilters.provider}
+                  onProviderFilterChange={(value) => setPayFilters((prev) => ({ ...prev, provider: value }))}
+                  skuFilter={payFilters.sku}
+                  onSkuFilterChange={(value) => setPayFilters((prev) => ({ ...prev, sku: value }))}
+                  channelFilter={payFilters.channel}
+                  onChannelFilterChange={(value) => setPayFilters((prev) => ({ ...prev, channel: value }))}
+                  payForm={payForm}
+                  onPayFormChange={(patch) => setPayForm((prev) => ({ ...prev, ...patch }))}
+                  skuOptions={SKU_OPTIONS}
+                  onSubmitManualPayment={handleLogPayment}
+                  canFinance={canFinance}
+                  loading={loading}
+                />
+              </div>
             ) : null}
 
-            {section === "payments" ? (
-              <PaymentsPanel
-                filteredPayments={filteredPayments}
-                query={payFilters.query}
-                onQueryChange={(value) => setPayFilters((prev) => ({ ...prev, query: value }))}
-                statusFilter={payFilters.status}
-                onStatusFilterChange={(value) => setPayFilters((prev) => ({ ...prev, status: value }))}
-                providerFilter={payFilters.provider}
-                onProviderFilterChange={(value) => setPayFilters((prev) => ({ ...prev, provider: value }))}
-                skuFilter={payFilters.sku}
-                onSkuFilterChange={(value) => setPayFilters((prev) => ({ ...prev, sku: value }))}
-                channelFilter={payFilters.channel}
-                onChannelFilterChange={(value) => setPayFilters((prev) => ({ ...prev, channel: value }))}
-                payForm={payForm}
-                onPayFormChange={(patch) => setPayForm((prev) => ({ ...prev, ...patch }))}
-                skuOptions={SKU_OPTIONS}
-                onSubmitManualPayment={handleLogPayment}
-                canFinance={canFinance}
-                loading={loading}
-              />
+            {section === "entitlements" ? <EntitlementsPanel customers={customers} /> : null}
+
+            {section === "usage" ? (
+              <UsagePanel customers={customers} channels={channels} stats={stats} />
             ) : null}
 
-            {section === "catalog" ? (
+            {section === "nutrition-data" ? (
               <CatalogPanel
                 state={{
                   schemaReady: Boolean(schema?.ready),
@@ -1022,22 +1138,29 @@ export default function Admin() {
               />
             ) : null}
 
+            {section === "analytics" ? (
+              <AnalyticsPanel users={users} customers={customers} payments={payments} />
+            ) : null}
+
             {section === "system" ? (
               <SystemPanel schema={schema} health={health} auditLogs={auditLogs} onRefresh={fetchBaseData} />
             ) : null}
 
-            {section === "settings" ? (
-              <SettingsPanel
-                access={access}
-                members={members}
-                memberForm={memberForm}
-                onMemberFormChange={(patch) => setMemberForm((prev) => ({ ...prev, ...patch }))}
-                onSaveMember={handleSaveMember}
-                onToggleMemberActive={handleToggleMemberActive}
-                onApplyRoles={handleApplyRoles}
-                canManageMembers={isOwner}
-                skuOptions={SKU_OPTIONS}
-              />
+            {section === "security" ? (
+              <div className="space-y-6">
+                <SecurityPanel access={access} members={members} auditLogs={auditLogs} />
+                <SettingsPanel
+                  access={access}
+                  members={members}
+                  memberForm={memberForm}
+                  onMemberFormChange={(patch) => setMemberForm((prev) => ({ ...prev, ...patch }))}
+                  onSaveMember={handleSaveMember}
+                  onToggleMemberActive={handleToggleMemberActive}
+                  onApplyRoles={handleApplyRoles}
+                  canManageMembers={isOwner}
+                  skuOptions={SKU_OPTIONS}
+                />
+              </div>
             ) : null}
           </div>
         </div>

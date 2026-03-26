@@ -9,7 +9,10 @@ import { AdminRoute } from "./components/AdminRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
+import Checkout from "./pages/Checkout";
+import Activate from "./pages/Activate";
 import Admin from "./pages/Admin";
 
 
@@ -25,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route 
               path="/dashboard" 
               element={
@@ -32,6 +36,22 @@ const App = () => (
                   <Dashboard />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/activate"
+              element={
+                <ProtectedRoute>
+                  <Activate />
+                </ProtectedRoute>
+              }
             />
             <Route 
               path="/admin" 

@@ -7,6 +7,8 @@ export type BillingSku =
   | "yearly"
   | "lifetime";
 
+export type PublicCheckoutProvider = "vnpay" | "momo" | "bank_transfer";
+
 export type BillingOffer = {
   sku: BillingSku;
   tier: PlanTier;
@@ -19,8 +21,26 @@ export type BillingOffer = {
   badge?: string;
 };
 
+export type PublicPlanCard = {
+  plan: PlanTier;
+  label: string;
+  priceLabel: string;
+  helper: string;
+  defaultSku: BillingSku | null;
+  badge?: string;
+  features: string[];
+};
+
+export type CheckoutProviderOption = {
+  value: PublicCheckoutProvider;
+  label: string;
+  helper: string;
+  accent: "primary" | "accent" | "neutral";
+};
+
 export const LIFETIME_SENTINEL_ISO = "2099-12-31T23:59:59.000Z";
 export const MARKETING_SKUS: BillingSku[] = ["monthly", "lifetime"];
+export const PUBLIC_CHECKOUT_SKUS: BillingSku[] = ["monthly", "lifetime"];
 
 export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
   weekly: {
@@ -30,7 +50,7 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 39000,
     label: "Pro 7 ngày",
     shortLabel: "Pro tuần",
-    description: "Gói ngắn hạn để thử CaloTrack trong 7 ngày.",
+    description: "Gói ngắn hạn để trải nghiệm CaloTrack trong 7 ngày.",
   },
   monthly: {
     sku: "monthly",
@@ -39,7 +59,7 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 99000,
     label: "Pro 30 ngày",
     shortLabel: "Pro tháng",
-    description: "Gói Pro tiêu chuẩn để theo dõi bữa ăn đều đặn mỗi ngày.",
+    description: "Gói Pro tiêu chuẩn để dùng AI nutrition và dashboard chi tiết mỗi ngày.",
     highlighted: true,
     badge: "Phổ biến nhất",
   },
@@ -50,7 +70,7 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 239000,
     label: "Pro 90 ngày",
     shortLabel: "Pro quý",
-    description: "Tiết kiệm hơn khi dùng theo quý.",
+    description: "Tiết kiệm hơn khi dùng theo chu kỳ quý.",
   },
   yearly: {
     sku: "yearly",
@@ -59,7 +79,7 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 799000,
     label: "Pro 365 ngày",
     shortLabel: "Pro năm",
-    description: "Phù hợp cho người dùng dài hạn.",
+    description: "Gói dài hạn cho người dùng muốn tracking nghiêm túc quanh năm.",
   },
   lifetime: {
     sku: "lifetime",
@@ -68,12 +88,79 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 990000,
     label: "Lifetime",
     shortLabel: "Lifetime",
-    description: "Thanh toán một lần, dùng dài hạn với toàn bộ quyền lợi trả phí.",
-    badge: "Thanh toán một lần",
+    description: "Thanh toán một lần, giữ entitlement dài hạn ở cấp customer.",
+    badge: "One-time",
   },
 };
 
 export const BILLING_SKU_OPTIONS = Object.values(BILLING_OFFERS);
+
+export const PUBLIC_PLAN_CARDS: PublicPlanCard[] = [
+  {
+    plan: "free",
+    label: "Free",
+    priceLabel: "0đ",
+    helper: "Bắt đầu miễn phí để làm quen flow tracking.",
+    defaultSku: null,
+    badge: "Start free",
+    features: [
+      "Log bữa ăn cơ bản",
+      `Giới hạn ${getFreeDailyLimit()} lượt AI mỗi ngày`,
+      "Không có advanced analytics",
+      "Không export dữ liệu",
+    ],
+  },
+  {
+    plan: "pro",
+    label: "Pro",
+    priceLabel: `${formatBillingPriceVnd(BILLING_OFFERS.monthly.priceVnd)} / tháng`,
+    helper: "Nâng quota AI và mở dashboard, progress insight, export.",
+    defaultSku: "monthly",
+    badge: "Telegram-first",
+    features: [
+      "AI meal analysis quota cao hơn",
+      "Meal plan cá nhân hóa",
+      "Dashboard calories và macro chi tiết",
+      "Export PDF / CSV",
+      "Priority support",
+    ],
+  },
+  {
+    plan: "lifetime",
+    label: "Lifetime",
+    priceLabel: `${formatBillingPriceVnd(BILLING_OFFERS.lifetime.priceVnd)} một lần`,
+    helper: "Entitlement dài hạn theo customer, không phụ thuộc renewal.",
+    defaultSku: "lifetime",
+    badge: "One-time",
+    features: [
+      "One-time payment",
+      "Giữ entitlement theo số điện thoại canonical",
+      "Dùng chung trên Telegram, Zalo và portal khi đã link",
+      "Phù hợp với heavy users và internal operators",
+    ],
+  },
+];
+
+export const PUBLIC_CHECKOUT_PROVIDERS: CheckoutProviderOption[] = [
+  {
+    value: "vnpay",
+    label: "VNPAY",
+    helper: "Redirect sang cổng thanh toán, backend xác nhận bằng IPN.",
+    accent: "primary",
+  },
+  {
+    value: "momo",
+    label: "MoMo",
+    helper: "Phù hợp với flow IPN bất đồng bộ để auto-activate.",
+    accent: "accent",
+  },
+  {
+    value: "bank_transfer",
+    label: "Chuyển khoản ngân hàng",
+    helper: "QR + mã đơn hàng để đối soát và kích hoạt tự động.",
+    accent: "neutral",
+  },
+];
 
 export function resolveTierFromSku(sku: BillingSku): PlanTier {
   return BILLING_OFFERS[sku].tier;
@@ -81,6 +168,16 @@ export function resolveTierFromSku(sku: BillingSku): PlanTier {
 
 export function resolveOffer(sku: BillingSku): BillingOffer {
   return BILLING_OFFERS[sku];
+}
+
+export function getDefaultSkuForTier(tier: PlanTier): BillingSku | null {
+  if (tier === "free") return null;
+  if (tier === "lifetime") return "lifetime";
+  return "monthly";
+}
+
+export function getPlanCard(tier: PlanTier): PublicPlanCard {
+  return PUBLIC_PLAN_CARDS.find((card) => card.plan === tier) ?? PUBLIC_PLAN_CARDS[0];
 }
 
 export function computePremiumUntil(
@@ -113,9 +210,9 @@ export function formatTierLabel(tier: PlanTier): string {
 }
 
 export function describeTier(tier: PlanTier): string {
-  if (tier === "lifetime") return "Thanh toán một lần, dùng dài hạn.";
-  if (tier === "pro") return "Ưu tiên trải nghiệm trả phí và entitlement có thời hạn.";
-  return "Bắt đầu miễn phí với giới hạn dùng hàng ngày.";
+  if (tier === "lifetime") return "One-time payment, giữ entitlement dài hạn theo customer.";
+  if (tier === "pro") return "Mở quota AI cao hơn, analytics tốt hơn và support ưu tiên.";
+  return "Bắt đầu miễn phí với quota hằng ngày vừa đủ để trải nghiệm.";
 }
 
 export function formatBillingPriceVnd(value: number): string {
@@ -127,9 +224,15 @@ export function formatBillingSkuLabel(sku: BillingSku): string {
 }
 
 export function getBillingCheckoutLabel(sku: BillingSku): string {
-  if (sku === "monthly") return `Nâng cấp Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
-  if (sku === "lifetime") return `Mở Lifetime ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
-  if (sku === "weekly") return `Dùng thử Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  if (sku === "monthly") {
+    return `Nâng cấp Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  }
+  if (sku === "lifetime") {
+    return `Mở Lifetime ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  }
+  if (sku === "weekly") {
+    return `Dùng thử Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  }
   return `Chọn ${BILLING_OFFERS[sku].shortLabel}`;
 }
 
@@ -140,7 +243,7 @@ export function getBillingTierBadge(tier: PlanTier): string {
 }
 
 export function getBillingProviderSummary(): string {
-  return "PayOS • VietQR • Chuyển khoản • Stripe";
+  return "VNPAY • MoMo • Chuyển khoản ngân hàng";
 }
 
 export function getFreeDailyLimit(): number {
