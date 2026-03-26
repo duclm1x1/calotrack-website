@@ -20,6 +20,7 @@ export type BillingOffer = {
 };
 
 export const LIFETIME_SENTINEL_ISO = "2099-12-31T23:59:59.000Z";
+export const MARKETING_SKUS: BillingSku[] = ["monthly", "lifetime"];
 
 export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
   weekly: {
@@ -28,17 +29,17 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     days: 7,
     priceVnd: 39000,
     label: "Pro 7 ngày",
-    shortLabel: "Weekly",
-    description: "Dùng thử gói Pro trong 7 ngày.",
+    shortLabel: "Pro tuần",
+    description: "Gói ngắn hạn để thử CaloTrack trong 7 ngày.",
   },
   monthly: {
     sku: "monthly",
     tier: "pro",
     days: 30,
-    priceVnd: 89000,
+    priceVnd: 99000,
     label: "Pro 30 ngày",
-    shortLabel: "Monthly",
-    description: "Gói Pro tiêu chuẩn cho người dùng Telegram-first.",
+    shortLabel: "Pro tháng",
+    description: "Gói Pro tiêu chuẩn để theo dõi bữa ăn đều đặn mỗi ngày.",
     highlighted: true,
     badge: "Phổ biến nhất",
   },
@@ -48,7 +49,7 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     days: 90,
     priceVnd: 239000,
     label: "Pro 90 ngày",
-    shortLabel: "Quarterly",
+    shortLabel: "Pro quý",
     description: "Tiết kiệm hơn khi dùng theo quý.",
   },
   yearly: {
@@ -57,18 +58,18 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     days: 365,
     priceVnd: 799000,
     label: "Pro 365 ngày",
-    shortLabel: "Yearly",
+    shortLabel: "Pro năm",
     description: "Phù hợp cho người dùng dài hạn.",
   },
   lifetime: {
     sku: "lifetime",
     tier: "lifetime",
     days: null,
-    priceVnd: 1899000,
+    priceVnd: 990000,
     label: "Lifetime",
     shortLabel: "Lifetime",
-    description: "Thanh toán 1 lần, dùng trọn đời.",
-    badge: "Best value",
+    description: "Thanh toán một lần, dùng dài hạn với toàn bộ quyền lợi trả phí.",
+    badge: "Thanh toán một lần",
   },
 };
 
@@ -109,6 +110,37 @@ export function formatTierLabel(tier: PlanTier): string {
   if (tier === "lifetime") return "Lifetime";
   if (tier === "pro") return "Pro";
   return "Free";
+}
+
+export function describeTier(tier: PlanTier): string {
+  if (tier === "lifetime") return "Thanh toán một lần, dùng dài hạn.";
+  if (tier === "pro") return "Ưu tiên trải nghiệm trả phí và entitlement có thời hạn.";
+  return "Bắt đầu miễn phí với giới hạn dùng hàng ngày.";
+}
+
+export function formatBillingPriceVnd(value: number): string {
+  return `${value.toLocaleString("vi-VN")}đ`;
+}
+
+export function formatBillingSkuLabel(sku: BillingSku): string {
+  return BILLING_OFFERS[sku].label;
+}
+
+export function getBillingCheckoutLabel(sku: BillingSku): string {
+  if (sku === "monthly") return `Nâng cấp Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  if (sku === "lifetime") return `Mở Lifetime ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  if (sku === "weekly") return `Dùng thử Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  return `Chọn ${BILLING_OFFERS[sku].shortLabel}`;
+}
+
+export function getBillingTierBadge(tier: PlanTier): string {
+  if (tier === "lifetime") return "One-time";
+  if (tier === "pro") return "Priority";
+  return "Free tier";
+}
+
+export function getBillingProviderSummary(): string {
+  return "PayOS • VietQR • Chuyển khoản • Stripe";
 }
 
 export function getFreeDailyLimit(): number {

@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 
+import { SITE_CONFIG } from "@/lib/siteConfig";
+
 const logoSquare = "/logo-square.jpg";
 
 const footerGroups = [
@@ -14,10 +16,10 @@ const footerGroups = [
     ],
   },
   {
-    title: "Công ty",
+    title: "Portal",
     links: [
-      { label: "Về CaloTrack", href: "#" },
-      { label: "Portal", href: "/login" },
+      { label: "Đăng nhập", href: "/login" },
+      { label: "Dashboard", href: "/dashboard" },
       { label: "Admin", href: "/admin" },
     ],
   },
@@ -26,7 +28,7 @@ const footerGroups = [
     links: [
       { label: "FAQ", href: "#faq" },
       { label: "Liên hệ", href: "#contact" },
-      { label: "support@calotrack.vn", href: "mailto:support@calotrack.vn" },
+      { label: SITE_CONFIG.supportEmail, href: `mailto:${SITE_CONFIG.supportEmail}` },
     ],
   },
 ];
@@ -41,12 +43,12 @@ export const Footer = () => {
               <img src={logoSquare} alt="CaloTrack" className="h-10 w-10 rounded-lg object-cover" />
               <div>
                 <span className="text-lg font-bold text-foreground">CaloTrack</span>
-                <p className="text-sm text-muted-foreground">AI Nutrition Assistant</p>
+                <p className="text-sm text-muted-foreground">{SITE_CONFIG.productStageLabel}</p>
               </div>
             </motion.a>
             <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
-              CaloTrack giúp bạn theo dõi bữa ăn, calories và macro theo cách tự nhiên hơn
-              thông qua chat, AI và một lớp dashboard hỗ trợ rõ ràng.
+              CaloTrack là AI nutrition assistant theo hướng chat-first, với website đóng vai trò lớp SaaS cho
+              pricing, portal, billing và admin backoffice.
             </p>
           </div>
 
@@ -62,11 +64,20 @@ export const Footer = () => {
               </div>
             </div>
           ))}
+
+          <div className="rounded-2xl border border-primary/10 bg-white/80 p-4 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Channel truth</div>
+            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <div>Telegram: tracking live</div>
+              <div>{SITE_CONFIG.secondaryChannelLabel}: {SITE_CONFIG.secondaryChannelStatus}</div>
+              <div>{SITE_CONFIG.webPortalLabel}: account, billing và admin</div>
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} CaloTrack. Made in Vietnam.</p>
-          <p>Theo dõi bữa ăn thông minh, đơn giản và gần với đời sống hằng ngày.</p>
+          <p>Frontend canonical: Vite SPA. Layer chat đi trước, layer portal đi sau nhưng đồng bộ.</p>
         </div>
       </div>
     </footer>

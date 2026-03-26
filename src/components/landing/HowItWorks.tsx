@@ -8,25 +8,25 @@ const steps = [
   {
     number: "01",
     icon: Camera,
-    title: "Chụp & Gửi",
+    title: "Gửi từ Telegram trước",
     description:
-      "Gửi ảnh bữa ăn hoặc nhắn món theo cách tự nhiên nhất, giống như bạn đang nhắn tin cho một người đồng hành theo dõi ăn uống.",
+      "Bắt đầu bằng ảnh bữa ăn hoặc câu chat ngắn trong Telegram. Bạn không phải đổi sang một app tracking riêng chỉ để log cho xong việc.",
     color: "primary",
   },
   {
     number: "02",
     icon: BrainCircuit,
-    title: "AI Phân Tích",
+    title: "AI đọc món và follow-up",
     description:
-      "CaloTrack ước tính calories, macro và khẩu phần để bạn có một bức tranh đủ rõ về bữa ăn mà không phải đo đếm quá nhiều.",
+      "CaloTrack ước tính calories, macro, khẩu phần và giữ ngữ cảnh để bạn sửa tiếp hoặc log nhanh hơn ngay trong mạch trò chuyện.",
     color: "flame",
   },
   {
     number: "03",
     icon: BarChart3,
-    title: "Theo Dõi & Báo Cáo",
+    title: "Portal gom account và recap",
     description:
-      "Xem tổng nạp trong ngày, tiến độ tuần và những gợi ý ngắn gọn để bám sát mục tiêu của bạn dễ hơn.",
+      "Website lo phần pricing, account, billing, dashboard và admin backoffice. Về sau khi Zalo riêng sẵn sàng, frontend này không cần đổi lại.",
     color: "primary",
   },
 ];
@@ -46,11 +46,11 @@ export const HowItWorks = () => {
           className="mb-16 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Chỉ <span className="text-gradient-primary">3 bước</span> để kiểm soát calo
+            Một vòng đời <span className="text-gradient-primary">chat-first nhưng vận hành như SaaS</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Không cần mở một ứng dụng phức tạp hay tự nhập quá nhiều trường dữ liệu.
-            Bạn chỉ cần bắt đầu bằng bữa ăn gần nhất, CaloTrack sẽ lo phần còn lại.
+            CaloTrack không ép mọi thứ dồn vào website. Tracking đi qua chat để nhanh và tự nhiên, còn web
+            lo những thứ người dùng và đội vận hành cần cho account, billing, recap và backoffice.
           </p>
         </motion.div>
 
@@ -88,18 +88,6 @@ export const HowItWorks = () => {
             );
           })}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center"
-        >
-          <p className="mx-auto max-w-3xl text-sm text-muted-foreground">
-            Mục tiêu của CaloTrack là làm cho việc theo dõi ăn uống trở nên nhẹ nhàng hơn:
-            ít ma sát hơn, hiểu bữa ăn nhanh hơn và nhìn tiến độ rõ hơn theo từng ngày.
-          </p>
-        </motion.div>
       </div>
     </section>
   );

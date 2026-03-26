@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { BILLING_OFFERS } from "@/lib/billing";
 
 interface PendingApproval {
   id: string;
@@ -112,7 +113,7 @@ export default function PendingApprovalsPage() {
       id: "1",
       userName: "Nguyễn Văn A",
       telegramId: "nguyenvana",
-      amount: 199000,
+      amount: BILLING_OFFERS.monthly.priceVnd,
       transactionCode: "VCB20260118001234",
       screenshotUrl: "/mock.jpg",
       createdAt: "18/01/2026 14:30"
@@ -121,7 +122,7 @@ export default function PendingApprovalsPage() {
       id: "2",
       userName: "Trần Thị B",
       telegramId: "tranthib",
-      amount: 1000000,
+      amount: BILLING_OFFERS.lifetime.priceVnd,
       transactionCode: "MB20260118005678",
       createdAt: "18/01/2026 13:15"
     },
@@ -129,7 +130,7 @@ export default function PendingApprovalsPage() {
       id: "3",
       userName: "Lê Văn C",
       telegramId: "levanc",
-      amount: 199000,
+      amount: BILLING_OFFERS.monthly.priceVnd,
       transactionCode: "TCB20260118009012",
       screenshotUrl: "/mock.jpg",
       createdAt: "18/01/2026 10:45"

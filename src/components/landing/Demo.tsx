@@ -2,14 +2,14 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { ArrowUpRight, Bot, CalendarDays, Flame, PieChart, User } from "lucide-react";
+import { ArrowUpRight, Bot, CalendarDays, Flame, ImageIcon, PieChart, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 const chatMessages = [
   {
     type: "user",
-    content: "[gửi ảnh bữa trưa]",
+    content: "Ảnh bữa trưa vừa ăn",
     isImage: true,
   },
   {
@@ -50,11 +50,11 @@ export const Demo = () => {
           className="mb-12 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Xem <span className="text-gradient-primary">demo Dashboard</span>
+            Xem demo <span className="text-gradient-primary">chat + portal</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Từ chat flow hằng ngày tới lớp tổng hợp số liệu, CaloTrack giúp bạn nhìn nhanh
-            hôm nay đã ăn gì, còn lại bao nhiêu và tuần này đang đi đúng hướng ra sao.
+            Chat là nơi log và sửa bữa ăn nhanh nhất. Portal là nơi bạn nhìn account, entitlement, payment
+            và recap theo ngày hoặc theo tuần.
           </p>
         </motion.div>
 
@@ -70,15 +70,15 @@ export const Demo = () => {
                 <Bot className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">CaloTrack</h3>
-                <p className="text-xs text-muted-foreground">AI nutrition assistant trong khung chat</p>
+                <h3 className="font-semibold text-foreground">CaloTrack Chat</h3>
+                <p className="text-xs text-muted-foreground">Tracking trực tiếp trong Telegram hôm nay</p>
               </div>
             </div>
 
             <div className="min-h-[400px] space-y-4 p-4">
               {chatMessages.map((message, index) => (
                 <motion.div
-                  key={index}
+                  key={`${message.type}-${index}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.4, delay: 0.4 + index * 0.3 }}
@@ -94,24 +94,24 @@ export const Demo = () => {
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                       message.type === "user"
-                        ? "bg-[#0068FF] text-white rounded-br-md"
-                        : "bg-muted text-foreground rounded-bl-md"
+                        ? "rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-bl-md bg-muted text-foreground"
                     }`}
                   >
                     {message.isImage ? (
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-amber-200 to-orange-300 text-2xl">
-                          🍱
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 text-primary">
+                          <ImageIcon className="h-7 w-7" />
                         </div>
-                        <span className="text-sm opacity-80">Ảnh bữa trưa</span>
+                        <span className="text-sm opacity-90">{message.content}</span>
                       </div>
                     ) : (
                       <p className="whitespace-pre-line text-sm">{message.content}</p>
                     )}
                   </div>
                   {message.type === "user" && (
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#0068FF]/20">
-                      <User className="h-4 w-4 text-[#0068FF]" />
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/15">
+                      <User className="h-4 w-4 text-primary" />
                     </div>
                   )}
                 </motion.div>
@@ -133,8 +133,8 @@ export const Demo = () => {
           >
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Dashboard tổng quan</p>
-                <h3 className="text-2xl font-bold text-foreground">Theo dõi rõ hơn mỗi ngày</h3>
+                <p className="text-sm text-muted-foreground">Customer portal</p>
+                <h3 className="text-2xl font-bold text-foreground">Account, billing và recap</h3>
               </div>
               <Button variant="outline" asChild>
                 <a href="/login">
@@ -160,24 +160,20 @@ export const Demo = () => {
             </div>
 
             <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-5">
-              <p className="text-sm text-muted-foreground">Tóm tắt tuần này</p>
-              <div className="mt-4 flex items-end gap-3">
-                {[56, 88, 72, 94, 68, 81, 77].map((height, index) => (
-                  <div key={index} className="flex flex-1 flex-col items-center gap-2">
-                    <div
-                      className="w-full rounded-t-xl bg-gradient-to-t from-primary to-flame"
-                      style={{ height: `${height}px` }}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {["T2", "T3", "T4", "T5", "T6", "T7", "CN"][index]}
-                    </span>
-                  </div>
-                ))}
+              <p className="text-sm text-muted-foreground">Portal scope hiện tại</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-primary/10 bg-white/80 p-4 text-sm text-muted-foreground">
+                  Pricing, entitlement, quota và payment summary
+                </div>
+                <div className="rounded-2xl border border-primary/10 bg-white/80 p-4 text-sm text-muted-foreground">
+                  Admin backoffice cho users, payments, catalog và support
+                </div>
               </div>
             </div>
 
             <p className="mt-5 text-sm text-muted-foreground">
-              Demo mô phỏng giao diện tổng hợp. Bản production có thể khác tùy dữ liệu, quyền truy cập và trạng thái tính năng.
+              Demo này mô tả đúng vai trò hiện tại của frontend: bổ trợ và làm rõ sản phẩm chat-first, không thay
+              thế hoàn toàn layer tracking trong chat.
             </p>
           </motion.div>
         </div>

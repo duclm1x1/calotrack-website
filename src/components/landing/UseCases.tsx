@@ -2,29 +2,29 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Compass, HeartHandshake, Sparkles } from "lucide-react";
+import { Compass, MessageCircle, MonitorSmartphone } from "lucide-react";
 
 const values = [
   {
+    icon: MessageCircle,
+    title: "Telegram live now",
+    description:
+      "Tracking bữa ăn, image review, stats và các flow sửa log hiện đang mạnh nhất trên Telegram. Đây là nơi người dùng dùng sản phẩm mỗi ngày.",
+    color: "from-primary/80 to-primary",
+  },
+  {
     icon: Compass,
-    title: "Tầm nhìn",
+    title: "Zalo next channel",
     description:
-      "Biến việc theo dõi ăn uống thành một trải nghiệm đơn giản, gần gũi và đủ thông minh để gắn bó lâu dài với đời sống thực tế.",
-    color: "from-blue-500 to-cyan-500",
+      "Website và data model đã được dọn để khi Zalo workflow riêng trong n8n sẵn sàng, frontend không cần đổi lại cách kể chuyện hay cấu trúc account.",
+    color: "from-accent/80 to-accent",
   },
   {
-    icon: HeartHandshake,
-    title: "Sứ mệnh",
+    icon: MonitorSmartphone,
+    title: "Portal and backoffice",
     description:
-      "Giúp nhiều người hiểu bữa ăn của mình rõ hơn mỗi ngày mà không cần biến chuyện ăn uống thành một công việc nặng đầu.",
-    color: "from-primary to-primary/70",
-  },
-  {
-    icon: Sparkles,
-    title: "Triết lý",
-    description:
-      "CaloTrack ưu tiên trải nghiệm ấm áp, tự nhiên và thực dụng: bớt phức tạp, bớt áp lực, nhưng vẫn giữ thông tin đủ tốt để ra quyết định.",
-    color: "from-purple-500 to-pink-500",
+      "Portal web gom pricing, login, billing, dashboard và admin vận hành. Đây là phần giúp CaloTrack đi từ bot sang SaaS thật.",
+    color: "from-slate-700 to-slate-900",
   },
 ];
 
@@ -43,11 +43,11 @@ export const UseCases = () => {
           className="mb-12 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Về <span className="text-gradient-primary">chúng tôi</span>
+            Ba lớp sản phẩm <span className="text-gradient-primary">đi cùng nhau</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            CaloTrack được xây để trở thành một AI nutrition assistant dành cho đời sống thật:
-            dễ dùng, đáng tin và đủ linh hoạt để đi cùng nhiều thói quen ăn uống khác nhau.
+            CaloTrack không cố biến mọi thứ thành một web app thuần. Sản phẩm được chia rõ thành layer chat,
+            layer portal và layer vận hành để mỗi phần làm đúng việc của nó.
           </p>
         </motion.div>
 
@@ -81,8 +81,8 @@ export const UseCases = () => {
           className="mx-auto mt-10 max-w-3xl rounded-3xl border border-border bg-muted/50 px-8 py-8 text-center"
         >
           <p className="text-lg font-medium leading-8 text-foreground">
-            “Theo dõi ăn uống không nên là một công việc nặng đầu. Nó nên là một cuộc trò chuyện
-            đủ thông minh để giúp bạn hiểu mình đang ăn gì và đang tiến xa tới đâu.”
+            “Tracking nên diễn ra ở nơi người dùng thấy tự nhiên nhất, còn website nên làm tốt phần tin cậy,
+            account, money và backoffice. Đó là cách CaloTrack đi từ bot sang SaaS.”
           </p>
         </motion.blockquote>
       </div>

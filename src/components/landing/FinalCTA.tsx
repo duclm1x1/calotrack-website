@@ -2,17 +2,17 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Mail, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle, Monitor } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import { SITE_CONFIG, getPrimaryChannelCta, getPrimaryChannelHref } from "@/lib/siteConfig";
 
 export const FinalCTA = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="contact" className="section-padding bg-gradient-to-br from-primary/10 via-background to-flame/5">
+    <section id="contact" className="section-padding bg-gradient-to-br from-primary/10 via-background to-accent/5">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div
           ref={ref}
@@ -22,27 +22,26 @@ export const FinalCTA = () => {
           className="mx-auto max-w-3xl text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Sẵn sàng bắt đầu với <span className="text-gradient-primary">bữa ăn tiếp theo</span>?
+            Bắt đầu bằng <span className="text-gradient-primary">chat hôm nay</span>, quản lý bằng portal khi cần
           </h2>
           <p className="mb-8 text-lg text-muted-foreground">
-            Bạn có thể bắt đầu miễn phí ngay hôm nay, hoặc liên hệ đội ngũ CaloTrack nếu muốn
-            được tư vấn thêm về cách dùng, gói phù hợp hay các kênh triển khai.
+            Bạn có thể vào Telegram để dùng ngay, hoặc đăng nhập portal web nếu muốn xem account, billing,
+            quota và lớp quản trị đang mở rộng dần.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button
-              size="lg"
-              asChild
-              className="gap-2 bg-[#229ED9] px-10 py-7 text-lg text-white hover:bg-[#1d90c4]"
-            >
-              <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+            <Button size="lg" asChild className="gap-2 px-10 py-7 text-lg">
+              <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="h-6 w-6" />
-                Trải nghiệm ngay
+                {getPrimaryChannelCta()}
               </a>
             </Button>
 
             <Button size="lg" variant="outline" asChild className="px-10 py-7 text-lg">
-              <a href={SITE_CONFIG.pricingAnchor}>Xem bảng giá</a>
+              <a href="/login">
+                <Monitor className="mr-2 h-5 w-5" />
+                Vào portal web
+              </a>
             </Button>
           </div>
 
@@ -58,16 +57,10 @@ export const FinalCTA = () => {
               </a>
             </div>
             <div className="rounded-2xl border border-border bg-background/80 p-5 backdrop-blur">
-              <p className="text-sm text-muted-foreground">Kênh trải nghiệm nhanh</p>
-              <a
-                href={SITE_CONFIG.telegramBotUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-2 font-semibold text-foreground"
-              >
-                <MessageCircle className="h-4 w-4 text-primary" />
-                CaloTrack trên Telegram
-              </a>
+              <p className="text-sm text-muted-foreground">Trạng thái channel</p>
+              <div className="mt-2 font-semibold text-foreground">
+                Telegram live • {SITE_CONFIG.secondaryChannelLabel} {SITE_CONFIG.secondaryChannelStatus.toLowerCase()}
+              </div>
             </div>
           </div>
         </motion.div>

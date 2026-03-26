@@ -10,31 +10,31 @@ const faqs = [
   {
     question: "CaloTrack hoạt động như thế nào?",
     answer:
-      "Bạn có thể gửi ảnh bữa ăn, nhắn tên món hoặc khẩu phần, sau đó CaloTrack sẽ ước tính calories và macro để bạn theo dõi ngay trong cuộc trò chuyện.",
+      "Bạn có thể gửi ảnh bữa ăn, nhắn tên món hoặc khẩu phần trong chat, sau đó CaloTrack sẽ ước tính calories và macro để bạn theo dõi ngay trong cuộc trò chuyện.",
   },
   {
-    question: "AI có nhận diện được món Việt không?",
+    question: "Telegram, website và Zalo khác nhau ra sao?",
     answer:
-      "Có. CaloTrack được tối ưu để hiểu tốt hơn các món Việt và những kiểu khẩu phần đời thường, dù bạn vẫn luôn có thể sửa lại nếu muốn chính xác hơn.",
+      "Telegram đang là kênh tracking live mạnh nhất. Website là lớp account, billing, dashboard và admin. Zalo là channel kế tiếp đã được chừa chỗ sẵn ở frontend để nối workflow riêng khi backend hoàn tất.",
   },
   {
-    question: "Tôi có cần cân đồ ăn mỗi lần không?",
+    question: "Portal web có thay thế trải nghiệm chat không?",
     answer:
-      "Không bắt buộc. Bạn có thể dùng ảnh, mô tả đơn giản hoặc thêm gram nếu muốn chi tiết hơn. CaloTrack được thiết kế để vừa tiện vừa đủ chính xác cho sử dụng hằng ngày.",
+      "Không. Portal web được thiết kế để bổ trợ cho account, quota, payment, entitlement và recap. Layer tracking hàng ngày vẫn được tối ưu xoay quanh chat-first experience.",
   },
   {
-    question: "Tôi có thể dùng CaloTrack trên Zalo hoặc Telegram không?",
+    question: "AI có hiểu món Việt không?",
     answer:
-      "Có. CaloTrack được định hướng là một trải nghiệm chat-first đa kênh, với lớp website dùng để giới thiệu sản phẩm, quản lý tài khoản và vận hành hệ thống.",
+      "Có. CaloTrack được tối ưu để hiểu tốt hơn các món Việt và khẩu phần đời thường, dù bạn vẫn luôn có thể sửa estimate nếu muốn chính xác hơn.",
   },
   {
-    question: "Dữ liệu của tôi có an toàn không?",
+    question: "Khi nào tôi nên nâng cấp Pro hoặc Lifetime?",
+    answer: `Nếu bạn dùng CaloTrack thường xuyên, cần AI nhiều hơn hoặc muốn entitlement rõ ràng hơn trong portal, Pro và Lifetime sẽ hợp lý hơn. Nếu cần tư vấn thêm, bạn có thể liên hệ ${SITE_CONFIG.supportEmail}.`,
+  },
+  {
+    question: "Dữ liệu có an toàn và quản trị được không?",
     answer:
-      "CaloTrack xây theo hướng dữ liệu có cấu trúc, có lớp quản trị và khả năng kiểm soát tốt hơn theo thời gian. Đây là nền tảng để sản phẩm trở nên đáng tin cậy khi dùng lâu dài.",
-  },
-  {
-    question: "Khi nào tôi nên nâng cấp Pro?",
-    answer: `Nếu bạn dùng CaloTrack thường xuyên, cần AI nhiều hơn hoặc muốn trải nghiệm mượt hơn cho các flow phân tích ảnh và follow-up, gói Pro sẽ hợp lý hơn. Nếu cần hỗ trợ thêm, bạn có thể liên hệ ${SITE_CONFIG.supportEmail}.`,
+      "CaloTrack đang đi theo hướng dữ liệu có cấu trúc, có lớp portal và admin backoffice để vừa phục vụ người dùng, vừa đảm bảo sản phẩm có thể vận hành như một SaaS thật.",
   },
 ];
 

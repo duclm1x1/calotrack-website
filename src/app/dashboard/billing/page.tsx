@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { BILLING_OFFERS, getBillingCheckoutLabel } from "@/lib/billing";
 
 interface Transaction {
   id: string;
@@ -19,19 +20,19 @@ export default function BillingPage() {
   // Mock data
   const currentPlan = {
     name: "Pro",
-    price: 199000,
+    price: BILLING_OFFERS.monthly.priceVnd,
     expiryDate: "28/02/2026",
     daysRemaining: 41,
     status: "active"
   };
 
   const transactions: Transaction[] = [
-    {
-      id: "1",
-      amount: 199000,
-      method: "Stripe",
-      status: "completed",
-      createdAt: "18/01/2026"
+      {
+        id: "1",
+        amount: BILLING_OFFERS.monthly.priceVnd,
+        method: "Stripe",
+        status: "completed",
+        createdAt: "18/01/2026"
     },
     {
       id: "2",
@@ -73,8 +74,8 @@ export default function BillingPage() {
           </div>
           
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button>⬆️ Nâng cấp Lifetime</Button>
-            <Button variant="outline">🔄 Gia hạn</Button>
+            <Button>{getBillingCheckoutLabel("lifetime")}</Button>
+            <Button variant="outline">{getBillingCheckoutLabel("monthly")}</Button>
             <Button variant="ghost" className="text-muted">Hủy gói</Button>
           </div>
         </CardContent>

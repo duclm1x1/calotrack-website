@@ -2,18 +2,22 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Check, MessageCircle } from "lucide-react";
+import { ArrowDown, Check, MessageCircle, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import {
+  SITE_CONFIG,
+  getPrimaryChannelCta,
+  getPrimaryChannelHref,
+  hasConfiguredZaloOa,
+} from "@/lib/siteConfig";
 
 const logo3d = "/logo-3d.png";
-const DEFAULT_ZALO_URL = "https://zalo.me/your-oa-id";
 
 const bullets = [
-  "Hoàn toàn miễn phí để bắt đầu.",
-  "Hỗ trợ món Việt và khẩu phần thường gặp.",
-  "Theo dõi calories, macro và tiến độ ngay trong chat.",
+  "Log bữa ăn bằng ảnh hoặc chat tự nhiên, không cần form nặng nề.",
+  "Portal web lo account, billing, dashboard và admin vận hành.",
+  "Frontend đã sẵn để nối thêm Zalo workflow riêng khi backend hoàn tất.",
 ];
 
 export const Hero = () => {
@@ -26,11 +30,6 @@ export const Hero = () => {
   const logoRotate = useTransform(scrollYProgress, [0, 1], [0, 15]);
   const logoScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
-
-  const primaryExperienceHref =
-    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? SITE_CONFIG.zaloOaUrl : SITE_CONFIG.telegramBotUrl;
-  const primaryExperienceLabel =
-    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? "Trải nghiệm ngay (Zalo)" : "Trải nghiệm ngay";
 
   return (
     <section
@@ -46,7 +45,7 @@ export const Hero = () => {
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-1/4 right-[10%] h-80 w-80 rounded-full bg-flame/10 blur-3xl"
+        className="absolute bottom-1/4 right-[10%] h-80 w-80 rounded-full bg-accent/10 blur-3xl"
         animate={{ y: [0, -25, 0], x: [0, -20, 0] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -66,20 +65,20 @@ export const Hero = () => {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
             >
               <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-              <span className="text-sm font-medium text-primary">AI Nutrition Assistant</span>
+              <span className="text-sm font-medium text-primary">{SITE_CONFIG.productStageLabel}</span>
             </motion.div>
 
             <h1 className="mb-6 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl xl:text-6xl">
-              <span className="text-foreground">Gửi ảnh bữa ăn → </span>
-              <span className="text-gradient-primary">track calo</span>
-              <span className="text-foreground"> ngay trong </span>
-              <span className="text-flame">khung chat</span>
+              <span className="text-foreground">Gửi ảnh bữa ăn, </span>
+              <span className="text-gradient-brand">track calories</span>
+              <span className="text-foreground"> và quản lý account ngay trong </span>
+              <span className="text-accent">hệ CaloTrack</span>
             </h1>
 
             <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground lg:mx-0">
-              Không cần tự tính toán phức tạp. CaloTrack giúp bạn ước tính calories và macro,
-              theo dõi tiến độ mỗi ngày và giữ nhịp ăn uống lành mạnh qua Zalo, Telegram
-              hoặc các kênh chat quen thuộc.
+              CaloTrack là AI nutrition assistant theo mô hình chat-first. Telegram đang là kênh live mạnh
+              nhất, còn website đóng vai trò lớp SaaS cho pricing, login, billing, dashboard và admin
+              backoffice. Zalo là channel tiếp theo đã được chuẩn bị sẵn ở frontend.
             </p>
 
             <ul className="mb-8 space-y-3">
@@ -100,36 +99,37 @@ export const Hero = () => {
             </ul>
 
             <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row">
-              <Button
-                size="lg"
-                asChild
-                className="w-full gap-2 bg-[#229ED9] px-8 py-6 text-base text-white hover:bg-[#1d90c4] sm:w-auto"
-              >
-                <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
+              <Button size="lg" asChild className="w-full gap-2 px-8 py-6 text-base sm:w-auto">
+                <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-5 w-5" />
-                  {primaryExperienceLabel}
+                  {getPrimaryChannelCta()}
                 </a>
               </Button>
               <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto" asChild>
-                <a href="#demo">Xem demo Dashboard</a>
+                <a href="/login">Vào portal web</a>
               </Button>
             </div>
 
             <div className="mb-6 flex flex-wrap gap-3">
               <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                Hoàn toàn miễn phí để bắt đầu
+                Free tier {SITE_CONFIG.freeDailyLimit} lượt AI/ngày
               </span>
               <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                Hỗ trợ món Việt
+                Telegram đang live
               </span>
               <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                Theo dõi macro mỗi ngày
+                {hasConfiguredZaloOa() ? "Zalo OA đã sẵn link" : "Zalo sẵn để build phase sau"}
               </span>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              Bạn có thể bắt đầu bằng một ảnh bữa ăn, một câu hỏi về calories, hoặc nhảy thẳng vào dashboard để xem lớp tổng hợp dữ liệu hoạt động như thế nào.
-            </p>
+            <div className="flex items-start gap-3 rounded-2xl border border-primary/10 bg-white/70 px-4 py-4 text-left shadow-sm backdrop-blur">
+              <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
+              <p className="text-sm leading-6 text-muted-foreground">
+                Frontend này không giả vờ thay thế trải nghiệm chat. Nó tập trung làm tốt acquisition,
+                account, billing, dashboard và vận hành, để layer chat trên Telegram và sau đó là Zalo tiếp tục
+                làm phần tracking chính.
+              </p>
+            </div>
           </motion.div>
 
           <motion.div
@@ -140,7 +140,7 @@ export const Hero = () => {
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
-                className="h-80 w-80 rounded-full bg-gradient-to-br from-primary/40 to-flame/30 blur-3xl md:h-96 md:w-96"
+                className="h-80 w-80 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 blur-3xl md:h-96 md:w-96"
                 animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
@@ -153,7 +153,7 @@ export const Hero = () => {
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="1">
                       <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
                     </stop>
-                    <stop offset="50%" stopColor="hsl(var(--flame))" stopOpacity="1">
+                    <stop offset="50%" stopColor="hsl(var(--accent))" stopOpacity="1">
                       <animate attributeName="offset" values="0.5;1.5;0.5" dur="3s" repeatCount="indefinite" />
                     </stop>
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1">
@@ -197,9 +197,9 @@ export const Hero = () => {
                 <p className="text-xs text-muted-foreground">P 96g • C 130g • F 42g</p>
               </div>
               <div className="absolute -bottom-2 right-0 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-                <p className="text-xs uppercase tracking-[0.2em] text-flame">AI note</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">Bạn còn khoảng 520 kcal cho hôm nay</p>
-                <p className="text-xs text-muted-foreground">Gợi ý thêm protein nạc và rau xanh.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-accent">Portal note</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">Account, billing và admin cùng một lớp giao diện</p>
+                <p className="text-xs text-muted-foreground">Trải nghiệm tracking chính vẫn đi qua chat.</p>
               </div>
             </motion.div>
           </motion.div>

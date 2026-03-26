@@ -5,10 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, MessageCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import { SITE_CONFIG, getPrimaryChannelCta, getPrimaryChannelHref } from "@/lib/siteConfig";
 
 const logoSquare = "/logo-square.jpg";
-const DEFAULT_ZALO_URL = "https://zalo.me/your-oa-id";
 
 const navLinks = [
   { label: "Tính năng", href: "#features" },
@@ -21,11 +20,6 @@ const navLinks = [
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const primaryExperienceHref =
-    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? SITE_CONFIG.zaloOaUrl : SITE_CONFIG.telegramBotUrl;
-  const primaryExperienceLabel =
-    SITE_CONFIG.zaloOaUrl !== DEFAULT_ZALO_URL ? "Trải nghiệm ngay (Zalo)" : "Trải nghiệm ngay";
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -54,7 +48,7 @@ export const Navbar = () => {
               <img src={logoSquare} alt="CaloTrack" className="h-10 w-10 rounded-xl object-cover" />
               <div>
                 <span className="text-xl font-bold text-foreground">CaloTrack</span>
-                <p className="text-xs text-muted-foreground">AI Nutrition Assistant</p>
+                <p className="text-xs text-muted-foreground">{SITE_CONFIG.productStageLabel}</p>
               </div>
             </motion.a>
 
@@ -73,12 +67,12 @@ export const Navbar = () => {
 
             <div className="hidden items-center gap-3 md:flex">
               <Button variant="outline" asChild>
-                <a href="/login">Đăng nhập</a>
+                <a href="/login">Đăng nhập portal</a>
               </Button>
-              <Button asChild className="gap-2 bg-[#229ED9] text-white hover:bg-[#1d90c4]">
-                <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
+              <Button asChild className="gap-2">
+                <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-4 w-4" />
-                  {primaryExperienceLabel}
+                  {getPrimaryChannelCta()}
                 </a>
               </Button>
             </div>
@@ -122,16 +116,16 @@ export const Navbar = () => {
 
                 <div className="flex flex-col gap-3 border-t border-border pt-4">
                   <Button asChild variant="outline" className="w-full">
-                    <a href="/login">Đăng nhập</a>
+                    <a href="/login">Đăng nhập portal</a>
                   </Button>
-                  <Button asChild className="w-full gap-2 bg-[#229ED9] text-white hover:bg-[#1d90c4]">
-                    <a href={primaryExperienceHref} target="_blank" rel="noopener noreferrer">
+                  <Button asChild className="w-full gap-2">
+                    <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="h-4 w-4" />
-                      {primaryExperienceLabel}
+                      {getPrimaryChannelCta()}
                     </a>
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
-                    Theo dõi bữa ăn nhanh qua các kênh chat quen thuộc của bạn.
+                    Telegram đang là kênh tracking live. Zalo được giữ sẵn để nối phase sau.
                   </p>
                 </div>
               </div>

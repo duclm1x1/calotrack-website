@@ -2,44 +2,44 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { BarChart3, Bell, MessageCircle, PieChart, Shield, Utensils } from "lucide-react";
+import { Bell, CreditCard, MessageCircle, PieChart, Shield, Utensils } from "lucide-react";
 
 const benefits = [
   {
     icon: MessageCircle,
-    title: "Chat-first Hybrid",
+    title: "Chat-first tracking",
     description:
       "Bạn có thể log bữa ăn bằng chat, ảnh hoặc follow-up ngắn mà không bị ép đi qua một form quá nặng nề.",
   },
   {
     icon: Utensils,
-    title: "AI Hiểu Món Việt",
+    title: "AI hiểu món Việt",
     description:
-      "CaloTrack được tối ưu để hiểu món Việt, đồ uống quen thuộc và các kiểu khẩu phần đời thường tốt hơn so với những cách track quá cơ học.",
+      "CaloTrack được tối ưu để hiểu món Việt, đồ uống quen thuộc và các kiểu khẩu phần đời thường tốt hơn so với các cách track quá cơ học.",
   },
   {
     icon: PieChart,
-    title: "Gamification Nhẹ Nhàng",
+    title: "Dashboard đọc nhanh",
     description:
-      "Theo dõi tiến độ bằng những mốc rõ ràng và gợi ý vừa đủ, thay vì tạo cảm giác đang bị chấm điểm từng bữa ăn.",
+      "Từ tổng nạp hôm nay đến recap tuần, dữ liệu được gom lại trong một giao diện dễ đọc và đủ sâu khi bạn cần xem kỹ.",
   },
   {
     icon: Bell,
-    title: "Dashboard Chuyên Sâu",
+    title: "Portal account + billing",
     description:
-      "Từ tổng nạp hôm nay cho tới recap tuần, dữ liệu được gom lại trong một giao diện dễ đọc, hữu ích và đủ sâu khi bạn muốn xem kỹ.",
+      "Website lo phần account, quota, plan, payment và support thay vì cố thay thế hoàn toàn luồng tracking trong chat.",
   },
   {
-    icon: BarChart3,
-    title: "Đồng Bộ Đa Nền Tảng",
+    icon: CreditCard,
+    title: "Thanh toán hybrid thật",
     description:
-      "Sản phẩm được định hướng theo mô hình chat-first đa kênh, với lớp website hỗ trợ cho acquisition, billing, dashboard và vận hành.",
+      "Pricing, payment CTA và entitlement được trình bày đúng với trạng thái vận hành thật: có online path, có admin fallback khi cần.",
   },
   {
     icon: Shield,
-    title: "An Toàn & Riêng Tư",
+    title: "Zalo-ready architecture",
     description:
-      "Dữ liệu được tổ chức có cấu trúc để vừa phục vụ trải nghiệm người dùng, vừa hỗ trợ lớp admin và khả năng mở rộng dài hạn.",
+      "Frontend, config và account surfaces đã được tổ chức quanh khái niệm channel để nối Zalo workflow riêng mà không phải đập lại UI.",
   },
 ];
 
@@ -58,11 +58,11 @@ export const Benefits = () => {
           className="mb-16 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Mọi thứ bạn cần để <span className="text-gradient-primary">làm chủ bữa ăn</span>
+            Một frontend SaaS <span className="text-gradient-primary">đúng với product thật</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Từ log nhanh, phân tích ảnh, theo dõi macro cho tới dashboard và lớp vận hành,
-            CaloTrack được thiết kế như một hệ thống đủ gọn để dùng hằng ngày nhưng vẫn đủ sâu để phát triển.
+            CaloTrack không chỉ là landing page. Đây là lớp frontend cho acquisition, portal, pricing, admin
+            và khả năng mở rộng sang Zalo mà vẫn giữ tracking chính theo mô hình chat-first.
           </p>
         </motion.div>
 

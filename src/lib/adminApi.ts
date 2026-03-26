@@ -1,7 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import {
+  BILLING_OFFERS,
   BILLING_SKU_OPTIONS,
   type BillingSku,
+  formatBillingPriceVnd,
   formatTierLabel,
   getFreeDailyLimit,
 } from "@/lib/billing";
@@ -16,6 +18,18 @@ type MaybeError =
   | null
   | undefined;
 
+export type AdminRole = "finance" | "catalog" | "support";
+export type AdminSection =
+  | "overview"
+  | "customers"
+  | "channels"
+  | "users"
+  | "payments"
+  | "catalog"
+  | "support"
+  | "system"
+  | "settings";
+
 export type AdminUser = {
   id: number;
   username: string | null;
@@ -23,6 +37,8 @@ export type AdminUser = {
   platform: string | null;
   platform_id: string | null;
   chat_id: number | null;
+  email: string | null;
+  auth_user_id: string | null;
   is_active: boolean;
   is_banned: boolean;
   plan: "free" | "pro" | "lifetime";
@@ -36,6 +52,10 @@ export type AdminUser = {
 export type PaymentRow = {
   id: string;
   user_id: number;
+  user_name?: string | null;
+  channel?: string | null;
+  customer_id?: number | null;
+  customer_phone?: string | null;
   amount: number;
   payment_method: string;
   status: string;
@@ -44,6 +64,8 @@ export type PaymentRow = {
   days_added: number;
   plan_granted: string | null;
   billing_sku: string | null;
+  provider_event_id?: string | null;
+  entitlement_result?: string | null;
   created_at: string;
   completed_at?: string | null;
 };
@@ -80,9 +102,78 @@ export type AdminAccessState = {
   isAuthenticated: boolean;
   linkedUserId: number | null;
   isAdmin: boolean;
+  isOwner: boolean;
+  roles: AdminRole[];
   email: string | null;
   checkedAt: string;
   reason: string | null;
+};
+
+export type AdminCustomer = {
+  id: number;
+  phone_e164: string | null;
+  phone_display: string | null;
+  full_name: string | null;
+  plan: "free" | "pro" | "lifetime";
+  premium_until: string | null;
+  entitlement_source: string | null;
+  status: string;
+  quota_used_today: number;
+  channel_count: number;
+  linked_portal_count: number;
+  last_activity: string | null;
+  total_spend: number;
+};
+
+export type AdminChannelAccount = {
+  id: number;
+  customer_id: number | null;
+  channel: string;
+  platform_user_id: string;
+  platform_chat_id: string | null;
+  display_name: string | null;
+  phone_claimed: string | null;
+  link_status: string;
+  linked_user_id: number | null;
+  customer_phone: string | null;
+  customer_plan: string | null;
+  auth_email: string | null;
+  last_activity: string | null;
+};
+
+export type AdminLinkReview = {
+  id: number;
+  customer_id: number | null;
+  channel_account_id: number;
+  channel: string;
+  platform_user_id: string;
+  display_name: string | null;
+  suggested_phone: string | null;
+  reason: string;
+  status: string;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type CustomerSupportNote = {
+  id: number;
+  customer_id: number;
+  note: string;
+  actor_display_name: string | null;
+  created_at: string;
+};
+
+export type AdminCustomer360 = {
+  customer: AdminCustomer | null;
+  channels: AdminChannelAccount[];
+  recentPayments: PaymentRow[];
+  supportNotes: CustomerSupportNote[];
+  linkedAuths: {
+    auth_user_id: string | null;
+    email: string | null;
+    link_status: string | null;
+  }[];
+  conversationState: Record<string, unknown> | null;
 };
 
 export type FoodCatalogRow = {
@@ -217,6 +308,67 @@ export type FoodCsvCommitResult = {
   skippedCount: number;
 };
 
+export type AdminMember = {
+  id: number;
+  auth_user_id: string | null;
+  linked_user_id: number | null;
+  display_name: string | null;
+  email: string | null;
+  username: string | null;
+  is_owner: boolean;
+  is_active: boolean;
+  roles: AdminRole[];
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type AdminAuditLogRow = {
+  id: number;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  actor_display_name: string | null;
+  role_snapshot: AdminRole[];
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type AdminSystemHealth = {
+  schemaReady: boolean;
+  schemaMissing: string[];
+  pendingPayments: number;
+  duplicateLikePayments: number;
+  failedPaymentEvents: number;
+  catalogCandidatesPending: number;
+  aiCallsToday: number;
+  adminMembers: number;
+  lastWebhookAt: string | null;
+  checkedAt: string;
+};
+
+export type SupportNote = {
+  id: number;
+  user_id: number;
+  note: string;
+  actor_display_name: string | null;
+  created_at: string;
+};
+
+export type AdminUser360 = {
+  user: AdminUser | null;
+  recentPayments: PaymentRow[];
+  subscriptionEvents: SubscriptionEvent[];
+  supportNotes: SupportNote[];
+  conversationState: Record<string, unknown> | null;
+  linkedAuthState: {
+    auth_user_id: string | null;
+    email: string | null;
+    pending_intent: string | null;
+  } | null;
+};
+
+const ADMIN_ROLES: AdminRole[] = ["finance", "catalog", "support"];
+
 function describeError(error: MaybeError): string {
   return String(error?.message || error?.details || error?.hint || error?.code || "Unknown error");
 }
@@ -227,7 +379,7 @@ function isMissingFunctionError(error: MaybeError): boolean {
   return (
     code === "42883" ||
     message.includes("Could not find the function") ||
-    message.includes("function") && message.includes("does not exist")
+    (message.includes("function") && message.includes("does not exist"))
   );
 }
 
@@ -239,6 +391,37 @@ async function callRpc<T>(fn: string, params?: Record<string, unknown>): Promise
   return data as T;
 }
 
+async function callRpcWithFallback<T>(
+  fn: string,
+  fallback: () => Promise<T> | T,
+  params?: Record<string, unknown>,
+): Promise<T> {
+  try {
+    return await callRpc<T>(fn, params);
+  } catch (error) {
+    if (isMissingFunctionError(error as Error)) {
+      return await fallback();
+    }
+    throw error;
+  }
+}
+
+function normalizeAdminRole(value: unknown): AdminRole | null {
+  if (value === "finance" || value === "catalog" || value === "support") {
+    return value;
+  }
+  return null;
+}
+
+function ensureRoleArray(value: unknown, isAdminFallback = false): AdminRole[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => normalizeAdminRole(entry))
+      .filter((entry): entry is AdminRole => Boolean(entry));
+  }
+  return isAdminFallback ? [...ADMIN_ROLES] : [];
+}
+
 function toAdminUser(row: Record<string, unknown>): AdminUser {
   return {
     id: Number(row.id),
@@ -247,6 +430,8 @@ function toAdminUser(row: Record<string, unknown>): AdminUser {
     platform: (row.platform as string | null) ?? null,
     platform_id: (row.platform_id as string | null) ?? null,
     chat_id: row.chat_id == null ? null : Number(row.chat_id),
+    email: (row.email as string | null) ?? null,
+    auth_user_id: (row.auth_user_id as string | null) ?? null,
     is_active: row.is_active !== false,
     is_banned: row.is_banned === true,
     plan: ((row.plan as string | null) ?? "free") as AdminUser["plan"],
@@ -262,6 +447,10 @@ function toPaymentRow(row: Record<string, unknown>): PaymentRow {
   return {
     id: String(row.id),
     user_id: Number(row.user_id),
+    user_name: (row.user_name as string | null) ?? null,
+    channel: (row.channel as string | null) ?? null,
+    customer_id: row.customer_id == null ? null : Number(row.customer_id),
+    customer_phone: (row.customer_phone as string | null) ?? null,
     amount: Number(row.amount ?? 0),
     payment_method: String(row.payment_method ?? "admin"),
     status: String(row.status ?? "pending"),
@@ -270,6 +459,8 @@ function toPaymentRow(row: Record<string, unknown>): PaymentRow {
     days_added: Number(row.days_added ?? 0),
     plan_granted: (row.plan_granted as string | null) ?? null,
     billing_sku: (row.billing_sku as string | null) ?? null,
+    provider_event_id: (row.provider_event_id as string | null) ?? null,
+    entitlement_result: (row.entitlement_result as string | null) ?? null,
     created_at: String(row.created_at ?? new Date().toISOString()),
     completed_at: (row.completed_at as string | null) ?? null,
   };
@@ -277,7 +468,7 @@ function toPaymentRow(row: Record<string, unknown>): PaymentRow {
 
 function toSubscriptionEvent(row: Record<string, unknown>): SubscriptionEvent {
   return {
-    id: String(row.id),
+    id: String(row.id ?? ""),
     event_type: String(row.event_type ?? ""),
     plan_from: (row.plan_from as string | null) ?? null,
     plan_to: (row.plan_to as string | null) ?? null,
@@ -298,6 +489,68 @@ function toSystemStats(row: Record<string, unknown>): SystemStats {
     monthRevenue: Number(row.month_revenue ?? 0),
     totalRevenue: Number(row.total_revenue ?? 0),
     expiringIn7Days: Number(row.expiring_in_7_days ?? 0),
+  };
+}
+
+function toAdminCustomer(row: Record<string, unknown>): AdminCustomer {
+  return {
+    id: Number(row.id),
+    phone_e164: (row.phone_e164 as string | null) ?? null,
+    phone_display: (row.phone_display as string | null) ?? null,
+    full_name: (row.full_name as string | null) ?? null,
+    plan: ((row.plan as string | null) ?? "free") as AdminCustomer["plan"],
+    premium_until: (row.premium_until as string | null) ?? null,
+    entitlement_source: (row.entitlement_source as string | null) ?? null,
+    status: String(row.status ?? "active"),
+    quota_used_today: Number(row.quota_used_today ?? 0),
+    channel_count: Number(row.channel_count ?? 0),
+    linked_portal_count: Number(row.linked_portal_count ?? 0),
+    last_activity: (row.last_activity as string | null) ?? null,
+    total_spend: Number(row.total_spend ?? 0),
+  };
+}
+
+function toAdminChannelAccount(row: Record<string, unknown>): AdminChannelAccount {
+  return {
+    id: Number(row.id),
+    customer_id: row.customer_id == null ? null : Number(row.customer_id),
+    channel: String(row.channel ?? "telegram"),
+    platform_user_id: String(row.platform_user_id ?? ""),
+    platform_chat_id: (row.platform_chat_id as string | null) ?? null,
+    display_name: (row.display_name as string | null) ?? null,
+    phone_claimed: (row.phone_claimed as string | null) ?? null,
+    link_status: String(row.link_status ?? "unlinked"),
+    linked_user_id: row.linked_user_id == null ? null : Number(row.linked_user_id),
+    customer_phone: (row.customer_phone as string | null) ?? null,
+    customer_plan: (row.customer_plan as string | null) ?? null,
+    auth_email: (row.auth_email as string | null) ?? null,
+    last_activity: (row.last_activity as string | null) ?? null,
+  };
+}
+
+function toAdminLinkReview(row: Record<string, unknown>): AdminLinkReview {
+  return {
+    id: Number(row.id),
+    customer_id: row.customer_id == null ? null : Number(row.customer_id),
+    channel_account_id: Number(row.channel_account_id),
+    channel: String(row.channel ?? "telegram"),
+    platform_user_id: String(row.platform_user_id ?? ""),
+    display_name: (row.display_name as string | null) ?? null,
+    suggested_phone: (row.suggested_phone as string | null) ?? null,
+    reason: String(row.reason ?? ""),
+    status: String(row.status ?? "pending"),
+    reviewed_at: (row.reviewed_at as string | null) ?? null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+function toCustomerSupportNote(row: Record<string, unknown>): CustomerSupportNote {
+  return {
+    id: Number(row.id),
+    customer_id: Number(row.customer_id),
+    note: String(row.note ?? ""),
+    actor_display_name: (row.actor_display_name as string | null) ?? null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
   };
 }
 
@@ -341,26 +594,75 @@ function toFoodCandidateRow(row: Record<string, unknown>): FoodCandidateRow {
   };
 }
 
+function toAdminMember(row: Record<string, unknown>): AdminMember {
+  return {
+    id: Number(row.id),
+    auth_user_id: (row.auth_user_id as string | null) ?? null,
+    linked_user_id: row.linked_user_id == null ? null : Number(row.linked_user_id),
+    display_name: (row.display_name as string | null) ?? null,
+    email: (row.email as string | null) ?? null,
+    username: (row.username as string | null) ?? null,
+    is_owner: row.is_owner === true,
+    is_active: row.is_active !== false,
+    roles: ensureRoleArray(row.roles, row.is_owner === true),
+    created_at: (row.created_at as string | null) ?? null,
+    updated_at: (row.updated_at as string | null) ?? null,
+  };
+}
+
+function toAdminAuditLog(row: Record<string, unknown>): AdminAuditLogRow {
+  return {
+    id: Number(row.id),
+    action: String(row.action ?? ""),
+    target_type: (row.target_type as string | null) ?? null,
+    target_id: row.target_id == null ? null : String(row.target_id),
+    actor_display_name: (row.actor_display_name as string | null) ?? null,
+    role_snapshot: ensureRoleArray(row.role_snapshot),
+    metadata:
+      row.metadata && typeof row.metadata === "object" ? (row.metadata as Record<string, unknown>) : null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+function toSupportNote(row: Record<string, unknown>): SupportNote {
+  return {
+    id: Number(row.id),
+    user_id: Number(row.user_id),
+    note: String(row.note ?? ""),
+    actor_display_name: (row.actor_display_name as string | null) ?? null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+function emptyAccessState(reason: string | null): AdminAccessState {
+  return {
+    isAuthenticated: false,
+    linkedUserId: null,
+    isAdmin: false,
+    isOwner: false,
+    roles: [],
+    email: null,
+    checkedAt: new Date().toISOString(),
+    reason,
+  };
+}
+
 export async function getAdminAccessState(): Promise<AdminAccessState> {
   try {
     const data = await callRpc<Record<string, unknown>>("admin_get_access_state");
+    const isAdmin = data.is_admin === true;
     return {
       isAuthenticated: data.is_authenticated === true,
       linkedUserId: data.linked_user_id == null ? null : Number(data.linked_user_id),
-      isAdmin: data.is_admin === true,
+      isAdmin,
+      isOwner: data.is_owner === true || (isAdmin && !Array.isArray(data.roles)),
+      roles: ensureRoleArray(data.roles, isAdmin),
       email: (data.email as string | null) ?? null,
       checkedAt: String(data.checked_at ?? new Date().toISOString()),
       reason: (data.reason as string | null) ?? null,
     };
   } catch (error) {
-    return {
-      isAuthenticated: false,
-      linkedUserId: null,
-      isAdmin: false,
-      email: null,
-      checkedAt: new Date().toISOString(),
-      reason: String((error as Error)?.message || error || "admin_access_check_failed"),
-    };
+    return emptyAccessState(String((error as Error)?.message || error || "admin_access_check_failed"));
   }
 }
 
@@ -389,13 +691,68 @@ export async function getSaasSchemaReadiness(): Promise<SchemaReadiness> {
 async function assertSaasSchemaReady(): Promise<void> {
   const readiness = await getSaasSchemaReadiness();
   if (!readiness.ready) {
-    throw new Error(`SaaS schema chua san sang: ${readiness.missing.join(", ")}`);
+    throw new Error(`Schema SaaS chưa sẵn sàng: ${readiness.missing.join(", ")}`);
   }
 }
 
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
   const data = await callRpc<Record<string, unknown>[]>("admin_list_users");
   return (data ?? []).map(toAdminUser);
+}
+
+export async function fetchAdminCustomers(): Promise<AdminCustomer[]> {
+  const data = await callRpcWithFallback<Record<string, unknown>[]>(
+    "admin_list_customers",
+    async () => {
+      const users = await fetchAdminUsers().catch(() => []);
+      return users.map((user) => ({
+        id: user.id,
+        phone_e164: null,
+        phone_display: null,
+        full_name: user.first_name ?? user.username ?? null,
+        plan: user.plan,
+        premium_until: user.premium_until,
+        entitlement_source: user.plan === "free" ? "compat_free" : "compat_user",
+        status: user.is_banned ? "blocked" : "active",
+        quota_used_today: user.daily_ai_usage_count,
+        channel_count: 1,
+        linked_portal_count: user.auth_user_id ? 1 : 0,
+        last_activity: user.last_active ?? user.created_at,
+        total_spend: 0,
+      }));
+    },
+  );
+  return (data ?? []).map(toAdminCustomer);
+}
+
+export async function fetchAdminChannelAccounts(): Promise<AdminChannelAccount[]> {
+  const data = await callRpcWithFallback<Record<string, unknown>[]>(
+    "admin_list_channel_accounts",
+    async () => {
+      const users = await fetchAdminUsers().catch(() => []);
+      return users.map((user) => ({
+        id: user.id,
+        customer_id: user.id,
+        channel: user.platform ?? "telegram",
+        platform_user_id: user.platform_id ?? String(user.id),
+        platform_chat_id: user.chat_id == null ? null : String(user.chat_id),
+        display_name: user.first_name ?? user.username ?? user.email,
+        phone_claimed: null,
+        link_status: user.auth_user_id || user.email ? "linked" : "unlinked",
+        linked_user_id: user.id,
+        customer_phone: null,
+        customer_plan: user.plan,
+        auth_email: user.email,
+        last_activity: user.last_active ?? user.created_at,
+      }));
+    },
+  );
+  return (data ?? []).map(toAdminChannelAccount);
+}
+
+export async function fetchAdminLinkReviews(): Promise<AdminLinkReview[]> {
+  const data = await callRpcWithFallback<Record<string, unknown>[]>("admin_list_link_reviews", () => []);
+  return (data ?? []).map(toAdminLinkReview);
 }
 
 export async function fetchPayments(): Promise<PaymentRow[]> {
@@ -595,11 +952,356 @@ export async function commitFoodCsvImport(rows: FoodCsvRow[]): Promise<FoodCsvCo
   };
 }
 
+export async function fetchAdminSystemHealth(): Promise<AdminSystemHealth> {
+  const data = await callRpcWithFallback<Record<string, unknown>>(
+    "admin_get_system_health",
+    async () => {
+      const [schema, stats, payments, candidates, members] = await Promise.all([
+        getSaasSchemaReadiness(),
+        getSystemStats().catch(() => null),
+        fetchPayments().catch(() => []),
+        fetchFoodCandidates("pending").catch(() => []),
+        fetchAdminMembers().catch(() => []),
+      ]);
+      const transactionCodeCounts = new Map<string, number>();
+      payments.forEach((payment) => {
+        if (payment.transaction_code) {
+          transactionCodeCounts.set(
+            payment.transaction_code,
+            (transactionCodeCounts.get(payment.transaction_code) ?? 0) + 1,
+          );
+        }
+      });
+      return {
+        schemaReady: schema.ready,
+        schemaMissing: schema.missing,
+        pendingPayments: payments.filter((payment) => payment.status === "pending").length,
+        duplicateLikePayments: payments.filter(
+          (payment) => payment.transaction_code && (transactionCodeCounts.get(payment.transaction_code) ?? 0) > 1,
+        ).length,
+        failedPaymentEvents: payments.filter((payment) => payment.status === "failed").length,
+        catalogCandidatesPending: candidates.length,
+        aiCallsToday: stats?.todayAICalls ?? 0,
+        adminMembers: members.length,
+        lastWebhookAt:
+          payments
+            .map((payment) => payment.completed_at || payment.created_at)
+            .filter(Boolean)
+            .sort()
+            .slice(-1)[0] ?? null,
+        checkedAt: new Date().toISOString(),
+      };
+    },
+  );
+
+  return {
+    schemaReady: data.schema_ready === true || data.schemaReady === true,
+    schemaMissing: Array.isArray(data.schema_missing)
+      ? data.schema_missing.map(String)
+      : Array.isArray(data.schemaMissing)
+        ? data.schemaMissing.map(String)
+        : [],
+    pendingPayments: Number(data.pending_payments ?? data.pendingPayments ?? 0),
+    duplicateLikePayments: Number(data.duplicate_like_payments ?? data.duplicateLikePayments ?? 0),
+    failedPaymentEvents: Number(data.failed_payment_events ?? data.failedPaymentEvents ?? 0),
+    catalogCandidatesPending: Number(data.catalog_candidates_pending ?? data.catalogCandidatesPending ?? 0),
+    aiCallsToday: Number(data.ai_calls_today ?? data.aiCallsToday ?? 0),
+    adminMembers: Number(data.admin_members ?? data.adminMembers ?? 0),
+    lastWebhookAt: (data.last_webhook_at as string | null) ?? (data.lastWebhookAt as string | null) ?? null,
+    checkedAt: String(data.checked_at ?? data.checkedAt ?? new Date().toISOString()),
+  };
+}
+
+export async function fetchAdminAuditLog(limit = 100): Promise<AdminAuditLogRow[]> {
+  const data = await callRpcWithFallback<Record<string, unknown>[]>("admin_list_audit_log", () => [], {
+    p_limit: limit,
+  });
+  return (data ?? []).map(toAdminAuditLog);
+}
+
+export async function fetchAdminMembers(): Promise<AdminMember[]> {
+  const access = await getAdminAccessState();
+  const data = await callRpcWithFallback<Record<string, unknown>[]>(
+    "admin_list_members",
+    () =>
+      access.isAdmin
+        ? [
+            {
+              id: 0,
+              auth_user_id: null,
+              linked_user_id: access.linkedUserId,
+              display_name: access.email ?? "Bootstrap owner",
+              email: access.email,
+              username: null,
+              is_owner: true,
+              is_active: true,
+              roles: access.roles.length ? access.roles : ADMIN_ROLES,
+              created_at: access.checkedAt,
+              updated_at: access.checkedAt,
+            },
+          ]
+        : [],
+  );
+  return (data ?? []).map(toAdminMember);
+}
+
+export async function fetchAdminCustomer360(customerId: number): Promise<AdminCustomer360> {
+  const fallback = async (): Promise<AdminCustomer360> => {
+    const [customers, channels, payments] = await Promise.all([
+      fetchAdminCustomers().catch(() => []),
+      fetchAdminChannelAccounts().catch(() => []),
+      fetchPayments().catch(() => []),
+    ]);
+    const customer = customers.find((row) => row.id === customerId) ?? null;
+    return {
+      customer,
+      channels: channels.filter((row) => row.customer_id === customerId),
+      recentPayments: payments.filter((row) => row.customer_id === customerId || row.user_id === customerId).slice(0, 10),
+      supportNotes: [],
+      linkedAuths:
+        customer?.linked_portal_count && customer.linked_portal_count > 0
+          ? [{ auth_user_id: null, email: null, link_status: "linked" }]
+          : [],
+      conversationState: null,
+    };
+  };
+
+  const data = await callRpcWithFallback<Record<string, unknown>>("admin_get_customer_360", fallback, {
+    p_customer_id: customerId,
+  });
+
+  if ("customer" in data || "channels" in data || "recent_payments" in data) {
+    return {
+      customer:
+        data.customer && typeof data.customer === "object"
+          ? toAdminCustomer(data.customer as Record<string, unknown>)
+          : (data.customer as AdminCustomer | null) ?? null,
+      channels: Array.isArray(data.channels)
+        ? data.channels.map((row) => toAdminChannelAccount(row as Record<string, unknown>))
+        : [],
+      recentPayments: Array.isArray(data.recent_payments)
+        ? data.recent_payments.map((row) => toPaymentRow(row as Record<string, unknown>))
+        : Array.isArray(data.recentPayments)
+          ? data.recentPayments.map((row) => toPaymentRow(row as Record<string, unknown>))
+          : [],
+      supportNotes: Array.isArray(data.support_notes)
+        ? data.support_notes.map((row) => toCustomerSupportNote(row as Record<string, unknown>))
+        : Array.isArray(data.supportNotes)
+          ? data.supportNotes.map((row) => toCustomerSupportNote(row as Record<string, unknown>))
+          : [],
+      linkedAuths: Array.isArray(data.linked_auths)
+        ? data.linked_auths.map((row) => ({
+            auth_user_id: ((row as Record<string, unknown>).auth_user_id as string | null) ?? null,
+            email: ((row as Record<string, unknown>).email as string | null) ?? null,
+            link_status: ((row as Record<string, unknown>).link_status as string | null) ?? null,
+          }))
+        : [],
+      conversationState:
+        data.conversation_state && typeof data.conversation_state === "object"
+          ? (data.conversation_state as Record<string, unknown>)
+          : data.conversationState && typeof data.conversationState === "object"
+            ? (data.conversationState as Record<string, unknown>)
+            : null,
+    };
+  }
+
+  return data as unknown as AdminCustomer360;
+}
+
+export async function upsertAdminMember(input: {
+  linkedUserId: number | null;
+  authUserId?: string | null;
+  displayName?: string | null;
+  isOwner?: boolean;
+}): Promise<number> {
+  const id = await callRpc<number>("admin_upsert_member", {
+    p_linked_user_id: input.linkedUserId,
+    p_auth_user_id: input.authUserId ?? null,
+    p_display_name: input.displayName ?? null,
+    p_is_owner: input.isOwner ?? false,
+  });
+  return Number(id);
+}
+
+export async function setAdminMemberRoles(memberId: number, roles: AdminRole[]): Promise<void> {
+  await callRpc("admin_set_member_roles", {
+    p_member_id: memberId,
+    p_roles: roles,
+  });
+}
+
+export async function toggleAdminMemberActive(memberId: number, isActive: boolean): Promise<void> {
+  await callRpc("admin_toggle_member_active", {
+    p_member_id: memberId,
+    p_is_active: isActive,
+  });
+}
+
+export async function fetchAdminUser360(userId: number): Promise<AdminUser360> {
+  const fallback = async (): Promise<AdminUser360> => {
+    const [users, payments, events] = await Promise.all([
+      fetchAdminUsers().catch(() => []),
+      fetchPayments().catch(() => []),
+      getSubscriptionEvents(userId).catch(() => []),
+    ]);
+    return {
+      user: users.find((row) => row.id === userId) ?? null,
+      recentPayments: payments.filter((row) => row.user_id === userId).slice(0, 10),
+      subscriptionEvents: events,
+      supportNotes: [],
+      conversationState: null,
+      linkedAuthState: null,
+    };
+  };
+
+  const data = await callRpcWithFallback<Record<string, unknown>>("admin_get_user_360", fallback, {
+    p_user_id: userId,
+  });
+
+  if ("user" in data || "recent_payments" in data || "support_notes" in data) {
+    return {
+      user:
+        data.user && typeof data.user === "object"
+          ? toAdminUser(data.user as Record<string, unknown>)
+          : (data.user as AdminUser | null) ?? null,
+      recentPayments: Array.isArray(data.recent_payments)
+        ? data.recent_payments.map((row) => toPaymentRow(row as Record<string, unknown>))
+        : Array.isArray(data.recentPayments)
+          ? data.recentPayments.map((row) => toPaymentRow(row as Record<string, unknown>))
+          : [],
+      subscriptionEvents: Array.isArray(data.subscription_events)
+        ? data.subscription_events.map((row) => toSubscriptionEvent(row as Record<string, unknown>))
+        : Array.isArray(data.subscriptionEvents)
+          ? data.subscriptionEvents.map((row) => toSubscriptionEvent(row as Record<string, unknown>))
+          : [],
+      supportNotes: Array.isArray(data.support_notes)
+        ? data.support_notes.map((row) => toSupportNote(row as Record<string, unknown>))
+        : Array.isArray(data.supportNotes)
+          ? data.supportNotes.map((row) => toSupportNote(row as Record<string, unknown>))
+          : [],
+      conversationState:
+        data.conversation_state && typeof data.conversation_state === "object"
+          ? (data.conversation_state as Record<string, unknown>)
+          : data.conversationState && typeof data.conversationState === "object"
+            ? (data.conversationState as Record<string, unknown>)
+            : null,
+      linkedAuthState:
+        data.linked_auth_state && typeof data.linked_auth_state === "object"
+          ? {
+              auth_user_id: (data.linked_auth_state as Record<string, unknown>).auth_user_id as string | null,
+              email: (data.linked_auth_state as Record<string, unknown>).email as string | null,
+              pending_intent:
+                ((data.linked_auth_state as Record<string, unknown>).pending_intent as string | null) ?? null,
+            }
+          : (data.linkedAuthState as AdminUser360["linkedAuthState"]) ?? null,
+    };
+  }
+
+  return data as unknown as AdminUser360;
+}
+
+export async function resetDailyQuota(userId: number): Promise<void> {
+  await callRpc("admin_reset_daily_quota", {
+    p_user_id: userId,
+  });
+}
+
+export async function linkUserAccount(userId: number, authUserId: string): Promise<void> {
+  await callRpc("admin_link_user_account", {
+    p_user_id: userId,
+    p_auth_user_id: authUserId,
+  });
+}
+
+export async function addSupportNote(userId: number, note: string): Promise<void> {
+  await callRpc("admin_add_support_note", {
+    p_user_id: userId,
+    p_note: note,
+  });
+}
+
+export async function setCustomerPhone(customerId: number, phoneInput: string, fullName?: string): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_set_customer_phone", {
+    p_customer_id: customerId,
+    p_phone_input: phoneInput,
+    p_full_name: fullName ?? null,
+  });
+}
+
+export async function linkChannelAccount(channelAccountId: number, customerId: number, note = ""): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_link_channel_account", {
+    p_channel_account_id: channelAccountId,
+    p_customer_id: customerId,
+    p_note: note || null,
+  });
+}
+
+export async function unlinkChannelAccount(channelAccountId: number, note = ""): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_unlink_channel_account", {
+    p_channel_account_id: channelAccountId,
+    p_note: note || null,
+  });
+}
+
+export async function mergeCustomers(sourceCustomerId: number, targetCustomerId: number, note = ""): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_merge_customers", {
+    p_source_customer_id: sourceCustomerId,
+    p_target_customer_id: targetCustomerId,
+    p_note: note || null,
+  });
+}
+
+export async function setCustomerEntitlement(
+  customerId: number,
+  plan: "free" | "pro" | "lifetime",
+  premiumUntil: string | null,
+  entitlementSource = "admin",
+  note = "",
+): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_set_customer_entitlement", {
+    p_customer_id: customerId,
+    p_plan: plan,
+    p_premium_until: premiumUntil,
+    p_entitlement_source: entitlementSource,
+    p_note: note || null,
+  });
+}
+
+export async function resetCustomerQuota(customerId: number): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_reset_customer_quota", {
+    p_customer_id: customerId,
+  });
+}
+
+export async function addCustomerSupportNote(customerId: number, note: string): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_add_customer_support_note", {
+    p_customer_id: customerId,
+    p_note: note,
+  });
+}
+
+export async function linkPortalAuth(customerId: number, authUserId: string, email = ""): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_link_portal_auth", {
+    p_customer_id: customerId,
+    p_auth_user_id: authUserId,
+    p_email: email || null,
+  });
+}
+
 export function exportUsersCSV(users: Record<string, unknown>[]): void {
   const headers = [
     "id",
     "username",
     "first_name",
+    "email",
     "platform",
     "platform_id",
     "chat_id",
@@ -625,24 +1327,55 @@ export function exportUsersCSV(users: Record<string, unknown>[]): void {
 }
 
 export function describeSchemaReadiness(readiness: SchemaReadiness | null): string {
-  if (!readiness) return "Dang kiem tra schema SaaS...";
-  if (readiness.ready) return "Schema SaaS da san sang.";
-  return `Schema SaaS chua san sang: ${readiness.missing.join(", ")}`;
+  if (!readiness) return "Đang kiểm tra schema SaaS...";
+  if (readiness.ready) return "Schema SaaS đã sẵn sàng.";
+  return `Schema SaaS chưa sẵn sàng: ${readiness.missing.join(", ")}`;
 }
 
 export function getAdminSkuOptions() {
   return BILLING_SKU_OPTIONS.map((offer) => ({
     value: offer.sku,
-    label: `${offer.shortLabel} - ${offer.days ?? "vinh vien"} ${offer.days ? "ngay" : ""}`.trim(),
+    label: offer.label,
     priceVnd: offer.priceVnd,
+    priceLabel: formatBillingPriceVnd(offer.priceVnd),
+    helper: offer.days ? `${offer.days} ngày` : "Vĩnh viễn",
     tier: formatTierLabel(offer.tier),
   }));
+}
+
+export function formatAdminSkuLabel(value: string | null | undefined): string {
+  if (!value) return "Chưa rõ gói";
+  if (value in BILLING_OFFERS) {
+    return BILLING_OFFERS[value as BillingSku].label;
+  }
+  if (value === "pro") return "Pro";
+  if (value === "free") return "Free";
+  if (value === "lifetime") return "Lifetime";
+  return value.replace(/_/g, " ");
+}
+
+export function formatAdminPaymentMethod(value: string | null | undefined): string {
+  if (!value) return "Chưa rõ nguồn";
+  if (value === "payos") return "PayOS";
+  if (value === "stripe") return "Stripe";
+  if (value === "bank_transfer") return "Chuyển khoản";
+  if (value === "manual_admin" || value === "admin") return "Admin thủ công";
+  return value.replace(/_/g, " ");
+}
+
+export function formatAdminPaymentStatus(value: string | null | undefined): string {
+  if (!value) return "Không rõ";
+  if (value === "completed") return "Hoàn thành";
+  if (value === "pending") return "Đang xử lý";
+  if (value === "failed") return "Thất bại";
+  if (value === "cancelled") return "Đã hủy";
+  return value;
 }
 
 export function getQuotaThresholdNotice(usageCount: number): string | null {
   const threshold = getFreeDailyLimit();
   if (usageCount < threshold) return null;
-  return `Da cham nguong free ${usageCount}/${threshold}`;
+  return `Đã chạm ngưỡng free ${usageCount}/${threshold}`;
 }
 
 export function getQuotaProgressPercent(usageCount: number): number {

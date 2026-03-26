@@ -7,6 +7,7 @@ import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Navbar } from "@/components/landing/Navbar";
 import { Pricing } from "@/components/landing/Pricing";
+import { TrustStrip } from "@/components/landing/TrustStrip";
 import { UseCases } from "@/components/landing/UseCases";
 
 const Index = () => {
@@ -15,6 +16,7 @@ const Index = () => {
       <Navbar />
       <main>
         <Hero />
+        <TrustStrip />
         <HowItWorks />
         <Benefits />
         <Demo />
