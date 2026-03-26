@@ -15,11 +15,7 @@ import {
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
-import {
-  SITE_CONFIG,
-  hasConfiguredBankTransfer,
-  hasConfiguredMomoCheckout,
-} from "@/lib/siteConfig";
+import { SITE_CONFIG, hasConfiguredBankTransfer, hasConfiguredMomoCheckout } from "@/lib/siteConfig";
 
 function parsePlan(value: string | null): PlanTier {
   if (value === "pro" || value === "lifetime") {
@@ -81,7 +77,7 @@ export default function Checkout() {
 
   async function handleCheckout() {
     if (selectedPlan === "free") {
-      navigate(SITE_CONFIG.dashboardPath);
+      navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath);
       return;
     }
 
@@ -117,11 +113,16 @@ export default function Checkout() {
         status: order.status,
         amount: String(order.amount),
       });
+
+      if (order.phoneE164) {
+        params.set("phone", order.phoneE164);
+      }
+
       if (order.bankTransferNote) {
         params.set("note", order.bankTransferNote);
       }
 
-      toast.success("Đơn hàng đã được tạo. Tiếp tục sang màn activation để hoàn tất dùng ngay.");
+      toast.success("Đơn hàng đã được tạo. Tiếp tục sang màn activation để dùng ngay.");
       navigate(`${SITE_CONFIG.activatePath}?${params.toString()}`);
     } catch (error) {
       toast.error(String((error as Error)?.message || "Không thể tạo checkout lúc này."));
@@ -135,15 +136,21 @@ export default function Checkout() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="rounded-[32px] border border-primary/10 bg-white/88 p-8 shadow-md backdrop-blur">
           <div className="mb-3 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Pay → Activate → Link channel
+            {"Pay -> Activate -> Link Telegram"}
           </div>
           <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">
             Chốt gói theo số điện thoại trước, rồi dùng ngay trên Telegram.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Đây là flow production ít ma sát nhất cho CaloTrack: thanh toán xong là plan active ở cấp customer, rồi bạn
-            được dẫn thẳng sang màn activation để kết nối Telegram hoặc tạo yêu cầu link Zalo.
+            Đây là flow ít ma sát nhất cho CaloTrack ở phase hiện tại: tạo order theo phone, thanh toán, sang activation và
+            mở Telegram để bắt đầu dùng ngay.
           </p>
+          {!user ? (
+            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
+              Buyer có thể tạo order ngay cả khi chưa vào portal. Portal sẽ dùng sau cho account, billing và hỗ trợ; còn
+              lane sử dụng nhanh nhất hôm nay vẫn là Telegram.
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
@@ -202,8 +209,8 @@ export default function Checkout() {
               {formatTierLabel(selectedPlan)} cho customer theo phone
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Chọn provider thanh toán, xác nhận số điện thoại canonical và để backend xử lý activation bằng callback,
-              IPN hoặc reconciliation.
+              Chọn provider thanh toán, xác nhận số điện thoại canonical và để backend xử lý activation bằng callback, IPN
+              hoặc reconciliation.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -280,7 +287,7 @@ export default function Checkout() {
                         <span>Ngân hàng: {SITE_CONFIG.bankName}</span>
                       </div>
                       <div>Số tài khoản nhận tiền: {SITE_CONFIG.bankAccountNumber}</div>
-                      <div>Flow thật: tạo order → hiện QR → chuyển khoản → webhook/Casso hoặc admin xác nhận.</div>
+                      <div>{"Flow thật: tạo order -> hiện QR -> chuyển khoản -> webhook/Casso hoặc admin xác nhận."}</div>
                     </div>
                   </div>
                 </div>
@@ -307,9 +314,8 @@ export default function Checkout() {
             )}
 
             <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-              Gói đang chọn: <span className="font-semibold text-foreground">{currentCard.label}</span>. Sau khi thanh
-              toán thành công, website sẽ dẫn bạn tới trang activation để dùng ngay trên Telegram hoặc tạo yêu cầu link
-              Zalo.
+              Gói đang chọn: <span className="font-semibold text-foreground">{currentCard.label}</span>. Sau khi thanh toán
+              thành công, website sẽ dẫn bạn tới trang activation để dùng ngay trên Telegram hoặc tạo yêu cầu link Zalo.
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -317,8 +323,11 @@ export default function Checkout() {
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
                 {selectedPlan === "free" ? "Vào dashboard" : "Thanh toán và sang activation"}
               </Button>
-              <Button variant="outline" onClick={() => navigate(SITE_CONFIG.dashboardPath)}>
-                Quay lại portal
+              <Button
+                variant="outline"
+                onClick={() => navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath)}
+              >
+                {user ? "Quay lại portal" : "Đăng nhập portal"}
               </Button>
             </div>
           </div>

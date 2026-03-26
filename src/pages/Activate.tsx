@@ -23,10 +23,20 @@ import {
   type PortalOrderStatus,
   type PortalSnapshot,
 } from "@/lib/portalApi";
-import { SITE_CONFIG, buildVietQrImageUrl, formatVnd } from "@/lib/siteConfig";
+import { SITE_CONFIG, buildVietQrImageUrl, formatVnd, getPrimaryChannelHref } from "@/lib/siteConfig";
 
 function formatAmount(value: number): string {
   return value > 0 ? formatVnd(value) : "Đang chờ";
+}
+
+function shouldFallbackTelegram(error: unknown): boolean {
+  const message = String((error as Error)?.message || error || "").toLowerCase();
+  return (
+    message.includes("customer_not_linked") ||
+    message.includes("not authenticated") ||
+    message.includes("jwt") ||
+    message.includes("permission denied")
+  );
 }
 
 export default function Activate() {
@@ -44,22 +54,29 @@ export default function Activate() {
   const orderCode = searchParams.get("orderCode") || orderId;
   const transferNote = searchParams.get("note") || orderCode || "";
   const amount = Number(searchParams.get("amount") || 0);
+  const phoneParam = searchParams.get("phone");
   const linkedCount = snapshot?.linkedChannels.filter((item) => item.linkStatus === "linked").length ?? 0;
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      if (!user) return;
       setLoading(true);
       try {
         const [nextSnapshot, nextOrderStatus] = await Promise.all([
-          fetchPortalSnapshot({ id: user.id, email: user.email, phone: user.phone }),
-          orderId ? portalGetOrderStatus(orderId) : Promise.resolve(null),
+          user
+            ? fetchPortalSnapshot({ id: user.id, email: user.email, phone: user.phone })
+            : Promise.resolve<PortalSnapshot | null>(null),
+          orderId ? portalGetOrderStatus(orderId) : Promise.resolve<PortalOrderStatus | null>(null),
         ]);
+
         if (!cancelled) {
           setSnapshot(nextSnapshot);
           setOrderStatus(nextOrderStatus);
+        }
+      } catch (error) {
+        if (!cancelled && orderId) {
+          toast.error(String((error as Error)?.message || "Không thể đồng bộ trạng thái activation."));
         }
       } finally {
         if (!cancelled) {
@@ -88,18 +105,31 @@ export default function Activate() {
     return buildVietQrImageUrl(amount, transferNote);
   }, [amount, provider, transferNote]);
 
+  const displayPhone =
+    snapshot?.phoneDisplay || snapshot?.phoneE164 || user?.phone || phoneParam || "Chưa có";
+
   async function handleTelegramLink() {
     setTelegramLoading(true);
     try {
-      const result = await portalCreateTelegramLinkToken();
-      window.open(result.url, "_blank", "noopener,noreferrer");
-      toast.success(
-        result.status === "ready"
-          ? "Đã tạo Telegram link token. Mở bot để hoàn tất liên kết."
-          : "Đã mở Telegram bot. Token flow sẽ đủ hơn khi backend mới được apply.",
-      );
+      if (user) {
+        const result = await portalCreateTelegramLinkToken();
+        window.open(result.url, "_blank", "noopener,noreferrer");
+        toast.success(
+          result.status === "ready"
+            ? "Đã tạo Telegram link token. Mở bot để hoàn tất liên kết."
+            : "Đã mở Telegram bot. Bạn có thể bắt đầu flow chat ngay.",
+        );
+      } else {
+        window.open(getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
+        toast.success("Đã mở Telegram bot. Sau khi thanh toán, bạn có thể bắt đầu dùng ngay trên bot.");
+      }
     } catch (error) {
-      toast.error(String((error as Error)?.message || "Không thể tạo Telegram link lúc này."));
+      if (shouldFallbackTelegram(error)) {
+        window.open(getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
+        toast.success("Đã mở Telegram bot. Portal link đầy đủ sẽ rõ hơn sau khi đăng nhập lại.");
+      } else {
+        toast.error(String((error as Error)?.message || "Không thể mở Telegram lúc này."));
+      }
     } finally {
       setTelegramLoading(false);
     }
@@ -108,6 +138,10 @@ export default function Activate() {
   async function handleZaloLink() {
     setZaloLoading(true);
     try {
+      if (!user) {
+        toast.success("Lane Zalo đã sẵn trong UI và admin. Đăng nhập portal sau để gửi yêu cầu link chính thức.");
+        return;
+      }
       const result = await portalRequestZaloLink();
       toast.success(result.helperText);
     } catch (error) {
@@ -137,9 +171,15 @@ export default function Activate() {
             Gói đã active thì bước tiếp theo phải là dùng được ngay trên Telegram.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Quyền sử dụng nằm ở customer theo số điện thoại. Sau khi activate, bạn chỉ còn một việc là link ít nhất một
-            kênh để bắt đầu dùng thật, với Telegram là đường ngắn nhất ở phase hiện tại.
+            Quyền sử dụng nằm ở customer theo số điện thoại. Sau khi thanh toán, bạn chỉ còn một việc là mở Telegram để bắt
+            đầu dùng, còn portal sẽ là lớp account, billing và support.
           </p>
+          {!user ? (
+            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
+              Bạn chưa cần login portal để xem màn này. Hãy giữ lại mã đơn hàng, hoàn tất thanh toán và mở Telegram bot để
+              bắt đầu tracking ngay.
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_0.92fr]">
@@ -148,16 +188,16 @@ export default function Activate() {
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Plan hiện tại</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">
-                  {snapshot ? snapshot.plan.toUpperCase() : "Đang tải"}
+                  {snapshot ? snapshot.plan.toUpperCase() : orderStatus?.entitlementActive ? "PRO" : "Đang tải"}
                 </div>
-                <div className="mt-2 text-sm text-muted-foreground">{snapshot?.entitlementLabel || "Đang đồng bộ entitlement"}</div>
+                <div className="mt-2 text-sm text-muted-foreground">
+                  {snapshot?.entitlementLabel || "Đang đồng bộ entitlement"}
+                </div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT canonical</div>
-                <div className="mt-3 text-2xl font-semibold text-foreground">
-                  {snapshot?.phoneDisplay || snapshot?.phoneE164 || user?.phone || "Chưa có"}
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Phone verified là chìa khóa shared entitlement.</div>
+                <div className="mt-3 text-2xl font-semibold text-foreground">{displayPhone}</div>
+                <div className="mt-2 text-sm text-muted-foreground">Phone là chìa khóa shared entitlement.</div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Linked channels</div>
@@ -195,8 +235,8 @@ export default function Activate() {
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Techcombank transfer</div>
                     <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển khoản đúng mã order để hệ thống đối soát</h2>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      Đây là lane đi live ngay được. Bạn chỉ cần chuyển đúng số tiền và giữ đúng nội dung, sau đó hệ thống
-                      sẽ auto-activate bằng webhook hoặc admin xác nhận nếu ngân hàng chưa đẩy callback.
+                      Đây là lane đi live ngay được. Bạn chỉ cần chuyển đúng số tiền và giữ đúng nội dung, sau đó hệ thống sẽ
+                      auto-activate bằng webhook hoặc admin xác nhận nếu ngân hàng chưa đẩy callback.
                     </p>
                   </div>
                 </div>
@@ -265,9 +305,12 @@ export default function Activate() {
                     <Loader2 className="mr-2 h-4 w-4" />
                     Tôi đã chuyển khoản, làm mới trạng thái
                   </Button>
-                  <Button variant="outline" onClick={() => navigate(SITE_CONFIG.dashboardPath)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath)}
+                  >
                     <ArrowUpRight className="mr-2 h-4 w-4" />
-                    Về portal theo dõi trạng thái
+                    {user ? "Về portal theo dõi trạng thái" : "Đăng nhập portal sau"}
                   </Button>
                 </div>
               </div>
@@ -284,7 +327,7 @@ export default function Activate() {
               </p>
 
               <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-                Trình tự khuyến nghị: <span className="font-medium text-foreground">Thanh toán thành công → mở Telegram → gửi /start token → quay lại portal để thấy trạng thái linked.</span>
+                Trình tự khuyến nghị: <span className="font-medium text-foreground">{"Thanh toán thành công -> mở Telegram -> bắt đầu tracking -> quay lại portal sau khi cần xem billing hoặc support."}</span>
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -296,9 +339,12 @@ export default function Activate() {
                   {zaloLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
                   Tạo yêu cầu kết nối Zalo
                 </Button>
-                <Button variant="outline" onClick={() => navigate(SITE_CONFIG.dashboardPath)}>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath)}
+                >
                   <ArrowUpRight className="mr-2 h-4 w-4" />
-                  Mở customer portal
+                  {user ? "Mở customer portal" : "Đăng nhập portal"}
                 </Button>
               </div>
             </div>

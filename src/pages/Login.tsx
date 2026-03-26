@@ -10,6 +10,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { portalStartPhoneAuth, portalVerifyPhoneOtp } from "@/lib/portalApi";
 import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 
+function describeAuthIssue(error: unknown): string | null {
+  const message = String((error as Error)?.message || error || "").toLowerCase();
+  if (message.includes("unsupported phone provider")) {
+    return "SMS OTP trên Supabase production chưa bật. Bạn vẫn có thể thanh toán ngay ở website, sau đó dùng Telegram trước và quay lại portal khi SMS provider được cấu hình.";
+  }
+  return null;
+}
+
 export default function Login() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -17,6 +25,7 @@ export default function Login() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authIssue, setAuthIssue] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -27,12 +36,17 @@ export default function Login() {
   async function handleSendOtp(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
+    setAuthIssue(null);
     try {
       const result = await portalStartPhoneAuth(phoneInput);
       setPhoneInput(result.phoneE164);
       setOtpSent(true);
       toast.success("Mã OTP đã được gửi tới số điện thoại của bạn.");
     } catch (error) {
+      const nextIssue = describeAuthIssue(error);
+      if (nextIssue) {
+        setAuthIssue(nextIssue);
+      }
       toast.error(String((error as Error)?.message || "Không thể gửi OTP lúc này."));
     } finally {
       setLoading(false);
@@ -64,8 +78,8 @@ export default function Login() {
             Vào CaloTrack bằng số điện thoại để thanh toán, kích hoạt và dùng ngay trên Telegram.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Portal này không còn là màn hình “beta” để tham khảo. Đây là lớp account thật cho login, checkout, activation,
-            payment và trạng thái link Telegram/Zalo, với entitlement luôn nằm ở customer theo phone.
+            Portal này dành cho account, billing, activation và trạng thái linked channels. Tracking hằng ngày vẫn mạnh
+            nhất trên Telegram, còn Zalo đang ở trạng thái sẵn sàng về UI và data model.
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -84,22 +98,22 @@ export default function Login() {
               </p>
             </div>
             <div className="rounded-3xl border border-accent/15 bg-accent/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Zalo-ready</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">{SITE_CONFIG.secondaryChannelLabel}</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Portal role</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Account + billing</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                UI và data model đã sẵn. Workflow riêng sẽ được nối bằng n8n ở phase sau.
+                Portal dùng cho account, checkout, payment, activation và support. Không phải nơi tracking chính.
               </p>
             </div>
           </div>
         </div>
 
         <div className="rounded-[32px] border border-primary/10 bg-white/90 p-8 shadow-md backdrop-blur">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng OTP</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Dùng số điện thoại để vào portal. Luồng admin đăng nhập riêng và không đi qua màn customer này.
-              </p>
-            </div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng OTP</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Dùng số điện thoại để vào portal. Luồng admin đăng nhập riêng và không đi qua màn customer này.
+            </p>
+          </div>
 
           {!otpSent ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
@@ -154,16 +168,33 @@ export default function Login() {
             </form>
           )}
 
+          {authIssue ? (
+            <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 p-4 text-sm leading-6 text-muted-foreground">
+              {authIssue}
+            </div>
+          ) : null}
+
           <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
-            Flow chuẩn là <span className="font-medium text-foreground">Pay → Activate → Link Telegram</span>. Zalo vẫn
-            được chừa lane riêng, nhưng nếu muốn dùng ngay hôm nay thì Telegram là đường ngắn nhất.
+            Flow chuẩn là <span className="font-medium text-foreground">{"Pay -> Activate -> Link Telegram"}</span>. Nếu OTP chưa bật,
+            bạn vẫn có thể tạo order ngay từ website và quay lại portal sau.
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-            <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+          <div className="mt-6 grid gap-3">
+            <Button variant="outline" onClick={() => navigate(`${SITE_CONFIG.checkoutPath}?plan=pro`)}>
+              Mua gói và sang activation ngay
+            </Button>
+            <a
+              href={getPrimaryChannelHref()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-center text-sm font-medium text-primary hover:underline"
+            >
               Mở CaloTrack trên Telegram
             </a>
-            <a href={SITE_CONFIG.adminLoginPath} className="font-medium text-zinc-600 hover:text-foreground">
+            <a
+              href={SITE_CONFIG.adminLoginPath}
+              className="text-center text-sm font-medium text-zinc-600 hover:text-foreground"
+            >
               Admin login
             </a>
           </div>

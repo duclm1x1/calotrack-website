@@ -37,22 +37,8 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/activate"
-              element={
-                <ProtectedRoute>
-                  <Activate />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/activate" element={<Activate />} />
             <Route 
               path="/admin" 
               element={
