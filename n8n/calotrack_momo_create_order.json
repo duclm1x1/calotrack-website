@@ -1,0 +1,102 @@
+{
+  "name": "CaloTrack — MoMo Create Order",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calotrack-momo-create-order",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook_receive",
+      "name": "Receive Create Order",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst body = $input.first().json.body || {};\nconst partnerCode = $vars.MOMO_PARTNER_CODE;\nconst accessKey = $vars.MOMO_ACCESS_KEY;\nconst secretKey = $vars.MOMO_SECRET_KEY;\nconst endpoint = $vars.MOMO_CREATE_ENDPOINT || 'https://payment.momo.vn/v2/gateway/api/create';\nif (!partnerCode || !accessKey || !secretKey) {\n  throw new Error('Missing MoMo vars');\n}\nconst orderCode = String(body.orderCode || '').trim();\nconst amount = String(Number(body.amount || 0));\nconst requestId = `${orderCode}-${Date.now()}`;\nconst redirectUrl = String(body.returnUrl || 'https://calotrack-website.vercel.app/activate');\nconst ipnUrl = String($vars.MOMO_IPN_URL || '');\nconst orderInfo = `CaloTrack ${body.billingSku || 'order'} ${orderCode}`;\nconst extraData = body.phoneE164 ? Buffer.from(String(body.phoneE164)).toString('base64') : '';\nconst rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderCode}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=captureWallet`;\nconst signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');\nreturn [{ json: { endpoint, requestBody: { partnerCode, accessKey, requestId, amount, orderId: orderCode, orderInfo, redirectUrl, ipnUrl, extraData, requestType: 'captureWallet', signature, lang: 'vi' } } }];"
+      },
+      "id": "build_request",
+      "name": "Build MoMo Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.endpoint }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}"
+      },
+      "id": "http_create_order",
+      "name": "Create MoMo Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ payUrl: $json.payUrl || null, deeplink: $json.deeplink || null, resultCode: $json.resultCode || null, message: $json.message || 'MoMo order created' }) }}"
+      },
+      "id": "respond_order",
+      "name": "Respond Payment URL",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        760,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Receive Create Order": {
+      "main": [
+        [
+          {
+            "node": "Build MoMo Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build MoMo Request": {
+      "main": [
+        [
+          {
+            "node": "Create MoMo Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create MoMo Order": {
+      "main": [
+        [
+          {
+            "node": "Respond Payment URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

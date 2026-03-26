@@ -10,8 +10,12 @@ import {
 } from "@/lib/billing";
 import {
   SITE_CONFIG,
+  buildSiteUrl,
+  buildVietQrImageUrl,
   getPrimaryChannelHref,
   getTelegramLinkHref,
+  hasConfiguredBankTransfer,
+  hasConfiguredMomoCheckout,
 } from "@/lib/siteConfig";
 import { supabase } from "@/lib/supabase";
 
@@ -65,7 +69,11 @@ export type PortalCheckoutOrder = {
   phoneE164: string | null;
   paymentUrl: string | null;
   qrContent: string | null;
+  qrImageUrl: string | null;
   bankTransferNote: string | null;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  bankAccountName: string | null;
   helperText: string;
   createdAt: string;
 };
@@ -98,6 +106,14 @@ type PortalUserRow = {
   premium_until: string | null;
   daily_ai_usage_count: number | null;
   customer_id?: number | null;
+};
+
+type MomoCheckoutResponse = {
+  payUrl?: string | null;
+  paymentUrl?: string | null;
+  deeplink?: string | null;
+  resultCode?: number | string | null;
+  message?: string | null;
 };
 
 function describeError(error: unknown): string {
@@ -183,12 +199,73 @@ function buildFallbackOrder(
     phoneE164,
     paymentUrl: null,
     qrContent: provider === "bank_transfer" ? orderCode : null,
+    qrImageUrl:
+      provider === "bank_transfer" && hasConfiguredBankTransfer()
+        ? buildVietQrImageUrl(amount, orderCode)
+        : null,
     bankTransferNote: provider === "bank_transfer" ? orderCode : null,
+    bankName: provider === "bank_transfer" ? SITE_CONFIG.bankName : null,
+    bankAccountNumber:
+      provider === "bank_transfer" ? SITE_CONFIG.bankAccountNumber : null,
+    bankAccountName:
+      provider === "bank_transfer" ? SITE_CONFIG.bankAccountName || null : null,
     helperText:
       provider === "bank_transfer"
         ? `Chuyển khoản đúng nội dung ${orderCode} để backend đối soát và kích hoạt tự động.`
         : providerOption?.helper ?? "Đơn hàng đang ở trạng thái chờ backend xác nhận.",
     createdAt: new Date().toISOString(),
+  };
+}
+
+async function enrichMomoOrder(order: PortalCheckoutOrder): Promise<PortalCheckoutOrder> {
+  if (order.provider !== "momo" || order.plan === "free" || order.paymentUrl) {
+    return order;
+  }
+
+  if (!hasConfiguredMomoCheckout()) {
+    return {
+      ...order,
+      helperText:
+        "MoMo đang chờ cấu hình webhook tạo payment session. Tạm thời dùng Techcombank chuyển khoản để đi live ngay.",
+    };
+  }
+
+  const response = await fetch(SITE_CONFIG.momoCreateOrderWebhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      orderId: order.id,
+      orderCode: order.orderCode,
+      amount: order.amount,
+      billingSku: order.billingSku,
+      phoneE164: order.phoneE164,
+      returnUrl: buildSiteUrl(
+        `${SITE_CONFIG.activatePath}?order=${encodeURIComponent(
+          order.id,
+        )}&provider=momo&status=pending_confirmation`,
+      ),
+      origin: buildSiteUrl("/"),
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as MomoCheckoutResponse;
+  if (!response.ok) {
+    throw new Error(
+      String(
+        payload.message ||
+          "Khong the tao payment session MoMo. Kiem tra webhook hoac merchant config.",
+      ),
+    );
+  }
+
+  return {
+    ...order,
+    paymentUrl: payload.payUrl || payload.paymentUrl || payload.deeplink || null,
+    helperText:
+      String(payload.message || "").trim() ||
+      "Đơn hàng MoMo đã được tạo. Hệ thống sẽ cấp quyền sau khi IPN xác nhận thành công.",
   };
 }
 
@@ -432,7 +509,7 @@ export async function portalStartCheckout(params: {
       throw error;
     }
     const row = (data ?? {}) as Record<string, unknown>;
-    return {
+    const nextOrder: PortalCheckoutOrder = {
       id: String(row.id ?? row.order_id ?? ""),
       orderCode: String(row.order_code ?? row.id ?? ""),
       provider: (row.provider as PublicCheckoutProvider) ?? params.provider,
@@ -443,13 +520,33 @@ export async function portalStartCheckout(params: {
       phoneE164: (row.phone_e164 as string | null) ?? phoneE164,
       paymentUrl: (row.payment_url as string | null) ?? null,
       qrContent: (row.qr_content as string | null) ?? null,
+      qrImageUrl:
+        ((row.qr_image_url as string | null) ?? null) ||
+        (params.provider === "bank_transfer"
+          ? buildVietQrImageUrl(
+              Number(row.amount ?? 0),
+              String(row.bank_transfer_note ?? row.order_code ?? ""),
+            )
+          : null),
       bankTransferNote: (row.bank_transfer_note as string | null) ?? null,
+      bankName:
+        (row.bank_name as string | null) ??
+        (params.provider === "bank_transfer" ? SITE_CONFIG.bankName : null),
+      bankAccountNumber:
+        (row.bank_account_number as string | null) ??
+        (params.provider === "bank_transfer" ? SITE_CONFIG.bankAccountNumber : null),
+      bankAccountName:
+        (row.bank_account_name as string | null) ??
+        (params.provider === "bank_transfer" ? SITE_CONFIG.bankAccountName || null : null),
       helperText: String(row.helper_text ?? "Đơn hàng đã được tạo và đang chờ backend xác nhận."),
       createdAt: String(row.created_at ?? new Date().toISOString()),
     };
+    return await enrichMomoOrder(nextOrder);
   } catch (error) {
     if (isMissingFunctionError(error)) {
-      return buildFallbackOrder(params.plan, params.provider, phoneE164);
+      return await enrichMomoOrder(
+        buildFallbackOrder(params.plan, params.provider, phoneE164),
+      );
     }
     throw error;
   }

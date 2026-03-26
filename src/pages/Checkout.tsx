@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Loader2, QrCode, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,11 @@ import {
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import {
+  SITE_CONFIG,
+  hasConfiguredBankTransfer,
+  hasConfiguredMomoCheckout,
+} from "@/lib/siteConfig";
 
 function parsePlan(value: string | null): PlanTier {
   if (value === "pro" || value === "lifetime") {
@@ -29,12 +33,15 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<PlanTier>(parsePlan(searchParams.get("plan")));
-  const [provider, setProvider] = useState<PublicCheckoutProvider>("vnpay");
+  const [provider, setProvider] = useState<PublicCheckoutProvider>(
+    hasConfiguredMomoCheckout() ? "momo" : "bank_transfer",
+  );
   const [phoneDraft, setPhoneDraft] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
       if (!user) return;
       try {
@@ -52,6 +59,7 @@ export default function Checkout() {
         }
       }
     }
+
     load();
     return () => {
       cancelled = true;
@@ -63,9 +71,27 @@ export default function Checkout() {
     [selectedPlan],
   );
 
+  const providerAvailability = useMemo(
+    () => ({
+      momo: hasConfiguredMomoCheckout(),
+      bank_transfer: hasConfiguredBankTransfer(),
+    }),
+    [],
+  );
+
   async function handleCheckout() {
     if (selectedPlan === "free") {
       navigate(SITE_CONFIG.dashboardPath);
+      return;
+    }
+
+    if (provider === "momo" && !providerAvailability.momo) {
+      toast.error("MoMo chưa được cấu hình trên production. Tạm thời dùng Techcombank chuyển khoản.");
+      return;
+    }
+
+    if (provider === "bank_transfer" && !providerAvailability.bank_transfer) {
+      toast.error("Chuyển khoản ngân hàng chưa được cấu hình trên production.");
       return;
     }
 
@@ -77,14 +103,26 @@ export default function Checkout() {
         provider,
         phoneInput: phoneDraft,
       });
+
       if (order.paymentUrl) {
         window.location.href = order.paymentUrl;
         return;
       }
-      toast.success("Đơn hàng đã được tạo. Tiếp tục sang màn activation.");
-      navigate(
-        `${SITE_CONFIG.activatePath}?order=${encodeURIComponent(order.id)}&plan=${selectedPlan}&provider=${provider}&status=${encodeURIComponent(order.status)}`,
-      );
+
+      const params = new URLSearchParams({
+        order: order.id,
+        orderCode: order.orderCode,
+        plan: selectedPlan,
+        provider,
+        status: order.status,
+        amount: String(order.amount),
+      });
+      if (order.bankTransferNote) {
+        params.set("note", order.bankTransferNote);
+      }
+
+      toast.success("Đơn hàng đã được tạo. Tiếp tục sang màn activation để hoàn tất dùng ngay.");
+      navigate(`${SITE_CONFIG.activatePath}?${params.toString()}`);
     } catch (error) {
       toast.error(String((error as Error)?.message || "Không thể tạo checkout lúc này."));
     } finally {
@@ -129,7 +167,11 @@ export default function Checkout() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-xl font-semibold">{card.label}</div>
                       {card.badge ? (
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${active ? "bg-white/15 text-white" : "bg-primary/10 text-primary"}`}>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            active ? "bg-white/15 text-white" : "bg-primary/10 text-primary"
+                          }`}
+                        >
                           {card.badge}
                         </span>
                       ) : null}
@@ -181,26 +223,40 @@ export default function Checkout() {
                 <div className="grid gap-3">
                   {PUBLIC_CHECKOUT_PROVIDERS.map((option) => {
                     const active = provider === option.value;
+                    const available =
+                      option.value === "momo"
+                        ? providerAvailability.momo
+                        : providerAvailability.bank_transfer;
+
                     return (
                       <button
                         key={option.value}
                         type="button"
-                        onClick={() => setProvider(option.value)}
+                        onClick={() => available && setProvider(option.value)}
+                        disabled={!available}
                         className={`rounded-2xl border p-4 text-left transition ${
                           active
-                            ? option.accent === "accent"
-                              ? "border-accent bg-accent/10"
-                              : option.accent === "neutral"
-                                ? "border-zinc-300 bg-zinc-50"
-                                : "border-primary bg-primary/10"
+                            ? option.accent === "neutral"
+                              ? "border-zinc-300 bg-zinc-50"
+                              : "border-primary bg-primary/10"
                             : "border-primary/10 bg-white hover:border-primary/20"
-                        }`}
+                        } ${!available ? "cursor-not-allowed opacity-60" : ""}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-sm font-semibold text-foreground">{option.label}</div>
-                          {active ? <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">đã chọn</span> : null}
+                          {active ? (
+                            <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                              đã chọn
+                            </span>
+                          ) : null}
                         </div>
-                        <div className="mt-2 text-sm leading-6 text-muted-foreground">{option.helper}</div>
+                        <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {available
+                            ? option.helper
+                            : option.value === "momo"
+                              ? "Chưa set webhook tạo payment session trên production."
+                              : "Chưa set tài khoản ngân hàng nhận tiền trên production."}
+                        </div>
                       </button>
                     );
                   })}
@@ -208,9 +264,52 @@ export default function Checkout() {
               </div>
             </div>
 
+            {provider === "bank_transfer" ? (
+              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5">
+                <div className="flex items-start gap-3">
+                  <Building2 className="mt-1 h-5 w-5 text-primary" />
+                  <div className="space-y-2 text-sm leading-6 text-muted-foreground">
+                    <div className="font-semibold text-foreground">Chuyển khoản Techcombank</div>
+                    <div>
+                      Mỗi order sẽ có một mã riêng. Sau khi bấm tạo order, màn activation sẽ hiện VietQR, số tài khoản và
+                      nội dung chuyển khoản đúng để đối soát.
+                    </div>
+                    <div className="grid gap-2 rounded-2xl border border-primary/10 bg-white/80 p-4 text-sm">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <QrCode className="h-4 w-4 text-primary" />
+                        <span>Ngân hàng: {SITE_CONFIG.bankName}</span>
+                      </div>
+                      <div>Số tài khoản nhận tiền: {SITE_CONFIG.bankAccountNumber}</div>
+                      <div>Flow thật: tạo order → hiện QR → chuyển khoản → webhook/Casso hoặc admin xác nhận.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5">
+                <div className="flex items-start gap-3">
+                  <Smartphone className="mt-1 h-5 w-5 text-primary" />
+                  <div className="space-y-2 text-sm leading-6 text-muted-foreground">
+                    <div className="font-semibold text-foreground">MoMo wallet checkout</div>
+                    <div>
+                      Website tạo order trước, sau đó gọi webhook tạo payment session. Khi MoMo gửi IPN thành công,
+                      entitlement sẽ bật ngay ở cấp customer.
+                    </div>
+                    {!providerAvailability.momo ? (
+                      <div className="rounded-2xl border border-accent/20 bg-accent/10 p-4 text-accent">
+                        Merchant webhook chưa được cấu hình trên production, nên lane live hiện tại vẫn là Techcombank
+                        chuyển khoản.
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
               Gói đang chọn: <span className="font-semibold text-foreground">{currentCard.label}</span>. Sau khi thanh
-              toán thành công, website sẽ dẫn bạn tới trang activation để dùng ngay trên Telegram hoặc tạo yêu cầu link Zalo.
+              toán thành công, website sẽ dẫn bạn tới trang activation để dùng ngay trên Telegram hoặc tạo yêu cầu link
+              Zalo.
             </div>
 
             <div className="mt-6 flex gap-3">

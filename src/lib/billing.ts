@@ -7,7 +7,7 @@ export type BillingSku =
   | "yearly"
   | "lifetime";
 
-export type PublicCheckoutProvider = "vnpay" | "momo" | "bank_transfer";
+export type PublicCheckoutProvider = "momo" | "bank_transfer";
 
 export type BillingOffer = {
   sku: BillingSku;
@@ -143,21 +143,15 @@ export const PUBLIC_PLAN_CARDS: PublicPlanCard[] = [
 
 export const PUBLIC_CHECKOUT_PROVIDERS: CheckoutProviderOption[] = [
   {
-    value: "vnpay",
-    label: "VNPAY",
-    helper: "Redirect sang cổng thanh toán, backend xác nhận bằng IPN.",
+    value: "momo",
+    label: "MoMo",
+    helper: "Redirect sang ví MoMo, backend xác nhận bằng IPN và auto-activate khi merchant setup xong.",
     accent: "primary",
   },
   {
-    value: "momo",
-    label: "MoMo",
-    helper: "Phù hợp với flow IPN bất đồng bộ để auto-activate.",
-    accent: "accent",
-  },
-  {
     value: "bank_transfer",
-    label: "Chuyển khoản ngân hàng",
-    helper: "QR + mã đơn hàng để đối soát và kích hoạt tự động.",
+    label: "Techcombank chuyển khoản",
+    helper: "VietQR + mã đơn hàng để đối soát và kích hoạt tự động.",
     accent: "neutral",
   },
 ];
@@ -243,7 +237,7 @@ export function getBillingTierBadge(tier: PlanTier): string {
 }
 
 export function getBillingProviderSummary(): string {
-  return "VNPAY • MoMo • Chuyển khoản ngân hàng";
+  return "MoMo • Techcombank chuyển khoản";
 }
 
 export function getFreeDailyLimit(): number {

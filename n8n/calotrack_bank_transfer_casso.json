@@ -1,0 +1,160 @@
+{
+  "name": "CaloTrack — Bank Transfer Webhook (Casso)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calotrack-bank-transfer-casso",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook_receive",
+      "name": "Receive Casso Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst secureToken = $vars.CASSO_SECURE_TOKEN || '';\nconst incomingToken = $json.headers?.['secure-token'] || $json.headers?.['x-secure-token'] || '';\nif (secureToken && incomingToken !== secureToken) {\n  throw new Error('Invalid Casso secure token');\n}\nconst items = Array.isArray(body.data) ? body.data : [];\nconst matches = items.map((item) => {\n  const description = String(item.description || item.descriptionText || '');\n  const match = description.match(/CT\\d+/i);\n  return {\n    orderCode: match ? match[0].toUpperCase() : null,\n    amount: Number(item.amount || 0),\n    transactionCode: String(item.tid || item.reference || item.id || ''),\n    description,\n    raw: item,\n  };\n}).filter((item) => item.orderCode);\nif (!matches.length) {\n  return [{ json: { ok: true, skipped: true, reason: 'No CT order code found' } }];\n}\nreturn matches.map((item) => ({ json: item }));"
+      },
+      "id": "extract_transfer",
+      "name": "Extract Transfer Match",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "payment_webhooks",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "provider",
+              "fieldValue": "bank_transfer"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "casso_transfer"
+            },
+            {
+              "fieldId": "provider_event_id",
+              "fieldValue": "={{ $json.transactionCode }}"
+            },
+            {
+              "fieldId": "payload",
+              "fieldValue": "={{ JSON.stringify($json.raw) }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "received"
+            }
+          ]
+        }
+      },
+      "id": "write_webhook",
+      "name": "Write Payment Webhook",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        500,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase_calotrack",
+          "name": "Supabase CaloTrack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeSql",
+        "query": "update public.orders set status = 'paid', updated_at = now() where order_code = '{{ $json.orderCode }}';\ninsert into public.payment_attempts (order_id, provider, provider_txn_id, status, amount, paid_at, raw_payload)\nselect id, 'bank_transfer', '{{ $json.transactionCode }}', 'paid', {{ $json.amount }}, now(), '{{ JSON.stringify($json.raw) }}'::jsonb\nfrom public.orders where order_code = '{{ $json.orderCode }}';"
+      },
+      "id": "mark_paid",
+      "name": "Mark Order Paid",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        760,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase_calotrack",
+          "name": "Supabase CaloTrack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, orderCode: $json.orderCode, transactionCode: $json.transactionCode }) }}"
+      },
+      "id": "respond_ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Receive Casso Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Transfer Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Transfer Match": {
+      "main": [
+        [
+          {
+            "node": "Write Payment Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Payment Webhook": {
+      "main": [
+        [
+          {
+            "node": "Mark Order Paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Order Paid": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

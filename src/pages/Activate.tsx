@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowUpRight, CheckCircle2, Link2, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Building2,
+  CheckCircle2,
+  Copy,
+  Link2,
+  Loader2,
+  MessageCircle,
+  QrCode,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +23,11 @@ import {
   type PortalOrderStatus,
   type PortalSnapshot,
 } from "@/lib/portalApi";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import { SITE_CONFIG, buildVietQrImageUrl, formatVnd } from "@/lib/siteConfig";
+
+function formatAmount(value: number): string {
+  return value > 0 ? formatVnd(value) : "Đang chờ";
+}
 
 export default function Activate() {
   const { user } = useAuth();
@@ -26,6 +40,10 @@ export default function Activate() {
   const [zaloLoading, setZaloLoading] = useState(false);
 
   const orderId = searchParams.get("order");
+  const provider = searchParams.get("provider");
+  const orderCode = searchParams.get("orderCode") || orderId;
+  const transferNote = searchParams.get("note") || orderCode || "";
+  const amount = Number(searchParams.get("amount") || 0);
   const linkedCount = snapshot?.linkedChannels.filter((item) => item.linkStatus === "linked").length ?? 0;
 
   useEffect(() => {
@@ -63,6 +81,13 @@ export default function Activate() {
     return "border-accent/20 bg-accent/10 text-accent";
   }, [orderStatus, snapshot?.plan]);
 
+  const qrImageUrl = useMemo(() => {
+    if (provider !== "bank_transfer" || !amount || !transferNote) {
+      return null;
+    }
+    return buildVietQrImageUrl(amount, transferNote);
+  }, [amount, provider, transferNote]);
+
   async function handleTelegramLink() {
     setTelegramLoading(true);
     try {
@@ -89,6 +114,15 @@ export default function Activate() {
       toast.error(String((error as Error)?.message || "Không thể tạo yêu cầu link Zalo."));
     } finally {
       setZaloLoading(false);
+    }
+  }
+
+  async function copyValue(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`Đã copy ${label}.`);
+    } catch {
+      toast.error(`Không thể copy ${label}.`);
     }
   }
 
@@ -147,18 +181,104 @@ export default function Activate() {
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {orderStatus
                       ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi backend xác nhận thành công, entitlement sẽ bật ngay ở cấp customer.`
-                      : "Nếu bạn vừa thanh toán, website sẽ dùng callback/IPN hoặc reconciliation backend làm nguồn sự thật cuối cùng trước khi cấp quyền."}
+                      : "Nếu bạn vừa thanh toán, website sẽ dùng callback, IPN hoặc reconciliation backend làm nguồn sự thật cuối cùng trước khi cấp quyền."}
                   </p>
                 </div>
               </div>
             </div>
+
+            {provider === "bank_transfer" && !orderStatus?.entitlementActive ? (
+              <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
+                <div className="flex items-start gap-3">
+                  <Building2 className="mt-1 h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Techcombank transfer</div>
+                    <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển khoản đúng mã order để hệ thống đối soát</h2>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      Đây là lane đi live ngay được. Bạn chỉ cần chuyển đúng số tiền và giữ đúng nội dung, sau đó hệ thống
+                      sẽ auto-activate bằng webhook hoặc admin xác nhận nếu ngân hàng chưa đẩy callback.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div className="rounded-[28px] border border-primary/10 bg-primary/5 p-5">
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Ngân hàng</div>
+                        <div className="mt-1 text-lg font-semibold text-foreground">{SITE_CONFIG.bankName}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Số tài khoản</div>
+                        <div className="mt-1 flex items-center gap-2 text-lg font-semibold text-foreground">
+                          <span>{SITE_CONFIG.bankAccountNumber}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyValue(SITE_CONFIG.bankAccountNumber, "số tài khoản")}
+                            className="inline-flex rounded-full border border-primary/10 bg-white p-2 text-primary transition hover:border-primary/30"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Số tiền</div>
+                        <div className="mt-1 text-lg font-semibold text-foreground">{formatAmount(amount)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Nội dung chuyển khoản</div>
+                        <div className="mt-1 flex items-center gap-2 text-lg font-semibold text-foreground">
+                          <span>{transferNote || "CT..."}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyValue(transferNote, "nội dung chuyển khoản")}
+                            className="inline-flex rounded-full border border-primary/10 bg-white p-2 text-primary transition hover:border-primary/30"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-primary/10 bg-white p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <QrCode className="h-4 w-4 text-primary" />
+                      Quét VietQR
+                    </div>
+                    {qrImageUrl ? (
+                      <img
+                        src={qrImageUrl}
+                        alt="VietQR thanh toan Techcombank"
+                        className="mt-4 w-full rounded-2xl border border-primary/10 bg-white"
+                      />
+                    ) : (
+                      <div className="mt-4 rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-6 text-sm leading-6 text-muted-foreground">
+                        QR sẽ hiện khi hệ thống có đủ số tiền và nội dung order.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    <Loader2 className="mr-2 h-4 w-4" />
+                    Tôi đã chuyển khoản, làm mới trạng thái
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate(SITE_CONFIG.dashboardPath)}>
+                    <ArrowUpRight className="mr-2 h-4 w-4" />
+                    Về portal theo dõi trạng thái
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-6">
             <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Bắt đầu sử dụng ngay</div>
               <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối Telegram trước, Zalo là lane tiếp theo</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Bạn có thể chọn một hoặc cả hai kênh. Entitlement luôn map về phone/customer, nhưng nếu muốn sử dụng ngay
                 sau khi thanh toán thì Telegram là flow live ngắn nhất.
               </p>
