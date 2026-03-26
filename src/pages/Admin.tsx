@@ -459,10 +459,13 @@ export default function Admin() {
   );
 
   useEffect(() => {
+    if (!access) {
+      return;
+    }
     if (!navItems.find((item) => item.key === section) && navItems[0]) {
       setSection(navItems[0].key);
     }
-  }, [navItems, section, setSection]);
+  }, [access, navItems, section, setSection]);
 
   const filteredCustomers = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
