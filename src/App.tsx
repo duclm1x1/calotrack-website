@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
 import Checkout from "./pages/Checkout";
 import Activate from "./pages/Activate";
+import ZaloAuthCallback from "./pages/ZaloAuthCallback";
 import Admin from "./pages/Admin";
 
 
@@ -39,6 +40,7 @@ const App = () => (
             />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/activate" element={<Activate />} />
+            <Route path="/zalo-auth-callback" element={<ZaloAuthCallback />} />
             <Route 
               path="/admin" 
               element={

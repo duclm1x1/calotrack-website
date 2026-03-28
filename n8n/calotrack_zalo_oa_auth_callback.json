@@ -1,0 +1,89 @@
+{
+  "name": "CaloTrack - Zalo OA Auth Callback",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "zalo-oa-auth-callback",
+        "responseMode": "responseNode"
+      },
+      "id": "zalo_oa_auth_webhook",
+      "name": "Zalo OA Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nasync function exchangeToken(appId, secretKey, code) {\n  const form = new URLSearchParams({\n    app_id: String(appId || ''),\n    code: String(code || ''),\n    grant_type: 'authorization_code',\n  });\n\n  const response = await fetch('https://oauth.zaloapp.com/v4/oa/access_token', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/x-www-form-urlencoded',\n      secret_key: String(secretKey || ''),\n    },\n    body: form.toString(),\n  });\n\n  const raw = await response.text();\n  let payload;\n  try {\n    payload = JSON.parse(raw);\n  } catch {\n    payload = { raw };\n  }\n\n  return {\n    status: response.status,\n    ok: response.ok,\n    payload,\n  };\n}\n\nconst input = $input.first().json || {};\nconst query = input.query || {};\nconst code = String(query.code || '');\nconst error = String(query.error || query.error_code || '');\nconst errorDescription = String(query.error_description || query.error_reason || '');\nconst appId = String($vars.ZALO_APP_ID || '1450975846052622442');\nconst secretKey = String($vars.ZALO_OA_SECRET_KEY || $vars.ZALO_APP_SECRET || '');\nconst redirectUrl = String(input.webhookUrl || '');\n\nlet ok = false;\nlet title = 'CaloTrack Zalo OA token callback';\nlet summary = '';\nlet tokenPayload = {};\nlet accessToken = '';\nlet refreshToken = '';\nlet expiresIn = 0;\nlet expiresAt = '';\n\nif (error) {\n  title = 'Zalo OA permission failed';\n  summary = `Zalo tra ve loi: ${error}${errorDescription ? ` - ${errorDescription}` : ''}`;\n} else if (!code) {\n  title = 'Missing authorization code';\n  summary = 'Khong tim thay query param code tren callback URL.';\n} else if (!secretKey) {\n  title = 'Missing Zalo secret in n8n';\n  summary = 'Can set ZALO_OA_SECRET_KEY hoac ZALO_APP_SECRET trong n8n Variables truoc khi doi token.';\n} else {\n  const result = await exchangeToken(appId, secretKey, code);\n  tokenPayload = result.payload || {};\n  accessToken = String(tokenPayload.access_token || tokenPayload.accessToken || '');\n  refreshToken = String(tokenPayload.refresh_token || tokenPayload.refreshToken || '');\n  expiresIn = Number(tokenPayload.expires_in || tokenPayload.expires || 0) || 0;\n  expiresAt = expiresIn > 0 ? new Date(Date.now() + (expiresIn * 1000)).toISOString() : '';\n  ok = Boolean(result.ok && accessToken);\n\n  if (ok) {\n    title = 'Zalo OA token ready';\n    summary = 'Da doi code sang access token thanh cong. Hay copy cac gia tri ben duoi vao n8n Variables.';\n  } else {\n    title = 'Zalo OA token exchange failed';\n    summary = `Zalo tra ve HTTP ${result.status}. Kiem tra lai redirect URI, secret key va OA permission.`;\n  }\n}\n\nconst responseJson = {\n  ok,\n  title,\n  summary,\n  app_id: appId,\n  redirect_url: redirectUrl,\n  access_token: accessToken,\n  refresh_token: refreshToken,\n  expires_in: expiresIn,\n  expires_at: expiresAt,\n  token_payload: tokenPayload,\n};\n\nconst html = `<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>${escapeHtml(title)}</title>\n  <style>\n    body { font-family: Inter, Arial, sans-serif; background: #f4fbfa; color: #17203a; padding: 40px 20px; }\n    .card { max-width: 880px; margin: 0 auto; background: #ffffff; border: 1px solid #d7ece8; border-radius: 24px; padding: 28px; box-shadow: 0 20px 60px rgba(23, 32, 58, 0.08); }\n    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; background: ${ok ? '#d9f5ef' : '#fff3e8'}; color: ${ok ? '#0f766e' : '#b45309'}; }\n    h1 { margin: 16px 0 8px; font-size: 34px; }\n    p { line-height: 1.6; color: #4f5d78; }\n    pre { white-space: pre-wrap; word-break: break-word; background: #f7fafc; border: 1px solid #dde6f0; border-radius: 16px; padding: 16px; font-size: 13px; overflow: auto; }\n    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 22px; }\n    .panel { background: #fbfdff; border: 1px solid #e8eef5; border-radius: 18px; padding: 16px; }\n    .panel h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #0f766e; }\n    .mono { font-family: Consolas, monospace; }\n  </style>\n</head>\n<body>\n  <div class=\"card\">\n    <span class=\"badge\">${ok ? 'success' : 'needs action'}</span>\n    <h1>${escapeHtml(title)}</h1>\n    <p>${escapeHtml(summary)}</p>\n    <div class=\"grid\">\n      <div class=\"panel\">\n        <h2>n8n Variables</h2>\n        <pre class=\"mono\">ZALO_APP_ID=${escapeHtml(appId)}\nZALO_OA_SECRET_KEY=(rotate va set secret moi)\nZALO_OA_ACCESS_TOKEN=${escapeHtml(accessToken)}\nZALO_OA_REFRESH_TOKEN=${escapeHtml(refreshToken)}\nZALO_OA_TOKEN_EXPIRES_AT=${escapeHtml(expiresAt)}</pre>\n      </div>\n      <div class=\"panel\">\n        <h2>Debug</h2>\n        <pre class=\"mono\">redirect_url=${escapeHtml(redirectUrl)}\ncode=${escapeHtml(code)}\nexpires_in=${escapeHtml(expiresIn)}</pre>\n      </div>\n    </div>\n    <div class=\"panel\" style=\"margin-top: 18px;\">\n      <h2>Token payload</h2>\n      <pre class=\"mono\">${escapeHtml(JSON.stringify(responseJson, null, 2))}</pre>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { ...responseJson, html } }];"
+      },
+      "id": "zalo_oa_exchange_code",
+      "name": "Exchange Zalo OA Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "zalo_oa_auth_response",
+      "name": "Return Auth Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Zalo OA Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Exchange Zalo OA Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange Zalo OA Code": {
+      "main": [
+        [
+          {
+            "node": "Return Auth Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

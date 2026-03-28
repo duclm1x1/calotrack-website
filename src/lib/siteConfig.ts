@@ -1,6 +1,7 @@
 export const DEFAULT_TELEGRAM_BOT_URL = "https://t.me/CaloTrack_bot";
-export const DEFAULT_ZALO_OA_URL = "https://zalo.me/your-oa-id";
+export const DEFAULT_ZALO_OA_URL = "https://zalo.me/4423588403113387176";
 export const DEFAULT_SITE_URL = "https://calotrack-website.vercel.app";
+export const DEFAULT_ZALO_APP_ID = "1450975846052622442";
 export const DEFAULT_BANK_NAME = "Techcombank";
 export const DEFAULT_BANK_CODE = "TCB";
 export const DEFAULT_BANK_ACCOUNT_NUMBER = "19034065720011";
@@ -13,6 +14,7 @@ export const SITE_CONFIG = {
   siteUrl: readEnv(import.meta.env.VITE_SITE_URL),
   telegramBotUrl: readEnv(import.meta.env.VITE_TELEGRAM_BOT_URL) || DEFAULT_TELEGRAM_BOT_URL,
   zaloOaUrl: readEnv(import.meta.env.VITE_ZALO_OA_URL) || DEFAULT_ZALO_OA_URL,
+  zaloAppId: readEnv(import.meta.env.VITE_ZALO_APP_ID) || DEFAULT_ZALO_APP_ID,
   supportEmail: readEnv(import.meta.env.VITE_SUPPORT_EMAIL) || "support@calotrack.vn",
   bankName: readEnv(import.meta.env.VITE_BANK_NAME) || DEFAULT_BANK_NAME,
   bankCode: readEnv(import.meta.env.VITE_BANK_CODE) || DEFAULT_BANK_CODE,
@@ -36,6 +38,7 @@ export const SITE_CONFIG = {
   activatePath: "/activate",
   dashboardPath: "/dashboard",
   adminPath: "/admin",
+  zaloAuthCallbackPath: "/zalo-auth-callback",
 };
 
 function trimTrailingSlash(value: string): string {
@@ -59,6 +62,10 @@ export function getCanonicalSiteOrigin(): string {
 export function buildSiteUrl(path = "/"): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${getCanonicalSiteOrigin()}${normalizedPath}`;
+}
+
+export function buildZaloAuthCallbackUrl(): string {
+  return buildSiteUrl(SITE_CONFIG.zaloAuthCallbackPath);
 }
 
 export function formatVnd(value: number): string {

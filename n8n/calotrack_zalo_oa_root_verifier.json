@@ -1,0 +1,63 @@
+{
+  "name": "CaloTrack - Zalo OA Root Verifier",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "zalo_verifierRTQSTUoa7ofjghXohO1eLNsto5YHmHyEEJan.html",
+        "httpMethod": "GET",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook1",
+      "name": "Root Verifier Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta property=\"zalo-platform-site-verification\" content=\"RTQSTUoa7ofjghXohO1eLNsto5YHmHyEEJan\" />\n</head>\n<body>\nThere Is No Limit To What You Can Accomplish Using Zalo!\n</body>\n</html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "content-type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "resp1",
+      "name": "Return Verifier HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Root Verifier Webhook": {
+      "main": [
+        [
+          {
+            "node": "Return Verifier HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

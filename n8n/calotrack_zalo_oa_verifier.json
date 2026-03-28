@@ -1,0 +1,65 @@
+{
+  "name": "CaloTrack - Zalo OA Verifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "calotrack-zalo-oa-v2/zalo_verifierRTQSTUoa7ofjghXohO1eLNsto5YHmHyEEJan.html",
+        "responseMode": "responseNode"
+      },
+      "id": "zalo_verifier_webhook",
+      "name": "Zalo Verifier Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <meta property=\"zalo-platform-site-verification\" content=\"RTQSTUoa7ofjghXohO1eLNsto5YHmHyEEJan\" />\n</head>\n\n<body>\nThere Is No Limit To What You Can Accomplish Using Zalo!\n</body>\n\n</html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "public, max-age=300"
+              }
+            ]
+          }
+        }
+      },
+      "id": "zalo_verifier_response",
+      "name": "Return Verifier HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Zalo Verifier Webhook": {
+      "main": [
+        [
+          {
+            "node": "Return Verifier HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
