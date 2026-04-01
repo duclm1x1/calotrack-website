@@ -1,31 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BadgeCheck, CreditCard, MessagesSquare, Workflow } from "lucide-react";
+import { CreditCard, MessagesSquare } from "lucide-react";
 
 const items = [
   {
     icon: MessagesSquare,
-    label: "Telegram-first",
-    helper: "Tracking chat đang live và ổn định nhất",
+    label: "Chat Telegram - Zalo",
+    helper: "Tracking Chat Live với model & Engine tính toán đặc biệt của Calo Bot",
     tone: "primary",
-  },
-  {
-    icon: Workflow,
-    label: "Zalo-ready",
-    helper: "Zalo hiện tại đã sẵn sàng với model tiên tiến nhất",
-    tone: "accent",
   },
   {
     icon: CreditCard,
-    label: "Portal + Billing",
-    helper: "Website lo pricing, account, payment và quyền truy cập",
-    tone: "primary",
-  },
-  {
-    icon: BadgeCheck,
-    label: "Admin vận hành",
-    helper: "Users, payments, catalog, support và audit trên cùng một backoffice",
+    label: "Portal + Dashboard vận hành",
+    helper: "User Dashboard tổng quan, user-friendly — billing, payment, admin backoffice tích hợp ngay trên một nền tảng.",
     tone: "neutral",
   },
 ];
@@ -34,7 +22,7 @@ export const TrustStrip = () => {
   return (
     <section className="relative z-10 -mt-8 pb-4">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2">
           {items.map((item, index) => {
             const Icon = item.icon;
             const toneClasses =
