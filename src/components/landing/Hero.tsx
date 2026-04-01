@@ -184,8 +184,8 @@ export const Hero = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Protein 96g • Carb 130g • Fat 42g</p>
               </div>
 
-              {/* Card 2: Progress — bottom-left */}
-              <div className="absolute -left-8 -bottom-4 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[190px]">
+              {/* Card 2: Progress — bottom-right (balances triangle with top-left Nutrition + top-right Gym Mode) */}
+              <div className="absolute -right-8 -bottom-4 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[190px]">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-orange-500 font-semibold">Tiến độ</p>
                 <p className="mt-1 text-xs font-medium text-foreground">TDEE 2471 · Đã nạp <span className="text-primary font-bold">1.730</span></p>
                 <p className="text-xs text-muted-foreground mt-0.5">🏃 Chạy bộ: <span className="font-semibold text-foreground">352 kcal</span></p>

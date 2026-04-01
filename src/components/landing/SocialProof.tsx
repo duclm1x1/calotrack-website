@@ -48,12 +48,12 @@ export const SocialProof = () => {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-muted-foreground"
+          className="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 pb-2 text-sm font-medium text-muted-foreground"
         >
-          <span>✓ Miễn phí 7 ngày</span>
-          <span>✓ Không cần thẻ tín dụng</span>
-          <span>✓ Dùng được ngay trên Zalo / Telegram</span>
-          <span>✓ Kích hoạt tự động 24/7</span>
+          <span className="flex items-center gap-1.5"><span className="text-primary font-bold">✓</span> Miễn phí 7 ngày</span>
+          <span className="flex items-center gap-1.5"><span className="text-primary font-bold">✓</span> Không cần thẻ tín dụng</span>
+          <span className="flex items-center gap-1.5"><span className="text-primary font-bold">✓</span> Dùng ngay trên Zalo / Telegram</span>
+          <span className="flex items-center gap-1.5"><span className="text-primary font-bold">✓</span> Kích hoạt tự động 24/7</span>
         </motion.div>
       </div>
     </section>

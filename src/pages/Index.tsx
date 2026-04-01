@@ -1,6 +1,5 @@
-import { Benefits } from "@/components/landing/Benefits";
+import { BenefitsComparison } from "@/components/landing/BenefitsComparison";
 import { ChatDemo } from "@/components/landing/ChatDemo";
-import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { Demo } from "@/components/landing/Demo";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
@@ -21,16 +20,15 @@ const Index = () => {
       <Navbar />
       <main>
         <Hero />
-        <SocialProof />        {/* P1: stats + risk reversal */}
+        <SocialProof />          {/* stats + risk reversal (bigger text, visible) */}
         <TrustStrip />
-        <ComparisonTable />    {/* P1: CaloTrack vs traditional */}
-        <ChatDemo />           {/* P2: real chat demo screenshots */}
+        <Testimonials />          {/* ← moved up: người dùng thật before comparison */}
+        <BenefitsComparison />    {/* merged: 2 benefit | comparison table | 2 benefit */}
+        <GymModeSection />        {/* ← moved above ChatDemo */}
+        <ChatDemo />              {/* real chat demo cards */}
         <UseCases />
-        <Benefits />
-        <GymModeSection />     {/* P2: dedicated Gym Mode section */}
         <Demo />
         <HowItWorks />
-        <Testimonials />       {/* P3: before/after weight results */}
         <Pricing />
         <FAQ />
         <FinalCTA />
