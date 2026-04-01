@@ -3,55 +3,59 @@
 import { motion } from "framer-motion";
 import { CreditCard, MessagesSquare } from "lucide-react";
 
-const items = [
-  {
-    icon: MessagesSquare,
-    label: "Chat Telegram - Zalo",
-    helper: "Tracking Chat Live với model & Engine tính toán đặc biệt của Calo Bot",
-    tone: "primary",
-  },
-  {
-    icon: CreditCard,
-    label: "Portal + Dashboard vận hành",
-    helper: "User Dashboard tổng quan, user-friendly — billing, payment, admin backoffice tích hợp ngay trên một nền tảng.",
-    tone: "neutral",
-  },
-];
-
 export const TrustStrip = () => {
   return (
     <section className="relative z-10 -mt-8 pb-4">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid gap-3 md:grid-cols-2">
-          {items.map((item, index) => {
-            const Icon = item.icon;
-            const toneClasses =
-              item.tone === "accent"
-                ? "border-accent/15 bg-white text-accent"
-                : item.tone === "neutral"
-                  ? "border-border bg-white text-foreground"
-                  : "border-primary/10 bg-white text-primary";
 
-            return (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.08, duration: 0.45 }}
-                className={`rounded-[24px] border px-4 py-4 shadow-sm backdrop-blur ${toneClasses}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="rounded-2xl bg-primary/10 p-2 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <div className="text-sm font-semibold">{item.label}</div>
-                    <div className="mt-1 text-sm leading-6 text-muted-foreground">{item.helper}</div>
-                  </div>
+          {/* Card 1: Chat Telegram - Zalo */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.45 }}
+            className="rounded-[24px] border border-primary/10 bg-white px-5 py-5 shadow-sm backdrop-blur"
+          >
+            <div className="flex items-start gap-3">
+              <span className="rounded-2xl bg-primary/10 p-2 text-primary mt-0.5">
+                <MessagesSquare className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="text-lg font-bold leading-tight text-foreground">
+                  Chat trực tiếp{" "}
+                  <span style={{ color: "#2AABEE" }}>Telegram</span>
+                  <span className="text-foreground font-bold"> - </span>
+                  <span style={{ color: "#0068FF" }}>Zalo</span>
                 </div>
-              </motion.div>
-            );
-          })}
+                <div className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                  Tracking Chat Live với model &amp; Engine tính toán đặc biệt của Calo Bot
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 2: Portal + Dashboard */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18, duration: 0.45 }}
+            className="rounded-[24px] border border-border bg-white px-5 py-5 shadow-sm backdrop-blur"
+          >
+            <div className="flex items-start gap-3">
+              <span className="rounded-2xl bg-primary/10 p-2 text-primary mt-0.5">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="text-lg font-bold leading-tight text-foreground">
+                  Portal + Dashboard vận hành
+                </div>
+                <div className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                  User Dashboard tổng quan, user-friendly — billing, payment, admin backoffice tích hợp ngay trên một nền tảng.
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
         </div>
       </div>
     </section>
