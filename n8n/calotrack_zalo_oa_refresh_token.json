@@ -3,6 +3,26 @@
   "nodes": [
     {
       "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "zalo_oa_refresh_schedule",
+      "name": "Hourly Zalo OA Token Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -180
+      ]
+    },
+    {
+      "parameters": {
         "httpMethod": "GET",
         "path": "zalo-oa-refresh-token",
         "responseMode": "responseNode"
@@ -13,19 +33,488 @@
       "typeVersion": 2,
       "position": [
         0,
-        0
+        20
       ]
     },
     {
       "parameters": {
-        "jsCode": "function escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nasync function refreshToken(appId, secretKey, refreshToken) {\n  const form = new URLSearchParams({\n    app_id: String(appId || ''),\n    refresh_token: String(refreshToken || ''),\n    grant_type: 'refresh_token',\n  });\n\n  const response = await fetch('https://oauth.zaloapp.com/v4/oa/access_token', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/x-www-form-urlencoded',\n      secret_key: String(secretKey || ''),\n    },\n    body: form.toString(),\n  });\n\n  const raw = await response.text();\n  let payload;\n  try {\n    payload = JSON.parse(raw);\n  } catch {\n    payload = { raw };\n  }\n\n  return {\n    status: response.status,\n    ok: response.ok,\n    payload,\n  };\n}\n\nconst input = $input.first().json || {};\nconst query = input.query || {};\nconst appId = String($vars.ZALO_APP_ID || '1450975846052622442');\nconst secretKey = String($vars.ZALO_OA_SECRET_KEY || $vars.ZALO_APP_SECRET || '');\nconst refreshTokenInput = String(query.refresh_token || query.refreshToken || '');\n\nlet ok = false;\nlet title = 'Zalo OA refresh token';\nlet summary = '';\nlet tokenPayload = {};\nlet accessToken = '';\nlet refreshToken = '';\nlet expiresIn = 0;\nlet expiresAt = '';\n\nif (!refreshTokenInput) {\n  title = 'Missing refresh token';\n  summary = 'Can truyen refresh_token tren query string de lam moi access token.';\n} else if (!secretKey) {\n  title = 'Missing Zalo secret in n8n';\n  summary = 'Can set ZALO_OA_SECRET_KEY hoac ZALO_APP_SECRET trong n8n Variables truoc khi refresh token.';\n} else {\n  const result = await refreshToken(appId, secretKey, refreshTokenInput);\n  tokenPayload = result.payload || {};\n  accessToken = String(tokenPayload.access_token || tokenPayload.accessToken || '');\n  refreshToken = String(tokenPayload.refresh_token || tokenPayload.refreshToken || refreshTokenInput || '');\n  expiresIn = Number(tokenPayload.expires_in || tokenPayload.expires || 0) || 0;\n  expiresAt = expiresIn > 0 ? new Date(Date.now() + (expiresIn * 1000)).toISOString() : '';\n  ok = Boolean(result.ok && accessToken);\n\n  if (ok) {\n    title = 'Zalo OA token refreshed';\n    summary = 'Da lam moi access token thanh cong. Hay cap nhat n8n Variables ngay.';\n  } else {\n    title = 'Zalo OA refresh failed';\n    summary = `Zalo tra ve HTTP ${result.status}. Refresh token co the da het han hoac secret key chua dung.`;\n  }\n}\n\nconst responseJson = {\n  ok,\n  title,\n  summary,\n  app_id: appId,\n  access_token: accessToken,\n  refresh_token: refreshToken,\n  expires_in: expiresIn,\n  expires_at: expiresAt,\n  token_payload: tokenPayload,\n};\n\nconst html = `<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>${escapeHtml(title)}</title>\n  <style>\n    body { font-family: Inter, Arial, sans-serif; background: #f4fbfa; color: #17203a; padding: 40px 20px; }\n    .card { max-width: 880px; margin: 0 auto; background: #ffffff; border: 1px solid #d7ece8; border-radius: 24px; padding: 28px; box-shadow: 0 20px 60px rgba(23, 32, 58, 0.08); }\n    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; background: ${ok ? '#d9f5ef' : '#fff3e8'}; color: ${ok ? '#0f766e' : '#b45309'}; }\n    h1 { margin: 16px 0 8px; font-size: 34px; }\n    p { line-height: 1.6; color: #4f5d78; }\n    pre { white-space: pre-wrap; word-break: break-word; background: #f7fafc; border: 1px solid #dde6f0; border-radius: 16px; padding: 16px; font-size: 13px; overflow: auto; }\n    .mono { font-family: Consolas, monospace; }\n  </style>\n</head>\n<body>\n  <div class=\"card\">\n    <span class=\"badge\">${ok ? 'success' : 'needs action'}</span>\n    <h1>${escapeHtml(title)}</h1>\n    <p>${escapeHtml(summary)}</p>\n    <pre class=\"mono\">ZALO_OA_ACCESS_TOKEN=${escapeHtml(accessToken)}\nZALO_OA_REFRESH_TOKEN=${escapeHtml(refreshToken)}\nZALO_OA_TOKEN_EXPIRES_AT=${escapeHtml(expiresAt)}</pre>\n    <pre class=\"mono\">${escapeHtml(JSON.stringify(responseJson, null, 2))}</pre>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { ...responseJson, html } }];"
+        "jsCode": "function normalizeBaseUrl(value) {\n  return String(value || '').trim().replace(/\\/+$/, '');\n}\n\nfunction toBoolean(value) {\n  return ['1', 'true', 'yes', 'y', 'force'].includes(String(value || '').trim().toLowerCase());\n}\n\nfunction parseIso(value) {\n  const text = String(value || '').trim();\n  if (!text) return null;\n  const dt = new Date(text);\n  if (Number.isNaN(dt.getTime())) return null;\n  return dt;\n}\n\nfunction expiresSoon(value, leadMs = 2 * 60 * 60 * 1000) {\n  const dt = parseIso(value);\n  if (!dt) return true;\n  return dt.getTime() <= (Date.now() + leadMs);\n}\n\nfunction maskToken(value, head = 10, tail = 6) {\n  const text = String(value || '');\n  if (!text) return '';\n  if (text.length <= head + tail + 3) return text;\n  return `${text.slice(0, head)}...${text.slice(-tail)}`;\n}\n\nconst staticData = $getWorkflowStaticData('global');\nconst input = $input.first()?.json || {};\nconst query = input.query || {};\nconst isWebhook = Boolean(input.webhookUrl || input.headers || Object.keys(query).length);\nconst now = new Date().toISOString();\n\nif (String(query.refresh_token || '').trim()) {\n  staticData.refresh_token = String(query.refresh_token).trim();\n}\nif (String(query.send_credential_id || '').trim()) {\n  staticData.send_credential_id = String(query.send_credential_id).trim();\n}\nif (String(query.sender_workflow_id || '').trim()) {\n  staticData.sender_workflow_id = String(query.sender_workflow_id).trim();\n}\nif (String(query.n8n_base_url || '').trim()) {\n  staticData.n8n_base_url = normalizeBaseUrl(query.n8n_base_url);\n}\nif (String(query.app_id || '').trim()) {\n  staticData.app_id = String(query.app_id).trim();\n}\nif (String(query.secret_key || '').trim()) {\n  staticData.secret_key = String(query.secret_key).trim();\n}\n\nconst force = toBoolean(query.force);\nconst appId = String(staticData.app_id || $vars.ZALO_APP_ID || '1450975846052622442').trim();\nconst secretKey = String(staticData.secret_key || $vars.ZALO_OA_SECRET_KEY || $vars.ZALO_APP_SECRET || '').trim();\nconst refreshTokenValue = String(staticData.refresh_token || '').trim();\nconst n8nApiKey = String(staticData.n8n_api_key || '').trim();\nconst sendCredentialId = String(staticData.send_credential_id || '8b9YBuYkMXj9hFss').trim();\nconst senderWorkflowId = String(staticData.sender_workflow_id || 'Imz2czCY78iJ2Fau').trim();\nconst n8nBaseUrl = normalizeBaseUrl(staticData.n8n_base_url || 'https://n214.fastn8n.id.vn/api/v1');\n\nif (!staticData.app_id) staticData.app_id = appId;\nif (!staticData.send_credential_id) staticData.send_credential_id = sendCredentialId;\nif (!staticData.sender_workflow_id) staticData.sender_workflow_id = senderWorkflowId;\nif (!staticData.n8n_base_url) staticData.n8n_base_url = n8nBaseUrl;\n\nconst responseBase = {\n  shouldRespond: isWebhook,\n  app_id: appId,\n  sender_credential_id: sendCredentialId,\n  sender_workflow_id: senderWorkflowId,\n  n8n_base_url: n8nBaseUrl,\n  refresh_token_masked: maskToken(staticData.refresh_token),\n  access_token_masked: maskToken(staticData.access_token),\n  expires_at: staticData.expires_at || '',\n  expires_in: staticData.expires_in || 0,\n  last_status: staticData.last_status || '',\n  last_checked_at: staticData.last_checked_at || '',\n  last_refresh_at: staticData.last_refresh_at || '',\n  last_patch_at: staticData.last_patch_at || '',\n  last_error: staticData.last_error || '',\n};\n\nconst needsRefresh = force\n  || !String(staticData.access_token || '').trim()\n  || expiresSoon(staticData.expires_at);\n\nlet errors = [];\nif (!secretKey) errors.push('Missing Zalo OA secret key.');\nif (!refreshTokenValue) errors.push('Missing stored refresh token.');\nif (!n8nApiKey) errors.push('Missing stored n8n API key.');\n\nif (errors.length) {\n  const summary = errors.join(' ');\n  staticData.last_status = 'bootstrap_required';\n  staticData.last_checked_at = now;\n  staticData.last_error = summary;\n  return [{\n    json: {\n      ...responseBase,\n      ok: false,\n      action: 'status',\n      title: 'Zalo OA auto-refresh needs bootstrap',\n      summary,\n    },\n  }];\n}\n\nif (!needsRefresh) {\n  staticData.last_status = 'healthy';\n  staticData.last_checked_at = now;\n  staticData.last_error = '';\n  return [{\n    json: {\n      ...responseBase,\n      ok: true,\n      action: 'status',\n      title: 'Zalo OA token healthy',\n      summary: 'Access token is still healthy. No refresh is needed yet.',\n    },\n  }];\n}\n\nreturn [{\n  json: {\n    ...responseBase,\n    ok: false,\n    action: 'refresh',\n    title: 'Zalo OA refresh in progress',\n    summary: 'Refreshing the OA access token and syncing the live Zalo sender workflow.',\n    app_id: appId,\n    secret_key: secretKey,\n    refresh_token: refreshTokenValue,\n    n8n_api_key: n8nApiKey,\n    send_credential_id: sendCredentialId,\n    sender_workflow_id: senderWorkflowId,\n    n8n_base_url: n8nBaseUrl,\n  },\n}];"
       },
       "id": "zalo_oa_refresh_code",
-      "name": "Refresh Zalo OA Token",
+      "name": "Prepare Refresh Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         320,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "should-refresh-token",
+              "leftValue": "={{ $json.action === 'refresh' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_respond",
+      "name": "Should Refresh Token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        620,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oauth.zaloapp.com/v4/oa/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "secret_key",
+              "value": "={{ $json.secret_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "app_id",
+              "value": "={{ $json.app_id }}"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.refresh_token }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "zalo_oa_refresh_http",
+      "name": "Call Zalo Refresh API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json || {};\nlet base = {};\ntry {\n  base = $('Prepare Refresh Context').first().json || {};\n} catch {\n  base = {};\n}\nlet payload = source.body && typeof source.body === 'object' ? source.body : null;\nif (!payload && source.data && typeof source.data === 'string') {\n  try {\n    payload = JSON.parse(source.data);\n  } catch {\n    payload = null;\n  }\n}\nif (!payload && source.data && typeof source.data === 'object') {\n  payload = source.data;\n}\nif (!payload) {\n  payload = source;\n}\nconst accessToken = String(payload.access_token || payload.accessToken || '').trim();\nconst nextRefreshToken = String(payload.refresh_token || payload.refreshToken || source.refresh_token || '').trim();\nconst expiresIn = Number(payload.expires_in || payload.expires || 0) || 0;\nconst expiresAt = expiresIn > 0 ? new Date(Date.now() + (expiresIn * 1000)).toISOString() : '';\nconst refreshHttpStatus = Number(source.statusCode || 0) || null;\n\nif (!accessToken) {\n  return [{\n    json: {\n      ...base,\n      ok: false,\n      patch_required: false,\n      title: 'Zalo OA refresh failed',\n      summary: `Zalo token refresh did not return an access token${refreshHttpStatus ? ` (HTTP ${refreshHttpStatus})` : ''}.`,\n      last_status: 'refresh_failed',\n      last_refresh_http_status: refreshHttpStatus,\n      last_error: 'Refresh endpoint did not return a usable access token.',\n    },\n  }];\n}\n\nreturn [{\n  json: {\n    ...base,\n    ok: false,\n    patch_required: true,\n    refreshed_access_token: accessToken,\n    refreshed_refresh_token: nextRefreshToken,\n    refreshed_expires_in: expiresIn,\n    refreshed_expires_at: expiresAt,\n    last_refresh_http_status: refreshHttpStatus,\n    sender_workflow_id: String(base.sender_workflow_id || 'Imz2czCY78iJ2Fau').trim(),\n  },\n}];"
+      },
+      "id": "zalo_oa_prepare_patch",
+      "name": "Prepare Credential Patch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "should-sync-sender-workflow",
+              "leftValue": "={{ $json.patch_required === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_patch",
+      "name": "Should Sync Sender Workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.n8n_base_url + '/workflows/' + encodeURIComponent($json.sender_workflow_id || '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $json.n8n_api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "zalo_oa_get_sender_workflow",
+      "name": "Get Sender Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflow = $input.first().json || {};\nlet source = {};\ntry {\n  source = $('Prepare Credential Patch').first().json || {};\n} catch {\n  source = {};\n}\n\nconst allowedSettings = [\n  'saveExecutionProgress',\n  'saveManualExecutions',\n  'saveDataSuccessExecution',\n  'saveDataErrorExecution',\n  'saveDataProgressExecution',\n  'executionTimeout',\n  'timezone',\n  'executionOrder',\n  'errorWorkflow',\n  'callerPolicy',\n];\n\nconst senderWorkflowId = String(source.sender_workflow_id || workflow.id || '').trim();\nconst senderWorkflowName = String(workflow.name || '').trim();\nconst refreshedAccessToken = String(source.refreshed_access_token || '').trim();\n\nif (!senderWorkflowId || !Array.isArray(workflow.nodes)) {\n  return [{\n    json: {\n      ...source,\n      ok: false,\n      workflow_update_required: false,\n      title: 'Zalo OA sender sync failed',\n      summary: 'Could not load the live sender workflow for token sync.',\n      last_status: 'sender_workflow_missing',\n      last_error: 'Missing sender workflow payload.',\n    },\n  }];\n}\n\nconst nodes = JSON.parse(JSON.stringify(workflow.nodes || []));\nconst patchedNodeNames = [];\nfor (const node of nodes) {\n  if (!['Send Final Response', 'Send Final Response1'].includes(String(node.name || ''))) continue;\n  const parameters = node.parameters && typeof node.parameters === 'object' ? node.parameters : {};\n  const headerParameters = parameters.headerParameters && typeof parameters.headerParameters === 'object'\n    ? parameters.headerParameters\n    : { parameters: [] };\n  const existing = Array.isArray(headerParameters.parameters) ? headerParameters.parameters : [];\n  const filtered = existing.filter((entry) => !['content-type', 'access_token'].includes(String(entry?.name || '').toLowerCase()));\n  headerParameters.parameters = [\n    { name: 'Content-Type', value: 'application/json' },\n    { name: 'access_token', value: refreshedAccessToken },\n    ...filtered,\n  ];\n  parameters.headerParameters = headerParameters;\n  delete parameters.authentication;\n  delete parameters.genericAuthType;\n  node.parameters = parameters;\n  delete node.credentials;\n  patchedNodeNames.push(String(node.name || ''));\n}\n\nif (!patchedNodeNames.length) {\n  return [{\n    json: {\n      ...source,\n      ok: false,\n      workflow_update_required: false,\n      title: 'Zalo OA sender sync failed',\n      summary: 'Could not find Zalo send nodes in the live sender workflow.',\n      last_status: 'sender_nodes_missing',\n      last_error: 'Missing Send Final Response nodes.',\n    },\n  }];\n}\n\nconst liveSettings = workflow.settings && typeof workflow.settings === 'object' ? workflow.settings : {};\nconst safeSettings = {};\nfor (const key of allowedSettings) {\n  if (Object.prototype.hasOwnProperty.call(liveSettings, key)) {\n    safeSettings[key] = liveSettings[key];\n  }\n}\n\nreturn [{\n  json: {\n    ...source,\n    ok: false,\n    workflow_update_required: true,\n    sender_workflow_id: senderWorkflowId,\n    sender_workflow_name: senderWorkflowName,\n    sender_workflow_was_active: Boolean(workflow.active),\n    patched_node_names: patchedNodeNames,\n    workflow_payload: {\n      name: senderWorkflowName || 'CaloTrack V18 - Main Workflow - Zalo',\n      nodes,\n      connections: workflow.connections || {},\n      settings: safeSettings,\n    },\n  },\n}];"
+      },
+      "id": "zalo_oa_prepare_sender_update",
+      "name": "Prepare Sender Workflow Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "workflow-update-required",
+              "leftValue": "={{ $json.workflow_update_required === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_update_sender_workflow",
+      "name": "Should Update Sender Workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2120,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.n8n_base_url + '/workflows/' + encodeURIComponent($json.sender_workflow_id || '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $json.n8n_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.workflow_payload }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "zalo_oa_update_sender_workflow",
+      "name": "Update Sender Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2360,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "sender-workflow-was-active",
+              "leftValue": "={{ $('Prepare Sender Workflow Update').first().json.sender_workflow_was_active === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_reactivate_sender_workflow",
+      "name": "Should Reactivate Sender Workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare Sender Workflow Update').first().json.n8n_base_url + '/workflows/' + encodeURIComponent($('Prepare Sender Workflow Update').first().json.sender_workflow_id || '') + '/deactivate' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $('Prepare Sender Workflow Update').first().json.n8n_api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "zalo_oa_deactivate_sender_workflow",
+      "name": "Deactivate Sender Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2840,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare Sender Workflow Update').first().json.n8n_base_url + '/workflows/' + encodeURIComponent($('Prepare Sender Workflow Update').first().json.sender_workflow_id || '') + '/activate' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-API-KEY",
+              "value": "={{ $('Prepare Sender Workflow Update').first().json.n8n_api_key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "zalo_oa_activate_sender_workflow",
+      "name": "Activate Sender Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3080,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction maskToken(value, head = 10, tail = 6) {\n  const text = String(value || '');\n  if (!text) return '';\n  if (text.length <= head + tail + 3) return text;\n  return `${text.slice(0, head)}...${text.slice(-tail)}`;\n}\n\nconst staticData = $getWorkflowStaticData('global');\nlet source = {};\ntry {\n  source = $('Prepare Credential Patch').first().json || {};\n} catch {\n  source = $input.first().json || {};\n}\nlet workflowSource = null;\ntry {\n  workflowSource = $('Prepare Sender Workflow Update').first().json || null;\n} catch {\n  workflowSource = null;\n}\nconst now = new Date().toISOString();\nlet updateSource = null;\ntry {\n  updateSource = $('Update Sender Workflow').first().json || null;\n} catch {\n  updateSource = null;\n}\nlet activateSource = null;\ntry {\n  activateSource = $('Activate Sender Workflow').first().json || null;\n} catch {\n  activateSource = null;\n}\nconst patchStatus = Number((updateSource && updateSource.statusCode) || source.statusCode || 0) || null;\nconst activateStatus = Number((activateSource && activateSource.statusCode) || 0) || null;\nconst patchRequired = source.patch_required === true;\nconst workflowUpdateRequired = workflowSource?.workflow_update_required === true;\nconst recycleNeeded = workflowSource?.sender_workflow_was_active === true;\n\nlet ok = false;\nlet title = String(source.title || 'Zalo OA auto-refresh status');\nlet summary = String(source.summary || '');\n\nif (!patchRequired) {\n  staticData.last_status = String(source.last_status || 'refresh_failed');\n  staticData.last_checked_at = now;\n  staticData.last_refresh_http_status = source.last_refresh_http_status || null;\n  staticData.last_error = String(source.last_error || summary || '');\n} else if (!workflowUpdateRequired) {\n  staticData.last_status = String(workflowSource?.last_status || source.last_status || 'sender_sync_failed');\n  staticData.last_checked_at = now;\n  staticData.last_refresh_http_status = source.last_refresh_http_status || null;\n  staticData.last_error = String(workflowSource?.last_error || source.last_error || summary || '');\n} else if (patchStatus && patchStatus >= 200 && patchStatus < 300 && (!recycleNeeded || (activateStatus && activateStatus >= 200 && activateStatus < 300))) {\n  ok = true;\n  title = 'Zalo OA token refreshed';\n  summary = recycleNeeded\n    ? 'The token was refreshed and the live sender workflow was updated and reactivated successfully.'\n    : 'The token was refreshed and the live sender workflow was updated successfully.';\n  staticData.access_token = String(source.refreshed_access_token || '').trim();\n  staticData.refresh_token = String(source.refreshed_refresh_token || '').trim();\n  staticData.expires_in = Number(source.refreshed_expires_in || 0) || 0;\n  staticData.expires_at = String(source.refreshed_expires_at || '').trim();\n  staticData.last_status = 'ok';\n  staticData.last_checked_at = now;\n  staticData.last_refresh_at = now;\n  staticData.last_refresh_http_status = source.last_refresh_http_status || null;\n  staticData.last_patch_at = now;\n  staticData.last_patch_http_status = patchStatus;\n  staticData.last_activate_http_status = activateStatus;\n  staticData.last_error = '';\n  if (workflowSource?.sender_workflow_id) {\n    staticData.sender_workflow_id = String(workflowSource.sender_workflow_id);\n  }\n} else {\n  title = 'Zalo OA sender sync failed';\n  summary = patchStatus\n    ? `The token was refreshed, but syncing the live sender workflow failed (update HTTP ${patchStatus}${recycleNeeded ? `, activate HTTP ${activateStatus || 'n/a'}` : ''}).`\n    : 'The token was refreshed, but syncing the live sender workflow failed.';\n  staticData.last_status = 'sender_sync_failed';\n  staticData.last_checked_at = now;\n  staticData.last_refresh_http_status = source.last_refresh_http_status || null;\n  staticData.last_patch_http_status = patchStatus;\n  staticData.last_activate_http_status = activateStatus;\n  staticData.last_error = summary;\n}\n\nconst responseJson = {\n  ok,\n  action: source.action || 'refresh',\n  title,\n  summary,\n  shouldRespond: Boolean(source.shouldRespond),\n  app_id: source.app_id || '',\n  sender_credential_id: source.send_credential_id || source.sender_credential_id || '',\n  sender_workflow_id: workflowSource?.sender_workflow_id || source.sender_workflow_id || staticData.sender_workflow_id || '',\n  sender_workflow_name: workflowSource?.sender_workflow_name || '',\n  n8n_base_url: source.n8n_base_url || '',\n  refresh_token_masked: maskToken(staticData.refresh_token),\n  access_token_masked: maskToken(staticData.access_token),\n  expires_at: staticData.expires_at || '',\n  expires_in: staticData.expires_in || 0,\n  last_status: staticData.last_status || '',\n  last_checked_at: staticData.last_checked_at || '',\n  last_refresh_at: staticData.last_refresh_at || '',\n  last_patch_at: staticData.last_patch_at || '',\n  last_error: staticData.last_error || '',\n  zalo_http_status: source.last_refresh_http_status || null,\n  sender_workflow_patch_http_status: patchStatus,\n  sender_workflow_activate_http_status: activateStatus,\n  patched_node_names: workflowSource?.patched_node_names || [],\n};\n\nconst html = `<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>${escapeHtml(title)}</title>\n  <style>\n    body { font-family: Inter, Arial, sans-serif; background: #f4fbfa; color: #17203a; padding: 40px 20px; }\n    .card { max-width: 920px; margin: 0 auto; background: #ffffff; border: 1px solid #d7ece8; border-radius: 24px; padding: 28px; box-shadow: 0 20px 60px rgba(23, 32, 58, 0.08); }\n    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; background: ${ok ? '#d9f5ef' : '#fff3e8'}; color: ${ok ? '#0f766e' : '#b45309'}; }\n    h1 { margin: 16px 0 8px; font-size: 34px; }\n    p { line-height: 1.6; color: #4f5d78; }\n    pre { white-space: pre-wrap; word-break: break-word; background: #f7fafc; border: 1px solid #dde6f0; border-radius: 16px; padding: 16px; font-size: 13px; overflow: auto; }\n    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 22px; }\n    .panel { background: #fbfdff; border: 1px solid #e8eef5; border-radius: 18px; padding: 16px; }\n    .panel h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #0f766e; }\n    .mono { font-family: Consolas, monospace; }\n  </style>\n</head>\n<body>\n  <div class=\"card\">\n    <span class=\"badge\">${ok ? 'healthy' : 'needs action'}</span>\n    <h1>${escapeHtml(title)}</h1>\n    <p>${escapeHtml(summary)}</p>\n    <div class=\"grid\">\n      <div class=\"panel\">\n        <h2>Stored token state</h2>\n        <pre class=\"mono\">refresh_token=${escapeHtml(maskToken(staticData.refresh_token))}\naccess_token=${escapeHtml(maskToken(staticData.access_token))}\nexpires_at=${escapeHtml(staticData.expires_at || '')}\nsender_workflow_id=${escapeHtml(responseJson.sender_workflow_id)}</pre>\n      </div>\n      <div class=\"panel\">\n        <h2>Latest refresh check</h2>\n        <pre class=\"mono\">last_status=${escapeHtml(staticData.last_status || '')}\nlast_checked_at=${escapeHtml(staticData.last_checked_at || '')}\nlast_refresh_at=${escapeHtml(staticData.last_refresh_at || '')}\nlast_patch_at=${escapeHtml(staticData.last_patch_at || '')}</pre>\n      </div>\n    </div>\n    <div class=\"panel\" style=\"margin-top: 18px;\">\n      <h2>Response JSON</h2>\n      <pre class=\"mono\">${escapeHtml(JSON.stringify(responseJson, null, 2))}</pre>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { ...responseJson, html } }];"
+      },
+      "id": "zalo_oa_finalize_refresh",
+      "name": "Finalize Refresh Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3320,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction maskToken(value, head = 10, tail = 6) {\n  const text = String(value || '');\n  if (!text) return '';\n  if (text.length <= head + tail + 3) return text;\n  return `${text.slice(0, head)}...${text.slice(-tail)}`;\n}\n\nconst staticData = $getWorkflowStaticData('global');\nconst responseJson = $input.first().json || {};\nconst ok = Boolean(responseJson.ok);\nconst title = String(responseJson.title || 'Zalo OA token healthy');\nconst summary = String(responseJson.summary || '');\nconst senderWorkflowId = String(responseJson.sender_workflow_id || staticData.sender_workflow_id || '');\n\nconst html = `<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>${escapeHtml(title)}</title>\n  <style>\n    body { font-family: Inter, Arial, sans-serif; background: #f4fbfa; color: #17203a; padding: 40px 20px; }\n    .card { max-width: 920px; margin: 0 auto; background: #ffffff; border: 1px solid #d7ece8; border-radius: 24px; padding: 28px; box-shadow: 0 20px 60px rgba(23, 32, 58, 0.08); }\n    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; background: ${ok ? '#d9f5ef' : '#fff3e8'}; color: ${ok ? '#0f766e' : '#b45309'}; }\n    h1 { margin: 16px 0 8px; font-size: 34px; }\n    p { line-height: 1.6; color: #4f5d78; }\n    pre { white-space: pre-wrap; word-break: break-word; background: #f7fafc; border: 1px solid #dde6f0; border-radius: 16px; padding: 16px; font-size: 13px; overflow: auto; }\n    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 22px; }\n    .panel { background: #fbfdff; border: 1px solid #e8eef5; border-radius: 18px; padding: 16px; }\n    .panel h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: #0f766e; }\n    .mono { font-family: Consolas, monospace; }\n  </style>\n</head>\n<body>\n  <div class=\"card\">\n    <span class=\"badge\">${ok ? 'healthy' : 'needs action'}</span>\n    <h1>${escapeHtml(title)}</h1>\n    <p>${escapeHtml(summary)}</p>\n    <div class=\"grid\">\n      <div class=\"panel\">\n        <h2>Stored token state</h2>\n        <pre class=\"mono\">refresh_token=${escapeHtml(maskToken(staticData.refresh_token))}\naccess_token=${escapeHtml(maskToken(staticData.access_token))}\nexpires_at=${escapeHtml(staticData.expires_at || '')}\nsender_workflow_id=${escapeHtml(senderWorkflowId)}</pre>\n      </div>\n      <div class=\"panel\">\n        <h2>Latest refresh check</h2>\n        <pre class=\"mono\">last_status=${escapeHtml(responseJson.last_status || '')}\nlast_checked_at=${escapeHtml(responseJson.last_checked_at || '')}\nlast_refresh_at=${escapeHtml(responseJson.last_refresh_at || '')}\nlast_patch_at=${escapeHtml(responseJson.last_patch_at || '')}</pre>\n      </div>\n    </div>\n    <div class=\"panel\" style=\"margin-top: 18px;\">\n      <h2>Response JSON</h2>\n      <pre class=\"mono\">${escapeHtml(JSON.stringify(responseJson, null, 2))}</pre>\n    </div>\n  </div>\n</body>\n</html>`;\n\nreturn [{ json: { ...responseJson, html } }];"
+      },
+      "id": "zalo_oa_finalize_static",
+      "name": "Finalize Static Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "respond-static-webhook",
+              "leftValue": "={{ $json.shouldRespond === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_respond_static",
+      "name": "Should Return Static Webhook?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "respond-refresh-webhook",
+              "leftValue": "={{ $json.shouldRespond === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "zalo_oa_should_respond_refresh",
+      "name": "Should Return Refresh Webhook?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2120,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "zalo_oa_refresh_response_static",
+      "name": "Return Static Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1400,
         0
       ]
     },
@@ -54,24 +543,229 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        680,
-        0
+        2360,
+        -320
       ]
     }
   ],
   "connections": {
-    "Zalo OA Refresh Webhook": {
+    "Hourly Zalo OA Token Check": {
       "main": [
         [
           {
-            "node": "Refresh Zalo OA Token",
+            "node": "Prepare Refresh Context",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Refresh Zalo OA Token": {
+    "Zalo OA Refresh Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Refresh Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Refresh Context": {
+      "main": [
+        [
+          {
+            "node": "Should Refresh Token?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Refresh Token?": {
+      "main": [
+        [
+          {
+            "node": "Call Zalo Refresh API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Static Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Zalo Refresh API": {
+      "main": [
+        [
+          {
+            "node": "Prepare Credential Patch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Credential Patch": {
+      "main": [
+        [
+          {
+            "node": "Should Sync Sender Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Sync Sender Workflow?": {
+      "main": [
+        [
+          {
+            "node": "Get Sender Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Refresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Sender Workflow": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sender Workflow Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sender Workflow Update": {
+      "main": [
+        [
+          {
+            "node": "Should Update Sender Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Update Sender Workflow?": {
+      "main": [
+        [
+          {
+            "node": "Update Sender Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Refresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sender Workflow": {
+      "main": [
+        [
+          {
+            "node": "Should Reactivate Sender Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Reactivate Sender Workflow?": {
+      "main": [
+        [
+          {
+            "node": "Deactivate Sender Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Refresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deactivate Sender Workflow": {
+      "main": [
+        [
+          {
+            "node": "Activate Sender Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Sender Workflow": {
+      "main": [
+        [
+          {
+            "node": "Finalize Refresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Static Status": {
+      "main": [
+        [
+          {
+            "node": "Should Return Static Webhook?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Return Static Webhook?": {
+      "main": [
+        [
+          {
+            "node": "Return Static Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Finalize Refresh Result": {
+      "main": [
+        [
+          {
+            "node": "Should Return Refresh Webhook?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Return Refresh Webhook?": {
       "main": [
         [
           {
@@ -79,7 +773,8 @@
             "type": "main",
             "index": 0
           }
-        ]
+        ],
+        []
       ]
     }
   },

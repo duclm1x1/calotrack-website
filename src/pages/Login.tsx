@@ -13,7 +13,7 @@ import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 function describeAuthIssue(error: unknown): string | null {
   const message = String((error as Error)?.message || error || "").toLowerCase();
   if (message.includes("unsupported phone provider")) {
-    return "Hệ thống gửi mã xác nhận đang bảo trì. Bạn có thể thanh toán trực tiếp để kích hoạt gói cước ngay mà không cần mã OTP.";
+    return "Hệ thống gửi mã xác nhận đang bảo trì. Bạn có thể thử lại sau hoặc liên hệ hỗ trợ để được xử lý thủ công.";
   }
   return null;
 }
@@ -57,8 +57,12 @@ export default function Login() {
     event.preventDefault();
     setLoading(true);
     try {
-      await portalVerifyPhoneOtp(phoneInput, otpValue);
-      toast.success("Xác thực số điện thoại thành công.");
+      const result = await portalVerifyPhoneOtp(phoneInput, otpValue);
+      if (result.accessState === "trialing") {
+        toast.success("Xác thực thành công. Dùng thử 7 ngày đã bắt đầu cho tài khoản của bạn.");
+      } else {
+        toast.success("Xác thực số điện thoại thành công.");
+      }
       navigate(SITE_CONFIG.dashboardPath, { replace: true });
     } catch (error) {
       toast.error(String((error as Error)?.message || "OTP chưa đúng hoặc đã hết hạn."));
@@ -72,35 +76,35 @@ export default function Login() {
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_420px]">
         <div className="rounded-[32px] border border-primary/10 bg-white/82 p-8 shadow-md backdrop-blur">
           <div className="mb-4 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Đăng Nhập Tài Khoản
+            Đăng nhập tài khoản
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground">
-            Quản lý gói cước CaloTrack bằng số điện thoại của bạn.
+            Xác thực số điện thoại để mở trial và dùng CaloTrack trên mọi kênh.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Đăng nhập để xem lịch sử giao dịch và kết nối hệ thống AI Bot trên Telegram hay Zalo OA!
+            Số điện thoại đã verify là định danh duy nhất của tài khoản. Sau bước này, hệ thống sẽ tạo hoặc liên kết customer truth, bật dùng thử 7 ngày và đồng bộ quyền dùng trên Zalo, Telegram và portal.
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-primary/10 bg-primary/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Bảo Mật Tối Đa</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">SĐT Định Danh</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Định danh chuẩn</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Phone-first truth</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Gói cước được bảo vệ bằng hệ thống cấp quyền qua số điện thoại duy nhất, dùng chung mọi kênh chat.
+                Mọi plan, trial, payment và link Zalo hoặc Telegram đều bám vào số điện thoại đã xác thực.
               </p>
             </div>
             <div className="rounded-3xl border border-primary/10 bg-white p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Đa Nền Tảng</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Zalo & Telegram</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Hard gate</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Chưa verify thì khóa bot</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Gắn kết liền mạch dữ liệu bữa ăn dù bạn dùng bot ở bất cứ mạng lưới tin nhắn nào.
+                Nếu chưa xác thực số điện thoại hoặc chưa có trial, bot sẽ không mở meal log, stats, gym hay image analysis.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/15 bg-accent/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Thống Kê Vóc Dáng</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Dashboard</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Dùng thử</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">7 ngày ngay sau OTP</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Quản lý lịch sử thanh toán và thống kê lượng Calo nạp vào hàng tuần một cách trực quan nhất.
+                Verify OTP xong là trial bắt đầu ngay. Hết trial, tài khoản quay về Free giới hạn 2 ảnh và 5 tin nhắn mỗi ngày.
               </p>
             </div>
           </div>
@@ -110,7 +114,7 @@ export default function Login() {
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng OTP</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Hệ thống sẽ gửi một tin nhắn chứa mã bảo mật tới số điện thoại của bạn.
+              Nhập số điện thoại của bạn, nhận mã OTP qua SMS và xác thực để mở portal cũng như quyền dùng bot.
             </p>
           </div>
 
@@ -174,7 +178,7 @@ export default function Login() {
           ) : null}
 
           <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
-            Nhập số điện thoại của bạn để nhận mã truy cập. Nếu bạn chưa rõ điều gì, có thể chuyển sang trang đăng ký bên dưới.
+            Trước khi dùng CaloTrack trên Zalo hoặc Telegram, bạn bắt buộc phải xác thực số điện thoại. Khi OTP đúng, hệ thống sẽ tạo customer truth và mở trial 7 ngày.
           </div>
 
           <div className="mt-6 grid gap-3">
@@ -187,7 +191,7 @@ export default function Login() {
               rel="noopener noreferrer"
               className="text-center text-sm font-medium text-primary hover:underline"
             >
-              Mở CaloTrack trên Telegram
+              Mở CaloTrack trên Zalo
             </a>
             <a
               href={SITE_CONFIG.adminLoginPath}

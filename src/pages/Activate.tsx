@@ -82,7 +82,7 @@ export default function Activate() {
       }
     }
 
-    load();
+    void load();
     return () => {
       cancelled = true;
     };
@@ -94,8 +94,6 @@ export default function Activate() {
     }
     return "border-accent/20 bg-accent/10 text-accent";
   }, [orderStatus, snapshot?.plan]);
-
-
 
   const displayPhone =
     snapshot?.phoneDisplay || snapshot?.phoneE164 || user?.phone || phoneParam || "Chưa có";
@@ -153,8 +151,6 @@ export default function Activate() {
     }
   }
 
-
-
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_24%),linear-gradient(180deg,#f7fbfa_0%,#ffffff_46%,#f8fafc_100%)] px-4 py-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -166,13 +162,13 @@ export default function Activate() {
             Bắt đầu theo dõi dinh dưỡng đa nền tảng
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Quyền sử dụng được gắn trực tiếp vào số điện thoại của bạn. Bạn mở phiên chat với Bot bằng Telegram hoặc Zalo
-            để bắt đầu, portal web sẽ là nơi quản lý cấu hình và thanh toán.
+            Quyền sử dụng được gắn trực tiếp vào số điện thoại của bạn. Bạn mở phiên chat với bot bằng Telegram hoặc Zalo
+            để bắt đầu, còn portal web là nơi quản lý cấu hình, payment và entitlement.
           </p>
           {!user ? (
             <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-              Bạn chưa cần login portal để xem màn này. Hãy giữ lại mã đơn hàng, hoàn tất thanh toán và mở Telegram bot để
-              bắt đầu tracking ngay.
+              Bạn chưa cần đăng nhập portal để xem màn này. Hãy giữ lại mã đơn hàng, hoàn tất thanh toán và mở Telegram bot
+              để bắt đầu tracking ngay.
             </div>
           ) : null}
         </div>
@@ -190,14 +186,14 @@ export default function Activate() {
                 </div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT Đăng Ký</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT đăng ký</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">{displayPhone}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Số điện thoại để quản lý gói cước.</div>
+                <div className="mt-2 text-sm text-muted-foreground">Số điện thoại canonical dùng để quản lý gói cước.</div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Web & Chat</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Web & chat</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">{linkedCount}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Bạn cần link kênh vào tài khoản trước khi chat.</div>
+                <div className="mt-2 text-sm text-muted-foreground">Số kênh đã liên kết vào customer truth của bạn.</div>
               </div>
             </div>
 
@@ -205,7 +201,7 @@ export default function Activate() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-1 h-5 w-5" />
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.18em]">Trạng Thái Gói</div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.18em]">Trạng thái gói</div>
                   <div className="mt-2 text-2xl font-semibold text-foreground">
                     {orderStatus?.entitlementActive || snapshot?.plan === "pro" || snapshot?.plan === "lifetime"
                       ? "Gói đã được kích hoạt"
@@ -215,30 +211,30 @@ export default function Activate() {
                   </div>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {orderStatus
-                      ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi thanh toán thành công, hệ thống sẽ tự động kích hoạt gói của bạn.`
-                      : "Nếu bạn vừa thanh toán, website đang đợi đối soát từ giao dịch chuyển khoản vào tài khoản ngân hàng."}
+                      ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi thanh toán thành công, hệ thống sẽ tự động kích hoạt entitlement của bạn.`
+                      : "Nếu bạn vừa thanh toán, website đang đợi đối soát từ giao dịch chuyển khoản hoặc callback của provider."}
                   </p>
                 </div>
               </div>
             </div>
 
             {!orderStatus?.entitlementActive ? (
-              <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur text-center">
+              <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 text-center shadow-md backdrop-blur">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Biên lai đối soát</div>
                 <h2 className="mt-3 text-2xl font-semibold text-foreground">Xác nhận chuyển khoản của bạn</h2>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground mx-auto max-w-xl">
-                  Nếu bạn chưa quét mã ở bước trước, bạn có thể quét mã tương ứng dưới đây để hoàn tất. 
-                  Hãy chắc chắn rằng ghi chú chuyển khoản có chứa <strong>số điện thoại của bạn</strong> hoặc mã đơn <strong>{transferNote}</strong>.
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                  Nếu bạn chưa quét mã ở bước trước, bạn có thể quét mã tương ứng dưới đây để hoàn tất. Hãy chắc chắn rằng
+                  ghi chú chuyển khoản có chứa <strong>số điện thoại của bạn</strong> hoặc mã đơn <strong>{transferNote}</strong>.
                 </p>
 
                 {provider === "bank_transfer" ? (
-                  <div className="mt-6 mx-auto max-w-sm rounded-[28px] border border-primary/10 bg-primary/5 p-6">
-                    <div className="text-sm font-semibold uppercase tracking-widest text-primary mb-4">Mã QR Techcombank</div>
+                  <div className="mx-auto mt-6 max-w-sm rounded-[28px] border border-primary/10 bg-primary/5 p-6">
+                    <div className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary">Mã QR Techcombank</div>
                     <img src="/qr-tcb.png" alt="Techcombank" className="mx-auto w-full rounded-xl mix-blend-multiply" />
                   </div>
                 ) : provider === "momo" ? (
-                  <div className="mt-6 mx-auto max-w-sm rounded-[28px] border border-primary/10 bg-primary/5 p-6">
-                    <div className="text-sm font-semibold uppercase tracking-widest text-[#A50064] mb-4">Mã QR MoMo</div>
+                  <div className="mx-auto mt-6 max-w-sm rounded-[28px] border border-primary/10 bg-primary/5 p-6">
+                    <div className="mb-4 text-sm font-semibold uppercase tracking-widest text-[#A50064]">Mã QR MoMo</div>
                     <img src="/qr-momo.jpg" alt="MoMo" className="mx-auto w-full rounded-xl mix-blend-multiply" />
                   </div>
                 ) : null}
@@ -256,14 +252,17 @@ export default function Activate() {
           <div className="space-y-6">
             <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Bắt đầu sử dụng ngay</div>
-              <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối nền tảng Chat yêu thích của bạn</h2>
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối nền tảng chat yêu thích của bạn</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Khuyến nghị nên mở Telegram bot theo nút bấm bên dưới sau khi kích hoạt xong. Nền tảng Chat là nơi hệ thống AI
-                của CaloTrack đồng hành cùng bữa ăn mỗi ngày của bạn.
+                Khuyến nghị nên mở Telegram bot theo nút bấm bên dưới sau khi kích hoạt xong. Nền tảng chat là nơi AI
+                CaloTrack đồng hành cùng bữa ăn mỗi ngày của bạn.
               </p>
 
               <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-                Trình tự khuyến nghị: <span className="font-medium text-foreground">{"Thanh toán thành công -> mở Telegram -> bắt đầu tracking -> quay lại portal sau khi cần xem billing hoặc support."}</span>
+                Trình tự khuyến nghị:{" "}
+                <span className="font-medium text-foreground">
+                  Thanh toán thành công → mở Telegram → bắt đầu tracking → quay lại portal khi cần xem billing hoặc support.
+                </span>
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -291,8 +290,8 @@ export default function Activate() {
                 <div>
                   <div className="text-sm font-semibold text-foreground">Bảo mật tài khoản</div>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                    <li>1 số điện thoại = 1 quyền sở hữu duy nhất.</li>
-                    <li>Mỗi tài khoản Telegram và Zalo chỉ được kết nối với 1 số điện thoại.</li>
+                    <li>1 số điện thoại = 1 quyền sở hữu canonical.</li>
+                    <li>Mỗi tài khoản Telegram và Zalo chỉ được liên kết với 1 customer truth.</li>
                     <li>Thông tin đăng ký sẽ không bị ảnh hưởng nếu bạn đổi tài khoản mạng xã hội.</li>
                   </ul>
                 </div>

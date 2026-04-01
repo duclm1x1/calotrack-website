@@ -15,6 +15,14 @@ import {
 } from "@/lib/siteConfig";
 import { supabase } from "@/lib/supabase";
 
+export type PortalAccessState =
+  | "pending_verification"
+  | "trialing"
+  | "free_limited"
+  | "active_paid"
+  | "blocked"
+  | string;
+
 export type PortalPaymentSummary = {
   id: string;
   amount: number;
@@ -44,6 +52,9 @@ export type PortalSnapshot = {
   fullName: string | null;
   plan: PlanTier;
   premiumUntil: string | null;
+  trialEndsAt: string | null;
+  accessState: PortalAccessState;
+  onboardingStatus: string | null;
   dailyAiUsageCount: number;
   entitlementSource: string | null;
   entitlementLabel: string;
@@ -52,6 +63,13 @@ export type PortalSnapshot = {
   payments: PortalPaymentSummary[];
   linkedChannels: PortalChannelLink[];
   lastSyncAt: string;
+};
+
+export type PortalVerificationResult = {
+  phoneE164: string;
+  customerId: number | null;
+  accessState: PortalAccessState;
+  trialEndsAt: string | null;
 };
 
 export type PortalCheckoutOrder = {
@@ -102,34 +120,61 @@ export type ZaloLinkRequestResult = {
   helperText: string;
 };
 
-// types removed
-
 function describeError(error: unknown): string {
-  return String((error as { message?: string })?.message || error || "Unknown error");
+  const message = String((error as { message?: string })?.message || error || "Unknown error");
+  if (message.includes("phone_verification_required")) {
+    return "Bạn cần xác thực số điện thoại trước khi dùng portal, checkout hoặc bot.";
+  }
+  if (message.includes("verified_phone_mismatch")) {
+    return "Số điện thoại checkout phải trùng với số đã xác thực trên tài khoản của bạn.";
+  }
+  if (message.includes("auth_required")) {
+    return "Bạn cần đăng nhập bằng OTP trước khi tiếp tục.";
+  }
+  return message;
 }
 
 function buildEntitlementLabel(
   plan: PlanTier,
   premiumUntil: string | null,
+  accessState: PortalAccessState,
   entitlementSource?: string | null,
 ): string {
+  if (accessState === "trialing") {
+    return "Dùng thử 7 ngày đang hoạt động.";
+  }
+  if (accessState === "free_limited") {
+    return "Gói Free giới hạn đang hoạt động sau khi trial kết thúc.";
+  }
+  if (accessState === "blocked") {
+    return "Tài khoản đang bị chặn.";
+  }
   if (plan === "lifetime" || premiumUntil === LIFETIME_SENTINEL_ISO) {
-    return "Lifetime entitlement đang active ở cấp customer";
+    return "Lifetime entitlement đang hoạt động ở cấp customer.";
   }
   if (plan === "pro" && premiumUntil) {
-    return `Pro active tới ${new Date(premiumUntil).toLocaleDateString("vi-VN")}`;
+    return `Pro đang hoạt động tới ${new Date(premiumUntil).toLocaleDateString("vi-VN")}.`;
   }
   if (entitlementSource) {
-    return `Free tier • ${entitlementSource}`;
+    return `Free limited • ${entitlementSource}`;
   }
-  return "Free tier";
+  return "Xác thực số điện thoại để bắt đầu dùng.";
 }
 
-function buildQuotaLabel(plan: PlanTier, usage: number): string {
-  if (plan === "free") {
+function buildQuotaLabel(accessState: PortalAccessState, plan: PlanTier, usage: number): string {
+  if (accessState === "pending_verification") {
+    return "Chưa có quyền truy cập. Xác thực số điện thoại để mở dùng thử 7 ngày.";
+  }
+  if (accessState === "blocked") {
+    return "Tài khoản đang bị chặn.";
+  }
+  if (accessState === "trialing") {
+    return `${usage} lượt dùng hôm nay • đang trong trial 7 ngày`;
+  }
+  if (accessState === "free_limited" || plan === "free") {
     return `${usage}/${getFreeDailyLimit()} tin nhắn hôm nay • ${getFreeImageDailyLimit()} ảnh/ngày`;
   }
-  return `${usage} lượt AI đã dùng hôm nay • quota shared theo customer`;
+  return `${usage} lượt AI đã dùng hôm nay • quota chia sẻ theo customer`;
 }
 
 function mapPortalPayments(items: unknown[]): PortalPaymentSummary[] {
@@ -162,25 +207,13 @@ function mapPortalChannels(items: unknown[]): PortalChannelLink[] {
   });
 }
 
-// Removed unused fallback and findLinkedUser functions
-
 export function normalizeVietnamPhoneInput(value: string): string {
   const digits = value.replace(/[^\d+]/g, "");
-  if (!digits) {
-    return "";
-  }
-  if (digits.startsWith("+84")) {
-    return `+84${digits.slice(3).replace(/\D/g, "")}`;
-  }
-  if (digits.startsWith("84")) {
-    return `+84${digits.slice(2)}`;
-  }
-  if (digits.startsWith("0")) {
-    return `+84${digits.slice(1)}`;
-  }
-  if (digits.startsWith("9") && digits.length === 9) {
-    return `+84${digits}`;
-  }
+  if (!digits) return "";
+  if (digits.startsWith("+84")) return `+84${digits.slice(3).replace(/\D/g, "")}`;
+  if (digits.startsWith("84")) return `+84${digits.slice(2)}`;
+  if (digits.startsWith("0")) return `+84${digits.slice(1)}`;
+  if (digits.startsWith("9") && digits.length === 9) return `+84${digits}`;
   return digits.startsWith("+") ? digits : `+${digits}`;
 }
 
@@ -196,7 +229,7 @@ export async function portalStartPhoneAuth(phoneInput: string): Promise<{ phoneE
 export async function portalVerifyPhoneOtp(
   phoneInput: string,
   otp: string,
-): Promise<{ phoneE164: string }> {
+): Promise<PortalVerificationResult> {
   const phoneE164 = normalizeVietnamPhoneInput(phoneInput);
   const { error } = await supabase.auth.verifyOtp({
     phone: phoneE164,
@@ -206,7 +239,21 @@ export async function portalVerifyPhoneOtp(
   if (error) {
     throw new Error(describeError(error));
   }
-  return { phoneE164 };
+
+  const { data, error: completeError } = await supabase.rpc("portal_complete_phone_verification", {
+    p_phone_input: phoneE164,
+  });
+  if (completeError) {
+    throw new Error(describeError(completeError));
+  }
+
+  const row = (data ?? {}) as Record<string, unknown>;
+  return {
+    phoneE164: (row.phone_e164 as string | null) ?? phoneE164,
+    customerId: row.customer_id == null ? null : Number(row.customer_id),
+    accessState: String(row.access_state ?? "pending_verification"),
+    trialEndsAt: (row.trial_ends_at as string | null) ?? null,
+  };
 }
 
 export async function fetchPortalSnapshot(authUser: {
@@ -222,6 +269,9 @@ export async function fetchPortalSnapshot(authUser: {
 
     const row = (data ?? {}) as Record<string, unknown>;
     const plan = normalizePlanTier((row.plan as string | null) ?? null);
+    const accessState = String(row.access_state ?? "pending_verification");
+    const usage = Number(row.quota_used_today ?? row.daily_ai_usage_count ?? 0);
+
     return {
       customerId: row.customer_id == null ? null : Number(row.customer_id),
       linkedUserId: row.linked_user_id == null ? null : Number(row.linked_user_id),
@@ -231,16 +281,22 @@ export async function fetchPortalSnapshot(authUser: {
       fullName: (row.full_name as string | null) ?? null,
       plan,
       premiumUntil: (row.premium_until as string | null) ?? null,
-      dailyAiUsageCount: Number(row.quota_used_today ?? row.daily_ai_usage_count ?? 0),
+      trialEndsAt: (row.trial_ends_at as string | null) ?? null,
+      accessState,
+      onboardingStatus: (row.onboarding_status as string | null) ?? null,
+      dailyAiUsageCount: usage,
       entitlementSource: (row.entitlement_source as string | null) ?? null,
       entitlementLabel:
         (row.entitlement_label as string | null) ??
         buildEntitlementLabel(
           plan,
           (row.premium_until as string | null) ?? null,
+          accessState,
           (row.entitlement_source as string | null) ?? null,
         ),
-      quotaLabel: buildQuotaLabel(plan, Number(row.quota_used_today ?? row.daily_ai_usage_count ?? 0)),
+      quotaLabel:
+        (row.quota_label as string | null) ??
+        buildQuotaLabel(accessState, plan, usage),
       source: ((row.source as PortalSnapshot["source"]) ?? "customer_linked"),
       payments: Array.isArray(row.payments) ? mapPortalPayments(row.payments as unknown[]) : [],
       linkedChannels: Array.isArray(row.linked_channels)
@@ -281,8 +337,9 @@ export async function portalStartCheckout(params: {
     if (error) {
       throw error;
     }
+
     const row = (data ?? {}) as Record<string, unknown>;
-    const nextOrder: PortalCheckoutOrder = {
+    return {
       id: String(row.id ?? row.order_id ?? ""),
       orderCode: String(row.order_code ?? row.id ?? ""),
       provider: (row.provider as PublicCheckoutProvider) ?? params.provider,
@@ -316,9 +373,6 @@ export async function portalStartCheckout(params: {
       telegramLinkUrl: getTelegramLinkHref((row.telegram_link_token as string | null) ?? null),
       createdAt: String(row.created_at ?? new Date().toISOString()),
     };
-    // If momo gets re-enabled via config, we could call enrichMomoOrder here. 
-    // Right now we just return the order directly.
-    return nextOrder;
   } catch (error) {
     throw new Error(`Không thể tạo đơn hàng: ${describeError(error)}`);
   }
@@ -394,16 +448,16 @@ export function getPortalChannelCards(snapshot?: PortalSnapshot | null) {
     {
       key: "zalo",
       label: SITE_CONFIG.primaryChannelLabel,
-      status: linkedChannels.has("zalo") ? "Đã linked" : "Sẵn sàng kết nối",
+      status: linkedChannels.has("zalo") ? "Đã liên kết" : "Sẵn sàng kết nối",
       helper: linkedChannels.has("zalo")
-        ? "Kênh này đã nối vào customer canonical."
+        ? "Kênh này đã nối vào customer truth."
         : "Kênh chat chính cho người dùng Việt, đi cùng flow kích hoạt và support hiện tại.",
       tone: "primary" as const,
     },
     {
       key: "telegram",
       label: SITE_CONFIG.secondaryChannelLabel,
-      status: linkedChannels.has("telegram") ? "Đã linked" : SITE_CONFIG.secondaryChannelStatus,
+      status: linkedChannels.has("telegram") ? "Đã liên kết" : SITE_CONFIG.secondaryChannelStatus,
       helper: linkedChannels.has("telegram")
         ? "Kênh này đã nằm trong shared entitlement của customer."
         : "Giữ cùng entitlement và hữu ích cho người dùng muốn tracking liên tục trên Telegram.",
@@ -412,8 +466,8 @@ export function getPortalChannelCards(snapshot?: PortalSnapshot | null) {
     {
       key: "web",
       label: SITE_CONFIG.webPortalLabel,
-      status: linkedChannels.has("web") ? "Portal linked" : SITE_CONFIG.webPortalStatus,
-      helper: "Portal dùng cho account, payment, activation và admin surfaces.",
+      status: linkedChannels.has("web") ? "Portal đã liên kết" : SITE_CONFIG.webPortalStatus,
+      helper: "Portal dùng cho account, payment, activation và khu admin.",
       tone: "neutral" as const,
     },
   ];

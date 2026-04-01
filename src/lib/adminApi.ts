@@ -18,12 +18,7 @@ type MaybeError =
   | null
   | undefined;
 
-export type AdminRole =
-  | "super_admin"
-  | "billing_admin"
-  | "support_admin"
-  | "content_admin"
-  | "analyst";
+export type AdminRole = "owner" | "admin" | "user";
 export type AdminSection =
   | "overview"
   | "users"
@@ -373,13 +368,7 @@ export type AdminUser360 = {
   } | null;
 };
 
-const ADMIN_ROLES: AdminRole[] = [
-  "super_admin",
-  "billing_admin",
-  "support_admin",
-  "content_admin",
-  "analyst",
-];
+const ADMIN_ROLES: AdminRole[] = ["owner", "admin", "user"];
 
 function describeError(error: MaybeError): string {
   return String(error?.message || error?.details || error?.hint || error?.code || "Unknown error");
@@ -419,31 +408,36 @@ async function callRpcWithFallback<T>(
 }
 
 function normalizeAdminRole(value: unknown): AdminRole | null {
-  if (value === "super_admin" || value === "billing_admin" || value === "support_admin" || value === "content_admin" || value === "analyst") {
+  if (value === "owner" || value === "admin" || value === "user") {
     return value;
   }
-  if (value === "finance") {
-    return "billing_admin";
-  }
-  if (value === "catalog") {
-    return "content_admin";
-  }
-  if (value === "support") {
-    return "support_admin";
-  }
-  if (value === "owner") {
-    return "super_admin";
+  if (
+    value === "super_admin" ||
+    value === "billing_admin" ||
+    value === "support_admin" ||
+    value === "content_admin" ||
+    value === "analyst" ||
+    value === "finance" ||
+    value === "catalog" ||
+    value === "support"
+  ) {
+    return "admin";
   }
   return null;
 }
 
 function ensureRoleArray(value: unknown, isAdminFallback = false): AdminRole[] {
+  if (typeof value === "string") {
+    const normalized = normalizeAdminRole(value);
+    return normalized ? [normalized] : isAdminFallback ? ["admin"] : [];
+  }
   if (Array.isArray(value)) {
-    return value
+    const roles = value
       .map((entry) => normalizeAdminRole(entry))
       .filter((entry): entry is AdminRole => Boolean(entry));
+    return Array.from(new Set(roles));
   }
-  return isAdminFallback ? [...ADMIN_ROLES] : [];
+  return isAdminFallback ? ["admin"] : [];
 }
 
 function toAdminUser(row: Record<string, unknown>): AdminUser {
@@ -619,6 +613,8 @@ function toFoodCandidateRow(row: Record<string, unknown>): FoodCandidateRow {
 }
 
 function toAdminMember(row: Record<string, unknown>): AdminMember {
+  const baseRoles = ensureRoleArray(row.roles, row.is_owner === true);
+  const roles = row.is_owner === true ? ["owner"] : baseRoles.length ? baseRoles : ["admin"];
   return {
     id: Number(row.id),
     auth_user_id: (row.auth_user_id as string | null) ?? null,
@@ -628,7 +624,7 @@ function toAdminMember(row: Record<string, unknown>): AdminMember {
     username: (row.username as string | null) ?? null,
     is_owner: row.is_owner === true,
     is_active: row.is_active !== false,
-    roles: ensureRoleArray(row.roles, row.is_owner === true),
+    roles,
     created_at: (row.created_at as string | null) ?? null,
     updated_at: (row.updated_at as string | null) ?? null,
   };
@@ -674,13 +670,18 @@ function emptyAccessState(reason: string | null): AdminAccessState {
 export async function getAdminAccessState(): Promise<AdminAccessState> {
   try {
     const data = await callRpc<Record<string, unknown>>("admin_get_access_state");
-    const isAdmin = data.is_admin === true;
+    const isOwner = data.is_owner === true;
+    const rawRoles = ensureRoleArray(data.roles, data.is_admin === true);
+    const roles = Array.from(
+      new Set(isOwner ? ["owner", ...rawRoles.filter((role) => role !== "owner")] : rawRoles),
+    );
+    const isAdmin = data.is_admin === true || isOwner || roles.includes("admin");
     return {
       isAuthenticated: data.is_authenticated === true,
       linkedUserId: data.linked_user_id == null ? null : Number(data.linked_user_id),
       isAdmin,
-      isOwner: data.is_owner === true || (isAdmin && !Array.isArray(data.roles)),
-      roles: ensureRoleArray(data.roles, isAdmin),
+      isOwner,
+      roles: roles.length ? roles : isAdmin ? [isOwner ? "owner" : "admin"] : [],
       email: (data.email as string | null) ?? null,
       checkedAt: String(data.checked_at ?? new Date().toISOString()),
       reason: (data.reason as string | null) ?? null,
@@ -1072,9 +1073,9 @@ export async function fetchAdminMembers(): Promise<AdminMember[]> {
               display_name: access.email ?? "Bootstrap owner",
               email: access.email,
               username: null,
-              is_owner: true,
+              is_owner: access.isOwner,
               is_active: true,
-              roles: access.roles.length ? access.roles : ADMIN_ROLES,
+              roles: access.roles.length ? access.roles : [access.isOwner ? "owner" : "admin"],
               created_at: access.checkedAt,
               updated_at: access.checkedAt,
             },
@@ -1163,9 +1164,23 @@ export async function upsertAdminMember(input: {
 }
 
 export async function setAdminMemberRoles(memberId: number, roles: AdminRole[]): Promise<void> {
-  await callRpc("admin_set_member_roles", {
+  const nextRole = roles.includes("owner")
+    ? "owner"
+    : roles.includes("admin")
+      ? "admin"
+      : "user";
+  await setAdminMemberAccess(memberId, nextRole);
+}
+
+export async function setAdminMemberAccess(
+  memberId: number,
+  role: AdminRole,
+  isActive?: boolean,
+): Promise<void> {
+  await callRpc("admin_set_member_access", {
     p_member_id: memberId,
-    p_roles: roles,
+    p_role: role,
+    p_is_active: isActive ?? null,
   });
 }
 

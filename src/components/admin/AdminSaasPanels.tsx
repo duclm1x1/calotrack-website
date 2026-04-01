@@ -421,11 +421,9 @@ export function SecurityPanel({
         <div className={SURFACE}>
           <div className="text-sm font-semibold text-foreground">Role model</div>
           <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-600">
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">super_admin: full access, roles, plan mutation, refund, merge/unlink identities.</div>
-            <div className="rounded-2xl border border-primary/10 bg-white p-4">billing_admin: payments, subscriptions, refunds, dunning, plan state.</div>
-            <div className="rounded-2xl border border-primary/10 bg-white p-4">support_admin: customer search, link repair, quota reset, notes, status actions.</div>
-            <div className="rounded-2xl border border-primary/10 bg-white p-4">content_admin: food DB, prompts, localization, content moderation.</div>
-            <div className="rounded-2xl border border-primary/10 bg-white p-4">analyst: readonly growth, ops và analytics dashboards.</div>
+            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">Owner: full access, role changes, payment review, plan mutation, merge/unlink identities và security settings.</div>
+            <div className="rounded-2xl border border-primary/10 bg-white p-4">Admin: vận hành đầy đủ cho customer, entitlement, payment reconciliation, support, linking, quota reset và moderation.</div>
+            <div className="rounded-2xl border border-primary/10 bg-white p-4">User: không có quyền backoffice, chỉ là end-user dùng portal và chat surfaces.</div>
           </div>
         </div>
 

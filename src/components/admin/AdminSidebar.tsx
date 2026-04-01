@@ -54,83 +54,81 @@ export function getAdminNavItems(
   badges?: Partial<Record<AdminSection, string | number | null>>,
 ): AdminNavItem[] {
   const roles = new Set(access?.roles ?? []);
-  const isOwner = access?.isOwner === true || roles.has("super_admin");
-  const canBilling = isOwner || roles.has("billing_admin");
-  const canSupport = isOwner || roles.has("support_admin");
-  const canContent = isOwner || roles.has("content_admin");
-  const canAnalytics = isOwner || roles.has("analyst") || canBilling;
+  const isOwner = access?.isOwner === true || roles.has("owner");
+  const isAdmin = isOwner || roles.has("admin");
 
   const items: AdminNavItem[] = [
     {
       key: "overview",
       label: "Tổng quan",
-      description: "KPI, active users, revenue và issue feed",
+      description: "KPI, trạng thái hệ thống và nhịp vận hành",
       icon: ICONS.overview,
       accent: "primary",
       badge: badges?.overview,
+      hidden: !isAdmin,
     },
     {
       key: "users",
-      label: "User management",
-      description: "Customer canonical, identities và support actions",
+      label: "Customers",
+      description: "Customer truth, linked channel và thao tác hỗ trợ",
       icon: ICONS.users,
       accent: "neutral",
       badge: badges?.users,
-      hidden: !(canSupport || canBilling),
+      hidden: !isAdmin,
     },
     {
       key: "subscriptions",
-      label: "Subscriptions",
-      description: "Plans, payments, trial, refunds và billing health",
+      label: "Payments",
+      description: "Plan, thanh toán, trial và entitlement",
       icon: ICONS.subscriptions,
       accent: "accent",
       badge: badges?.subscriptions,
-      hidden: !canBilling,
+      hidden: !isAdmin,
     },
     {
       key: "entitlements",
       label: "Entitlements",
-      description: "Feature flags, plan matrix và override logic",
+      description: "Plan matrix, override và thời hạn sử dụng",
       icon: ICONS.entitlements,
       accent: "primary",
       badge: badges?.entitlements,
-      hidden: !canBilling,
+      hidden: !isAdmin,
     },
     {
       key: "usage",
       label: "Usage & quota",
-      description: "AI calls, scan volume, abuse hotspots và cost",
+      description: "AI calls, quota, abuse hotspot và cost pressure",
       icon: ICONS.usage,
       accent: "neutral",
       badge: badges?.usage,
-      hidden: !(canBilling || canSupport || canAnalytics),
+      hidden: !isAdmin,
     },
     {
       key: "nutrition-data",
       label: "Nutrition data",
-      description: "Food DB, aliases, portions, candidates và CSV",
+      description: "Food DB, alias, portion, candidate và CSV import",
       icon: ICONS["nutrition-data"],
       accent: "primary",
       badge: badges?.["nutrition-data"],
-      hidden: !canContent,
+      hidden: !isAdmin,
     },
     {
       key: "support",
       label: "Support",
-      description: "Customer 360, notes, quota reset và repair flows",
+      description: "Customer 360, note nội bộ, reset quota và repair flow",
       icon: ICONS.support,
       accent: "neutral",
       badge: badges?.support,
-      hidden: !canSupport,
+      hidden: !isAdmin,
     },
     {
       key: "analytics",
       label: "Analytics",
-      description: "Growth, signup, conversion, retention và cohort signals",
+      description: "Growth, conversion, retention và tín hiệu thương mại",
       icon: ICONS.analytics,
       accent: "accent",
       badge: badges?.analytics,
-      hidden: !canAnalytics,
+      hidden: !isAdmin,
     },
     {
       key: "system",
@@ -139,11 +137,12 @@ export function getAdminNavItems(
       icon: ICONS.system,
       accent: "neutral",
       badge: badges?.system,
+      hidden: !isAdmin,
     },
     {
       key: "security",
       label: "Security",
-      description: "Admin roles, audit trail và break-glass owner state",
+      description: "Role owner/admin/user, audit trail và bảo mật quản trị",
       icon: ICONS.security,
       accent: "accent",
       badge: badges?.security,
@@ -162,6 +161,9 @@ type AdminSidebarProps = {
 };
 
 export function AdminSidebar({ items, section, onSelect, access }: AdminSidebarProps) {
+  const roles = new Set(access?.roles ?? []);
+  const roleLabel = access?.isOwner ? "Owner" : roles.has("admin") ? "Admin" : "User";
+
   return (
     <>
       <aside className="hidden xl:flex xl:w-[280px] xl:flex-col xl:gap-4 xl:rounded-[32px] xl:border xl:border-primary/10 xl:bg-white/80 xl:p-4 xl:shadow-md xl:backdrop-blur">
@@ -171,13 +173,18 @@ export function AdminSidebar({ items, section, onSelect, access }: AdminSidebarP
           </div>
           <h2 className="text-xl font-semibold text-foreground">Admin area cho SaaS đa kênh</h2>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Phone number là customer canonical. Telegram và Zalo là kênh sử dụng, còn web giữ vai trò checkout, activation và admin.
+            Số điện thoại là customer truth. Telegram và Zalo là kênh sử dụng, còn web giữ vai trò OTP, checkout,
+            activation và admin.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
-            <span className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-primary">Teal core</span>
-            <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-accent">Flame accent</span>
+            <span className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-primary">
+              Teal core
+            </span>
+            <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-accent">
+              Flame accent
+            </span>
             <span className="rounded-full border border-zinc-200 bg-white/90 px-3 py-1 text-zinc-500">
-              {access?.isOwner ? "Owner" : "Role-aware"}
+              {roleLabel}
             </span>
           </div>
         </div>
@@ -200,7 +207,11 @@ export function AdminSidebar({ items, section, onSelect, access }: AdminSidebarP
                   <span className="flex items-center gap-2">
                     <span className="text-sm font-semibold">{item.label}</span>
                     {item.badge != null && item.badge !== "" ? (
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? "bg-white/15 text-white" : "bg-white/90 text-zinc-500"}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          active ? "bg-white/15 text-white" : "bg-white/90 text-zinc-500"
+                        }`}
+                      >
                         {item.badge}
                       </span>
                     ) : null}

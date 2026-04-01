@@ -50,7 +50,7 @@ import {
   mergeCustomers,
   promoteFoodCandidate,
   resetCustomerQuota,
-  setAdminMemberRoles,
+  setAdminMemberAccess,
   setCustomerEntitlement,
   setCustomerPhone,
   toggleAdminMemberActive,
@@ -143,8 +143,7 @@ type MemberFormState = {
   linkedUserId: string;
   authUserId: string;
   displayName: string;
-  roles: AdminRole[];
-  isOwner: boolean;
+  role: AdminRole;
 };
 
 type PayFormState = {
@@ -296,8 +295,7 @@ function defaultMemberForm(): MemberFormState {
     linkedUserId: "",
     authUserId: "",
     displayName: "",
-    roles: ["support_admin"],
-    isOwner: false,
+    role: "admin",
   };
 }
 
@@ -396,11 +394,12 @@ export default function Admin() {
       : "overview"
   );
   const roles = access?.roles ?? [];
-  const isOwner = access?.isOwner === true || roles.includes("super_admin");
-  const canFinance = isOwner || roles.includes("billing_admin");
-  const canCatalog = isOwner || roles.includes("content_admin");
-  const canSupport = isOwner || roles.includes("support_admin");
-  const canAnalytics = isOwner || roles.includes("analyst") || canFinance;
+  const isOwner = access?.isOwner === true || roles.includes("owner");
+  const isAdmin = isOwner || roles.includes("admin");
+  const canFinance = isAdmin;
+  const canCatalog = isAdmin;
+  const canSupport = isAdmin;
+  const canAnalytics = isAdmin;
 
   const setSection = useCallback(
     (nextSection: AdminSection) => {
@@ -900,15 +899,15 @@ export default function Admin() {
         linkedUserId: Number(memberForm.linkedUserId),
         authUserId: memberForm.authUserId.trim() || null,
         displayName: memberForm.displayName.trim() || null,
-        isOwner: memberForm.isOwner,
+        isOwner: memberForm.role === "owner",
       });
-      await setAdminMemberRoles(memberId, memberForm.roles);
+      await setAdminMemberAccess(memberId, memberForm.role, true);
     }, "Đã lưu admin member");
     setMemberForm(defaultMemberForm());
   };
 
-  const handleApplyRoles = async (member: AdminMember, nextRoles: AdminRole[]) =>
-    withRefresh(() => setAdminMemberRoles(member.id, nextRoles), "Đã cập nhật roles");
+  const handleSetRole = async (member: AdminMember, role: AdminRole) =>
+    withRefresh(() => setAdminMemberAccess(member.id, role, member.is_active), "Đã cập nhật role");
 
   const handleToggleMemberActive = async (member: AdminMember) =>
     withRefresh(
@@ -965,7 +964,7 @@ export default function Admin() {
           eyebrow: "Analytics & growth",
           title: "Signup, conversion, retention và revenue signals",
           description:
-            "Analyst và business team theo dõi growth funnel, active users, Free → Paid conversion và xu hướng revenue theo cùng token system với landing page.",
+            "Owner và Admin theo dõi growth funnel, active users, Free → Paid conversion và xu hướng revenue theo cùng token system với landing page.",
         };
       case "system":
         return {
@@ -1191,7 +1190,7 @@ export default function Admin() {
                   onMemberFormChange={(patch) => setMemberForm((prev) => ({ ...prev, ...patch }))}
                   onSaveMember={handleSaveMember}
                   onToggleMemberActive={handleToggleMemberActive}
-                  onApplyRoles={handleApplyRoles}
+                  onSetRole={handleSetRole}
                   canManageMembers={isOwner}
                   skuOptions={SKU_OPTIONS}
                 />
