@@ -3,6 +3,7 @@ export type PlanTier = "free" | "pro" | "lifetime";
 export type BillingSku =
   | "weekly"
   | "monthly"
+  | "semiannual"
   | "quarterly"
   | "yearly"
   | "lifetime";
@@ -32,6 +33,14 @@ export type PublicPlanCard = {
   features: string[];
 };
 
+export type PublicProCadenceOption = {
+  sku: BillingSku;
+  label: string;
+  priceLabel: string;
+  helper: string;
+  badge?: string;
+};
+
 export type CheckoutProviderOption = {
   value: PublicCheckoutProvider;
   label: string;
@@ -40,8 +49,8 @@ export type CheckoutProviderOption = {
 };
 
 export const LIFETIME_SENTINEL_ISO = "2099-12-31T23:59:59.000Z";
-export const MARKETING_SKUS: BillingSku[] = ["monthly", "lifetime"];
-export const PUBLIC_CHECKOUT_SKUS: BillingSku[] = ["monthly", "lifetime"];
+export const MARKETING_SKUS: BillingSku[] = ["monthly", "semiannual", "yearly", "lifetime"];
+export const PUBLIC_CHECKOUT_SKUS: BillingSku[] = ["monthly", "semiannual", "yearly", "lifetime"];
 
 export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
   weekly: {
@@ -51,18 +60,28 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 39000,
     label: "Pro 7 ngày",
     shortLabel: "Pro tuần",
-    description: "Gói ngắn hạn để trải nghiệm CaloTrack trong 7 ngày.",
+    description: "Legacy offer giữ để tương thích với dữ liệu cũ.",
   },
   monthly: {
     sku: "monthly",
     tier: "pro",
     days: 30,
     priceVnd: 89000,
-    label: "Pro 30 ngày",
+    label: "Pro 1 tháng",
     shortLabel: "Pro tháng",
-    description: "Gói Pro tiêu chuẩn để mở khóa toàn bộ tính năng theo tháng.",
+    description: "Chu kỳ linh hoạt để bắt đầu nhanh và nâng cấp ngay trong chat.",
     highlighted: true,
     badge: "Phổ biến nhất",
+  },
+  semiannual: {
+    sku: "semiannual",
+    tier: "pro",
+    days: 180,
+    priceVnd: 459000,
+    label: "Pro 6 tháng",
+    shortLabel: "Pro 6 tháng",
+    description: "Phù hợp cho người theo dõi nghiêm túc và muốn tiết kiệm hơn gói tháng.",
+    badge: "Tiết kiệm hơn",
   },
   quarterly: {
     sku: "quarterly",
@@ -71,16 +90,17 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 239000,
     label: "Pro 90 ngày",
     shortLabel: "Pro quý",
-    description: "Tiết kiệm hơn khi dùng theo chu kỳ quý.",
+    description: "Legacy offer giữ để tương thích với dữ liệu cũ.",
   },
   yearly: {
     sku: "yearly",
     tier: "pro",
     days: 365,
     priceVnd: 889000,
-    label: "Pro 365 ngày",
+    label: "Pro 12 tháng",
     shortLabel: "Pro năm",
-    description: "Tiết kiệm hơn khi đăng ký trọn gói 1 năm sử dụng.",
+    description: "Mức tối ưu chi phí cho người muốn dùng trọn năm.",
+    badge: "Giá tốt nhất",
   },
   lifetime: {
     sku: "lifetime",
@@ -89,8 +109,8 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     priceVnd: 1980000,
     label: "Lifetime",
     shortLabel: "Lifetime",
-    description: "Đầu tư một lần, sử dụng CaloTrack trọn đời.",
-    badge: "One-time",
+    description: "Mua một lần, giữ entitlement dài hạn trên customer.",
+    badge: "Một lần thanh toán",
   },
 };
 
@@ -102,66 +122,69 @@ export const PUBLIC_PLAN_CARDS: PublicPlanCard[] = [
     plan: "free",
     label: "Free",
     priceLabel: "0đ",
-    helper: "Làm quen với việc theo dõi bữa ăn nhanh chóng trong 7 ngày.",
+    helper: "Làm quen với CaloTrack bằng quota nhỏ, đủ để thử flow chat và tránh abuse cost.",
     defaultSku: null,
-    badge: "Start free",
+    badge: "Dùng thử",
     features: [
-      "Trải nghiệm AI miễn phí trong 7 ngày",
-      "Giới hạn 2 lượt phân tích ảnh mỗi ngày",
-      "Giới hạn 5 lượt tin nhắn mỗi ngày",
-      "Không có Dashboard phân tích sâu",
+      "2 lượt phân tích ảnh mỗi ngày",
+      "5 lượt tin nhắn mỗi ngày",
+      "Dashboard cơ bản để theo dõi nhanh",
+      "Phù hợp để thử flow trước khi nâng cấp",
     ],
   },
   {
     id: "pro",
     plan: "pro",
-    label: "Pro Monthly",
-    priceLabel: "89.000đ / tháng",
-    helper: "Lựa chọn linh hoạt, phổ biến nhất để bắt đầu.",
+    label: "Pro",
+    priceLabel: "Từ 89.000đ / tháng",
+    helper: "Một tier Pro duy nhất. Chọn chu kỳ 1 tháng, 6 tháng hoặc 12 tháng trong checkout.",
     defaultSku: "monthly",
     badge: "Phổ biến nhất",
     features: [
-      "Theo dõi bữa ăn qua chat",
-      "Dashboard ngày/tuần/tháng",
+      "Theo dõi bữa ăn qua chat và ảnh",
+      "Dashboard ngày / tuần / tháng đầy đủ",
       "Cập nhật cân nặng và tiến độ",
       "Gym mode và coach chuyên sâu",
-      "Lịch sử đầy đủ",
-      "Ưu tiên xử lý",
-    ],
-  },
-  {
-    id: "yearly",
-    plan: "pro",
-    label: "Pro Yearly",
-    priceLabel: "899.000đ / năm",
-    helper: "Tiết kiệm 20% so với gói tháng.",
-    defaultSku: "yearly",
-    badge: "Giá ưu đãi nhất",
-    features: [
-      "Theo dõi bữa ăn qua chat",
-      "Dashboard ngày/tuần/tháng",
-      "Cập nhật cân nặng và tiến độ",
-      "Gym mode và coach chuyên sâu",
-      "Lịch sử đầy đủ",
-      "Ưu tiên xử lý",
+      "Lịch sử đầy đủ, quota cao hơn, ưu tiên xử lý",
     ],
   },
   {
     id: "lifetime",
     plan: "lifetime",
-    label: "Founder Lifetime",
+    label: "Lifetime",
     priceLabel: "1.980.000đ / một lần",
-    helper: "Mua một lần, sử dụng vĩnh viễn hệ sinh thái theo dõi năng lượng.",
+    helper: "Phù hợp nếu bạn muốn chốt entitlement dài hạn ngay từ đầu.",
     defaultSku: "lifetime",
-    badge: "Chỉ 50 slot",
+    badge: "Giới hạn slot",
     features: [
-      "Theo dõi bữa ăn qua chat",
-      "Dashboard ngày/tuần/tháng",
-      "Cập nhật cân nặng và tiến độ",
-      "Gym mode và coach chuyên sâu",
-      "Lịch sử đầy đủ",
-      "Ưu tiên xử lý",
+      "Mở toàn bộ quyền lợi Pro",
+      "Không cần gia hạn định kỳ",
+      "Giữ entitlement dài hạn ở cấp customer",
+      "Ưu tiên cho các capability AI mới",
     ],
+  },
+];
+
+export const PUBLIC_PRO_CADENCE_OPTIONS: PublicProCadenceOption[] = [
+  {
+    sku: "monthly",
+    label: "1 tháng",
+    priceLabel: formatBillingPriceVnd(BILLING_OFFERS.monthly.priceVnd),
+    helper: "Linh hoạt để bắt đầu nhanh.",
+    badge: "Phổ biến nhất",
+  },
+  {
+    sku: "semiannual",
+    label: "6 tháng",
+    priceLabel: formatBillingPriceVnd(BILLING_OFFERS.semiannual.priceVnd),
+    helper: "Tiết kiệm hơn nếu bạn dùng đều.",
+  },
+  {
+    sku: "yearly",
+    label: "12 tháng",
+    priceLabel: formatBillingPriceVnd(BILLING_OFFERS.yearly.priceVnd),
+    helper: "Mức tối ưu cho hành trình dài hạn.",
+    badge: "Giá tốt nhất",
   },
 ];
 
@@ -169,7 +192,7 @@ export const PUBLIC_CHECKOUT_PROVIDERS: CheckoutProviderOption[] = [
   {
     value: "momo",
     label: "MoMo",
-    helper: "Redirect sang ví MoMo, backend xác nhận bằng IPN và auto-activate khi merchant setup xong.",
+    helper: "Redirect sang ví MoMo, backend xác nhận bằng IPN và tự kích hoạt khi merchant setup xong.",
     accent: "primary",
   },
   {
@@ -228,9 +251,9 @@ export function formatTierLabel(tier: PlanTier): string {
 }
 
 export function describeTier(tier: PlanTier): string {
-  if (tier === "lifetime") return "One-time payment, giữ entitlement dài hạn theo customer.";
-  if (tier === "pro") return "Mở quota AI cao hơn, analytics tốt hơn và support ưu tiên.";
-  return "Bắt đầu miễn phí với quota hằng ngày vừa đủ để trải nghiệm.";
+  if (tier === "lifetime") return "Thanh toán một lần, giữ entitlement dài hạn theo customer.";
+  if (tier === "pro") return "Mở quota cao hơn, analytics tốt hơn, gym mode đầy đủ và support nhanh hơn.";
+  return "Bắt đầu miễn phí với quota nhỏ để thử flow thật và giảm rủi ro spam.";
 }
 
 export function formatBillingPriceVnd(value: number): string {
@@ -243,7 +266,13 @@ export function formatBillingSkuLabel(sku: BillingSku): string {
 
 export function getBillingCheckoutLabel(sku: BillingSku): string {
   if (sku === "monthly") {
-    return `Nâng cấp Pro ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+    return `Chọn Pro 1 tháng ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  }
+  if (sku === "semiannual") {
+    return `Chọn Pro 6 tháng ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
+  }
+  if (sku === "yearly") {
+    return `Chọn Pro 12 tháng ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
   }
   if (sku === "lifetime") {
     return `Mở Lifetime ${formatBillingPriceVnd(BILLING_OFFERS[sku].priceVnd)}`;
@@ -266,4 +295,8 @@ export function getBillingProviderSummary(): string {
 
 export function getFreeDailyLimit(): number {
   return 5;
+}
+
+export function getFreeImageDailyLimit(): number {
+  return 2;
 }

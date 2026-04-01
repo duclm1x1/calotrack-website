@@ -1,27 +1,20 @@
-import { BILLING_OFFERS, getFreeDailyLimit } from "@/lib/billing";
+import { BILLING_OFFERS, getFreeDailyLimit, getFreeImageDailyLimit } from "@/lib/billing";
 
-/**
- * Application Constants
- */
 export const APP_NAME = "CaloTrack";
-export const APP_TAGLINE = "Track Calories with AI";
+export const APP_TAGLINE = "AI coach theo bữa ăn, calories và tập luyện qua chat";
 
-/**
- * Legacy pricing constants kept for compatibility.
- * Canonical pricing must stay in billing.ts.
- */
 export const PLANS = {
-  TRIAL: {
-    id: "trial",
-    name: "Pro 7 Ngay",
-    price: BILLING_OFFERS.weekly.priceVnd,
-    duration: BILLING_OFFERS.weekly.days ?? 7,
+  FREE: {
+    id: "free",
+    name: "Free",
+    price: 0,
+    duration: 0,
     features: [
-      "Full tinh nang Pro trong 7 ngay",
-      `Free tier mac dinh ${getFreeDailyLimit()} luot AI/ngay truoc khi nang cap`,
-      "Truy cap bot Telegram production",
+      `${getFreeImageDailyLimit()} lượt ảnh mỗi ngày`,
+      `${getFreeDailyLimit()} lượt tin nhắn mỗi ngày`,
+      "Phù hợp để thử flow chat trước khi nâng cấp",
     ],
-    badge: "Dung Thu",
+    badge: "Dùng thử",
     highlighted: false,
   },
   PRO: {
@@ -30,11 +23,11 @@ export const PLANS = {
     price: BILLING_OFFERS.monthly.priceVnd,
     duration: BILLING_OFFERS.monthly.days ?? 30,
     features: [
-      "Phan tich AI va bot usage theo billing source of truth",
-      "Entitlement tier Pro cho payment online va admin fallback",
-      "Priority support va higher usage policy",
+      "Dashboard ngày / tuần / tháng",
+      "Gym mode và coach chuyên sâu",
+      "Quota cao hơn, lịch sử đầy đủ và support nhanh hơn",
     ],
-    badge: "Best Value",
+    badge: "Phổ biến nhất",
     highlighted: true,
   },
   LIFETIME: {
@@ -43,18 +36,15 @@ export const PLANS = {
     price: BILLING_OFFERS.lifetime.priceVnd,
     duration: -1,
     features: [
-      "Tat ca tinh nang Pro",
-      "Tra mot lan, dung dai han",
-      "VIP support va early access",
+      "Mở trọn quyền lợi Pro",
+      "Thanh toán một lần, không cần gia hạn định kỳ",
+      "Giữ entitlement dài hạn theo customer",
     ],
-    badge: "VIP",
+    badge: "Giới hạn slot",
     highlighted: false,
   },
 } as const;
 
-/**
- * User Status
- */
 export const USER_STATUS = {
   PENDING: "pending",
   ACTIVE: "active",
@@ -62,17 +52,11 @@ export const USER_STATUS = {
   BANNED: "banned",
 } as const;
 
-/**
- * Payment Methods
- */
 export const PAYMENT_METHODS = {
   STRIPE: "stripe",
   BANK: "bank_transfer",
 } as const;
 
-/**
- * Routes
- */
 export const ROUTES = {
   HOME: "/",
   PRICING: "/pricing",
