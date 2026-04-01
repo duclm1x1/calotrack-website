@@ -1,28 +1,31 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Eye, Target, Heart } from "lucide-react";
+import { Target, MessageCircle, LineChart, Dumbbell } from "lucide-react";
 
 const cards = [
   {
-    icon: Eye,
-    title: "Tầm Nhìn",
-    content:
-      "Trở thành người bạn đồng hành dinh dưỡng #1 cho người Việt — thông minh, thân thiện, và luôn sẵn sàng giúp đỡ.",
+    icon: Target,
+    title: "Người muốn kiểm soát vóc dáng",
+    content: "Đang muốn giảm mỡ hoặc giữ cân nhưng không thích dùng các app đếm calo phức tạp, thao tác rườm rà.",
     gradient: "from-teal/10 to-teal/5",
   },
   {
-    icon: Target,
-    title: "Sứ Mệnh",
-    content:
-      "Đơn giản hóa việc theo dõi calo, giúp mọi người kiểm soát sức khỏe mà không cần kiến thức chuyên môn hay công cụ phức tạp.",
+    icon: MessageCircle,
+    title: "Yêu thích sự tiện lợi",
+    content: "Muốn theo dõi ăn uống trực tiếp qua khung chat Telegram hoặc Zalo như đang nhắn tin cho bạn bè.",
     gradient: "from-flame/10 to-flame/5",
   },
   {
-    icon: Heart,
-    title: "Triết Lý",
-    content:
-      "Không phán xét, chỉ hỗ trợ. Chúng tôi tin rằng thay đổi bền vững đến từ sự tự nhận thức và hành động nhỏ mỗi ngày.",
-    gradient: "from-teal/10 to-flame/5",
+    icon: LineChart,
+    title: "Cần theo dõi tiến độ",
+    content: "Người cần một người trợ lý (coach) phân tích dinh dưỡng và theo dõi báo cáo tiến độ đều đặn mỗi ngày.",
+    gradient: "from-blue-500/10 to-blue-500/5",
+  },
+  {
+    icon: Dumbbell,
+    title: "Người tập luyện thể thao",
+    content: "Người tập gym muốn có chế độ hỗ trợ riêng biệt, tính macro chuyên sâu và tối ưu hóa hiệu suất buổi tập.",
+    gradient: "from-slate-700/10 to-slate-700/5",
   },
 ];
 
@@ -40,14 +43,14 @@ export const Mission = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <p className="tagline mb-4">Về chúng tôi</p>
+          <p className="tagline mb-4 justify-center">Chân dung người dùng</p>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            Câu chuyện <span className="text-gradient-teal">Calo Track</span>
+            CaloTrack <span className="text-gradient-teal">khiến ai thay đổi?</span>
           </h2>
         </motion.div>
 
         {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
           {cards.map((card, index) => (
             <motion.div
               key={card.title}
@@ -85,9 +88,8 @@ export const Mission = () => {
           className="mt-16 text-center"
         >
           <blockquote className="text-xl md:text-2xl font-medium text-foreground/80 italic max-w-3xl mx-auto">
-            "Kiểm soát calo, làm chủ bữa ăn"
+            "Sức khỏe của bạn, thói quen của bạn, hệ sinh thái của chúng tôi."
           </blockquote>
-          <p className="mt-4 text-muted-foreground">— Slogan Calo Track</p>
         </motion.div>
       </div>
     </section>

@@ -2,31 +2,31 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { BarChart3, BrainCircuit, Camera } from "lucide-react";
+import { BarChart3, BrainCircuit, MessageCircle } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    icon: Camera,
-    title: "Gửi ảnh qua Zalo / Telegram",
+    icon: MessageCircle,
+    title: "Chat như bình thường",
     description:
-      "Chụp ảnh bữa ăn hoặc nhập tên món và số gram. Không cần tải app hay tìm kiếm rườm rà, mọi thao tác ghi chép diễn ra tự nhiên như đang nhắn tin cho bạn bè.",
+      "Gửi món ăn bằng văn bản, gửi ảnh bữa ăn thực tế, hoặc hỏi nhanh các câu hỏi dinh dưỡng.",
     color: "primary",
   },
   {
     number: "02",
     icon: BrainCircuit,
-    title: "AI phân tích & tính toán",
+    title: "Phân tích và Lưu lại",
     description:
-      "Trí tuệ nhân tạo sẽ lập tức nhận diện món ăn thực tế tại Việt Nam, bóc tách khẩu phần, tính toán lượng calo và chỉ số Macro trả về ngay lập tức trong khung chat.",
+      "Hệ thống AI tự động phân tích và lưu trữ bữa ăn, thống kê calo, lịch sử nạp và tiến độ.",
     color: "flame",
   },
   {
     number: "03",
     icon: BarChart3,
-    title: "Theo dõi tiến độ chuyên sâu",
+    title: "Theo dõi và điều chỉnh",
     description:
-      "Website đóng vai trò như một bảng điều khiển trung tâm giúp bạn xem biểu đồ dinh dưỡng chi tiết, báo cáo tiến độ theo tuần và thiết lập lại các mục tiêu cá nhân.",
+      "Dễ dàng xem dashboard tổng quan mỗi ngày, cập nhật cân nặng và bật Gym mode khi cần.",
     color: "primary",
   },
 ];
@@ -45,11 +45,12 @@ export const HowItWorks = () => {
           transition={{ duration: 0.6 }}
           className="mb-16 text-center"
         >
+          <p className="tagline mb-3 justify-center">Cách dùng</p>
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Trải nghiệm mượt mà từ <span className="text-gradient-primary">Chat đến Website</span>
+            Sử dụng cực kỳ <span className="text-gradient-primary">đơn giản</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            CaloTrack kết hợp sự tiện lợi của tin nhắn và sức mạnh phân tích của website. Bạn chỉ cần gửi tin nhắn hoặc hình ảnh qua Zalo/Telegram để ghi chép, hệ thống AI sẽ tự động lo phần còn lại.
+            Chỉ với 3 bước cơ bản, bạn đã có ngay một trợ lý dinh dưỡng cá nhân hoạt động liên tục 24/7 mà không cần mở bất kỳ ứng dụng thứ ba nào.
           </p>
         </motion.div>
 

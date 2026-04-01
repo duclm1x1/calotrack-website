@@ -4,37 +4,34 @@ import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
-import { SITE_CONFIG } from "@/lib/siteConfig";
-
 const faqs = [
   {
-    question: "CaloTrack hoạt động như thế nào?",
-    answer:
-      "Bạn có thể gửi ảnh bữa ăn, nhắn tên món hoặc khẩu phần trong chat, sau đó CaloTrack sẽ ước tính calories và macro để bạn theo dõi ngay trong cuộc trò chuyện.",
+    question: "CaloTrack có phải app không?",
+    answer: "CaloTrack không phải là một app riêng cần cài đặt. Bạn có thể dùng trực tiếp qua Telegram hoặc Zalo, nên trải nghiệm sẽ nhanh và tiện hơn như đang chat bình thường.",
   },
   {
-    question: "Telegram, website và Zalo khác nhau ra sao?",
-    answer:
-      "Cả Zalo và Telegram đều là trợ lý Chat AI giúp bạn theo dõi bữa ăn. Website đóng vai trò bảo vệ tài khoản, truy xuất hóa đơn thanh toán và quản lý các thiết lập nâng cao.",
+    question: "Tôi dùng trên Telegram hay Zalo?",
+    answer: "Bạn có thể dùng CaloTrack trên Telegram hoặc Zalo. Tùy kênh nào bạn tiện hơn, bạn chỉ cần kết nối tài khoản và bắt đầu theo dõi bữa ăn, cân nặng, tiến độ và sử dụng các tính năng coach.",
   },
   {
-    question: "Portal web có thay thế trải nghiệm chat không?",
-    answer:
-      "Website không sinh ra để thay thế thói quen chat của bạn. Hãy tiếp tục sử dụng Zalo hoặc Telegram để ghi chép món ăn nhanh nhất, và dùng Website để nhìn lại tiến độ của mình mỗi tuần.",
+    question: "Có thể ghi món bằng ảnh không?",
+    answer: "Có. Bạn có thể gửi ảnh món ăn để CaloTrack phân tích và hỗ trợ review bữa ăn. Ngoài ảnh, bạn cũng có thể ghi món bằng text như chat bình thường để lưu nhanh hơn.",
   },
   {
-    question: "AI có hiểu món Việt không?",
-    answer:
-      "Có. CaloTrack được tối ưu để hiểu tốt hơn các món Việt và khẩu phần đời thường, dù bạn vẫn luôn có thể sửa estimate nếu muốn chính xác hơn.",
+    question: "Có xem lại thống kê ngày/tuần/tháng được không?",
+    answer: "Có. CaloTrack hỗ trợ xem lại thống kê theo ngày, tuần, và tháng. Bạn có thể theo dõi lượng ăn, tiến độ và xu hướng của mình thay vì chỉ nhìn từng bữa riêng lẻ.",
   },
   {
-    question: "Khi nào tôi nên nâng cấp Pro hoặc Lifetime?",
-    answer: `Nếu bạn sử dụng CaloTrack thường xuyên và muốn mở khóa toàn bộ giới hạn phân tích cũng như xem báo cáo nâng cao thì gói Pro hoặc Lifetime sẽ rất phù hợp. Liên hệ ${SITE_CONFIG.supportEmail} nếu bạn cần tư vấn.`,
+    question: "Gym mode là gì?",
+    answer: "Gym mode là chế độ hỗ trợ chuyên sâu hơn cho người đang tập luyện. Khi bật gym mode, bạn có thể nhận các phản hồi và hướng dẫn tập trung hơn vào nhu cầu workout, buổi tập, và các câu hỏi liên quan đến tập luyện.",
   },
   {
-    question: "Dữ liệu có an toàn và bảo mật không?",
-    answer:
-      "Mọi dữ liệu của bạn đều được mã hóa riêng biệt. Hệ thống đăng nhập không sử dụng mật khẩu mà xác thực trực tiếp qua số điện thoại để đảm bảo tính an toàn mức cao nhất.",
+    question: "Gói Pro khác gì Free?",
+    answer: "Gói Free phù hợp để trải nghiệm CaloTrack ở mức cơ bản. Gói Pro dành cho người muốn theo dõi nghiêm túc hơn, với các quyền lợi như theo dõi bữa ăn qua chat, xem thống kê ngày/tuần/tháng, gym mode, lịch sử đầy đủ và ưu tiên xử lý.",
+  },
+  {
+    question: "Lifetime có thật sự giới hạn 50 suất không?",
+    answer: "Có. Gói Lifetime là ưu đãi giới hạn và hiện chỉ mở 50 suất. Đây không phải gói bán đại trà lâu dài, nên khi đủ số lượng, CaloTrack có thể đóng gói này bất kỳ lúc nào.",
   },
 ];
 

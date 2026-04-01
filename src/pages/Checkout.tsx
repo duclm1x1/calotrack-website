@@ -142,11 +142,10 @@ export default function Checkout() {
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
             Thao tác đơn giản: chọn gói, thanh toán, kích hoạt và mở Telegram hoặc Zalo để bắt đầu ghi lại bữa ăn ngay lập tức.
           </p>
-          {!user ? (
-            <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-              Bạn có thể đăng ký ngay mà không cần tạo tài khoản mật khẩu. Hệ thống thẻ khóa thông tin bằng số điện thoại để bạn dùng chung được trên mọi thiết bị.
-            </div>
-          ) : null}
+          <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
+            <span className="font-semibold text-foreground">Lưu ý ngắn: </span>
+            CaloTrack hỗ trợ theo dõi dinh dưỡng và tập luyện. Không thay thế tư vấn y tế chuyên môn.
+          </div>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
@@ -290,8 +289,12 @@ export default function Checkout() {
             ) : null}
 
             <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-              Gói đang chọn: <span className="font-semibold text-foreground">{currentCard.label}</span>. Sau khi thanh toán
-              thành công, bạn sẽ được chuyển hướng tới trang hướng dẫn kết nối Zalo OA hoặc Telegram.
+              <span className="font-semibold text-foreground">Sau khi thanh toán:</span>
+              <ul className="mt-2 list-disc pl-5 space-y-1">
+                <li>Kích hoạt trên Telegram/Zalo</li>
+                <li>Liên kết bằng số điện thoại</li>
+                <li>Quyền lợi áp dụng cho tài khoản chính</li>
+              </ul>
             </div>
 
             <div className="mt-6 flex gap-3">

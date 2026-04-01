@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Check, MessageCircle, PlayCircle } from "lucide-react";
+import { ArrowDown, Check, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SITE_CONFIG } from "@/lib/siteConfig";
@@ -10,9 +10,9 @@ import { SITE_CONFIG } from "@/lib/siteConfig";
 const logo3d = "/logo-3d.png";
 
 const bullets = [
-  "Món Việt + ước lượng khẩu phần sát thực tế",
-  "Hỏi \"còn lại?\" ra ngay ngân sách kcal trong ngày",
-  "Tỉ lệ chuẩn xác lên tới >90%",
+  "Không cần cài app mới",
+  "Ghi món bằng chat hoặc ảnh",
+  "Phù hợp cho người muốn giảm mỡ / giữ cân / tăng cơ",
 ];
 
 export const Hero = () => {
@@ -60,59 +60,57 @@ export const Hero = () => {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              <span className="text-sm font-medium text-primary">Trợ lý dinh dưỡng AI qua chat</span>
+              <span className="text-sm font-medium text-primary">Chatbot thế hệ mới</span>
             </motion.div>
 
             <h1 className="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl xl:text-7xl tracking-[-0.04em]">
-              <span className="text-foreground">Gửi ảnh món ăn → biết kcal/macro trong </span>
-              <span className="text-gradient-flame">20 giây</span>
-              <br className="hidden lg:block md:hidden sm:hidden" />
-              <span className="text-foreground"> — ngay trên </span>
-              <span className="text-blue-500">Zalo</span>
+              <span className="text-foreground">AI Nutrition + Workout Coach qua </span>
+              <span className="text-[#229ED9]">Telegram</span>
+              <span className="text-foreground"> & </span>
+              <span className="text-blue-600">Zalo</span>
             </h1>
 
             <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground lg:mx-0">
-              CaloTrack là trợ lý dinh dưỡng qua chat (Zalo/Telegram). Nhắn ảnh hoặc "món + gram" để theo dõi calo chuẩn món Việt — không cần đếm tay.
+              Theo dõi bữa ăn qua chat, xem thống kê ngày/tuần/tháng, cập nhật cân nặng, dùng gym mode và nhận coach chuyên sâu mà không cần app phức tạp.
             </p>
 
-            <ul className="mb-8 space-y-3">
+            <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row">
+              <Button size="lg" asChild className="w-full gap-2 px-8 py-6 text-base sm:w-auto rounded-xl bg-[#229ED9] hover:bg-[#1C88B9] text-white border-0 shadow-lg shadow-[#229ED9]/25">
+                <a href={SITE_CONFIG.telegramBotUrl} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-5 w-5" />
+                  Dùng thử miễn phí trên Telegram
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto rounded-xl gap-2 bg-[#0068FF] hover:bg-[#005AE0] text-white border-0 shadow-lg" asChild>
+                <a href={SITE_CONFIG.zaloOaUrl} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-5 w-5" />
+                  Bắt đầu với Zalo
+                </a>
+              </Button>
+            </div>
+
+            <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row">
+              <Button variant="link" asChild className="text-muted-foreground hover:text-primary">
+                <a href="#pricing">Xem các gói Pro tính năng cao</a>
+              </Button>
+            </div>
+
+            <ul className="mb-8 space-y-3 flex flex-col items-center lg:items-start">
               {bullets.map((bullet, index) => (
                 <motion.li
                   key={bullet}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-start gap-3 text-left"
+                  className="flex items-center gap-3 text-left"
                 >
                   <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/15">
                     <Check className="h-3 w-3 text-primary" />
                   </span>
-                  <span className="text-muted-foreground">{bullet}</span>
+                  <span className="text-muted-foreground font-medium">{bullet}</span>
                 </motion.li>
               ))}
             </ul>
-
-            <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row">
-              <Button size="lg" asChild className="w-full gap-2 px-8 py-6 text-base sm:w-auto rounded-xl bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg shadow-blue-500/25">
-                <a href={SITE_CONFIG.zaloOaUrl} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="h-5 w-5" />
-                  Chat trên Zalo
-                </a>
-              </Button>
-              <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto rounded-xl gap-2 hover:bg-muted/50" asChild>
-                <a>
-                  <PlayCircle className="h-5 w-5" />
-                  Xem demo chat 20s
-                </a>
-              </Button>
-            </div>
-
-            <div className="mb-2 text-sm text-muted-foreground text-center lg:text-left">
-              Mở Zalo → tìm "CaloTrack OA" → gửi "bắt đầu" hoặc gửi ảnh bữa ăn
-            </div>
-            <div className="text-xs italic text-muted-foreground/70 text-center lg:text-left max-w-md mx-auto lg:mx-0">
-              Không thay thế tư vấn y khoa. Bạn luôn có thể sửa và xóa dữ liệu bất cứ lúc nào.
-            </div>
           </motion.div>
 
           <motion.div

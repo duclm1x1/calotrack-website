@@ -2,44 +2,28 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Bell, CreditCard, MessageCircle, PieChart, Shield, Utensils } from "lucide-react";
+import { MessageCircle, PieChart, Shield, Utensils } from "lucide-react";
 
 const benefits = [
   {
     icon: MessageCircle,
-    title: "Chat-first Tracking",
-    description:
-      "Ghi chép bữa ăn siêu tốc bằng thao tác chat hoặc gửi hình ảnh. Tạm biệt các ứng dụng truyền thống ép bạn phải tự tìm kiếm và định lượng món ăn rườm rà.",
-  },
-  {
-    icon: Utensils,
-    title: "AI am hiểu Món Việt",
-    description:
-      "Nhận diện chính xác từ phở bò, bún riêu đến cơm tấm. Ước lượng khẩu phần sát thực tế so với các công cụ track thụ động, cơ học.",
+    title: "Theo dõi bữa ăn qua chat",
+    description: "Gửi món ăn bằng text hoặc ảnh. Không cần ghi log thủ công như các app truyền thống.",
   },
   {
     icon: PieChart,
-    title: "Dashboard đọc nhanh",
-    description:
-      "Trực quan hóa quá trình ăn uống. Từ tổng nạp hôm nay đến báo cáo trung bình tuần, dữ liệu được hiển thị sinh động, dễ đọc và đủ sâu khi bạn cần xem kỹ.",
-  },
-  {
-    icon: Bell,
-    title: "Cá nhân hóa mục tiêu",
-    description:
-      "Tùy chỉnh linh hoạt chế độ ăn của riêng bạn (Tăng cơ, Giảm mỡ, Giữ dáng). AI sẽ tự động phân bổ lại lượng Calories và tỷ lệ Macro lý tưởng nhất.",
-  },
-  {
-    icon: CreditCard,
-    title: "Luôn luôn Đồng bộ",
-    description:
-      "Mọi dữ liệu cá nhân của bạn được lưu trữ và cập nhật realtime trên tài khoản. Log bữa ăn khi đang đi ngoài đường, xem lại cặn kẽ biểu đồ khi về nhà.",
+    title: "Xem thống kê ngày / tuần / tháng",
+    description: "Biết hôm nay ăn bao nhiêu. Quản lý tổng quan tiến độ tuần này đang lệch hay đúng mục tiêu.",
   },
   {
     icon: Shield,
-    title: "Tối ưu Zalo hoạt động",
-    description:
-      "Trải nghiệm trên Zalo được tối ưu hóa đặc biệt với các chức năng mở rộng như chế độ Tracking cơ bản, Nutrition chuyên sâu và cả Gym mode.",
+    title: "Cập nhật cân nặng và tiến độ",
+    description: "Theo dõi cân nặng liên tục. Nhìn được xu hướng dài hạn thay vì chỉ tập trung vào từng ngày.",
+  },
+  {
+    icon: Utensils,
+    title: "Gym mode và coach chuyên sâu",
+    description: "Dùng khi bắt đầu buổi tập hoặc cần hỏi nhiều hơn về tập luyện để nhận hướng dẫn theo ngữ cảnh.",
   },
 ];
 
@@ -57,15 +41,16 @@ export const Benefits = () => {
           transition={{ duration: 0.6 }}
           className="mb-16 text-center"
         >
+          <p className="tagline mb-3 justify-center">Lợi ích thực tế</p>
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Tính năng trọn vẹn để <span className="text-gradient-primary">làm chủ vóc dáng</span>
+            CaloTrack <span className="text-gradient-primary">giúp gì cho bạn?</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Từ việc đếm calo siêu tốc qua hình ảnh nền tảng chat đến các bản báo cáo Macro nâng cao, hệ sinh thái CaloTrack cung cấp đầy đủ công cụ thân thiện để giúp bạn chinh phục mọi mục tiêu sức khỏe.
+            Thiết kế đơn giản, tập trung vào kết quả thay vì thao tác rườm rà.
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon;
             return (
