@@ -249,8 +249,8 @@ export default function Activate() {
                 <div className="flex items-start gap-3">
                   <Building2 className="mt-1 h-5 w-5 text-primary" />
                   <div className="flex-1">
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Chuyển khoản Techcombank</div>
-                    <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển đúng mã đơn hàng để đối soát</h2>
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Cảm ơn bạn đã đặt mua gói cước 🎉</div>
+                    <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển mã đơn hàng dưới đây để kích hoạt</h2>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
                       Hệ thống đối soát tự động khi nhận khoản chuyển khoản có ghi đúng nội dung ghi chú.
                       Bạn sẽ được kích hoạt gói ngay lập tức không cần chờ đợi.

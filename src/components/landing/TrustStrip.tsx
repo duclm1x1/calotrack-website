@@ -13,7 +13,7 @@ const items = [
   {
     icon: Workflow,
     label: "Zalo-ready",
-    helper: "Frontend và account layer đã sẵn để nối workflow riêng",
+    helper: "Zalo hiện tại đã sẵn sàng với model tiên tiến nhất",
     tone: "accent",
   },
   {
