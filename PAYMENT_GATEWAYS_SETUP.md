@@ -54,18 +54,18 @@ Set these on Vercel:
 
 Use separate workflows:
 
-- `CaloTrack — MoMo Create Order`
+- `CaloTrack - MoMo Create Order`
   - public webhook called by website
   - validates `orderCode`, `amount`, `phone`
   - signs MoMo create-order payload
   - returns `payUrl`
-- `CaloTrack — MoMo IPN`
+- `CaloTrack - MoMo IPN`
   - receives MoMo callback
   - writes `payment_webhooks`
   - writes `payment_attempts`
   - updates `orders`
   - grants entitlement idempotently
-- `CaloTrack — Bank Transfer Webhook (Casso)`
+- `CaloTrack - Bank Transfer Webhook (Casso)`
   - receives transfer notification
   - extracts `CT...` order code from transfer content
   - writes payment ledger

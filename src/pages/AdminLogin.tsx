@@ -39,13 +39,9 @@ export default function AdminLogin() {
         throw error;
       }
 
-      toast.success(
-        "Đã gửi email đăng nhập admin. Kiểm tra Inbox, Spam hoặc Promotions để mở backoffice."
-      );
+      toast.success("Đã gửi email đăng nhập admin. Kiểm tra Inbox, Spam hoặc Promotions để mở backoffice.");
     } catch (error) {
-      toast.error(
-        String((error as Error)?.message || "Không thể gửi email đăng nhập admin.")
-      );
+      toast.error(String((error as Error)?.message || "Không thể gửi email đăng nhập admin."));
     } finally {
       setLoading(false);
     }

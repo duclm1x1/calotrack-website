@@ -5,27 +5,27 @@ import { Target, MessageCircle, LineChart, Dumbbell } from "lucide-react";
 const cards = [
   {
     icon: Target,
-    title: "Người muốn kiểm soát vóc dáng",
-    content: "Đang muốn giảm mỡ hoặc giữ cân nhưng không thích dùng các app đếm calo phức tạp, thao tác rườm rà.",
+    title: "Người muốn giảm mỡ",
+    content: "Muốn kiểm soát bữa ăn tốt hơn mà không phải ghi chép rườm rà.",
     gradient: "from-teal/10 to-teal/5",
   },
   {
     icon: MessageCircle,
-    title: "Yêu thích sự tiện lợi",
-    content: "Muốn theo dõi ăn uống trực tiếp qua khung chat Telegram hoặc Zalo như đang nhắn tin cho bạn bè.",
+    title: "Người muốn giữ cân",
+    content: "Muốn duy trì thói quen ăn uống ổn định và theo dõi tiến độ rõ ràng hơn.",
     gradient: "from-flame/10 to-flame/5",
   },
   {
-    icon: LineChart,
-    title: "Cần theo dõi tiến độ",
-    content: "Người cần một người trợ lý (coach) phân tích dinh dưỡng và theo dõi báo cáo tiến độ đều đặn mỗi ngày.",
-    gradient: "from-blue-500/10 to-blue-500/5",
+    icon: Dumbbell,
+    title: "Người đang tập gym",
+    content: "Muốn có thêm gym mode và hỗ trợ theo ngữ cảnh tập luyện.",
+    gradient: "from-slate-700/10 to-slate-700/5",
   },
   {
-    icon: Dumbbell,
-    title: "Người tập luyện thể thao",
-    content: "Người tập gym muốn có chế độ hỗ trợ riêng biệt, tính macro chuyên sâu và tối ưu hóa hiệu suất buổi tập.",
-    gradient: "from-slate-700/10 to-slate-700/5",
+    icon: LineChart,
+    title: "Người thích dùng Telegram hoặc Zalo",
+    content: "Muốn một công cụ theo dõi tiện như chat, không phải mở app phức tạp mỗi ngày.",
+    gradient: "from-blue-500/10 to-blue-500/5",
   },
 ];
 
@@ -43,9 +43,9 @@ export const Mission = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <p className="tagline mb-4 justify-center">Chân dung người dùng</p>
+          <p className="tagline mb-4 justify-center">Ai phù hợp?</p>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            CaloTrack <span className="text-gradient-teal">khiến ai thay đổi?</span>
+            CaloTrack <span className="text-gradient-teal">phù hợp với ai?</span>
           </h2>
         </motion.div>
 

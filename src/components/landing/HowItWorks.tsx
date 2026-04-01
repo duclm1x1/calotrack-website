@@ -8,25 +8,25 @@ const steps = [
   {
     number: "01",
     icon: MessageCircle,
-    title: "Chat như bình thường",
+    title: "Gửi món ăn hoặc ảnh bữa ăn",
     description:
-      "Gửi món ăn bằng văn bản, gửi ảnh bữa ăn thực tế, hoặc hỏi nhanh các câu hỏi dinh dưỡng.",
+      "Bạn có thể nhắn món ăn như bình thường hoặc gửi ảnh để được hỗ trợ phân tích.",
     color: "primary",
   },
   {
     number: "02",
     icon: BrainCircuit,
-    title: "Phân tích và Lưu lại",
+    title: "CaloTrack ghi nhận và phản hồi",
     description:
-      "Hệ thống AI tự động phân tích và lưu trữ bữa ăn, thống kê calo, lịch sử nạp và tiến độ.",
+      "Hệ thống hỗ trợ log món, theo dõi lịch sử, cập nhật thống kê và phản hồi theo ngữ cảnh của bạn.",
     color: "flame",
   },
   {
     number: "03",
     icon: BarChart3,
-    title: "Theo dõi và điều chỉnh",
+    title: "Xem tiến độ và điều chỉnh mỗi ngày",
     description:
-      "Dễ dàng xem dashboard tổng quan mỗi ngày, cập nhật cân nặng và bật Gym mode khi cần.",
+      "Mở lại dashboard ngày/tuần/tháng, cập nhật cân nặng, dùng gym mode khi cần và giữ mình đi đúng mục tiêu.",
     color: "primary",
   },
 ];
@@ -47,10 +47,10 @@ export const HowItWorks = () => {
         >
           <p className="tagline mb-3 justify-center">Cách dùng</p>
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Sử dụng cực kỳ <span className="text-gradient-primary">đơn giản</span>
+            Dùng CaloTrack đơn giản <span className="text-gradient-primary">như đang chat</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Chỉ với 3 bước cơ bản, bạn đã có ngay một trợ lý dinh dưỡng cá nhân hoạt động liên tục 24/7 mà không cần mở bất kỳ ứng dụng thứ ba nào.
+            Chỉ với 3 bước cơ bản, bạn đã có ngay một trợ lý dinh dưỡng cá nhân hoạt động liên tục 24/7 mà không cần mở bất kì ứng dụng nào.
           </p>
         </motion.div>
 
