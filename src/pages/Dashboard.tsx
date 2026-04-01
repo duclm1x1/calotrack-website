@@ -12,7 +12,7 @@ import {
   getPortalChannelCards,
   linkPortalCustomerByPhone,
   portalCreateTelegramLinkToken,
-  portalRequestZaloLink,
+  portalCreateZaloLinkToken,
   type PortalSnapshot,
 } from "@/lib/portalApi";
 import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
@@ -144,8 +144,23 @@ export default function Dashboard() {
   async function handleZaloLink() {
     setZaloLoading(true);
     try {
-      const result = await portalRequestZaloLink();
-      toast.success(result.helperText);
+      const result = await portalCreateZaloLinkToken();
+      const linkCode = result.linkCode || result.linkToken || "";
+
+      if (linkCode && navigator?.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(linkCode);
+        } catch (error) {
+          void error;
+        }
+      }
+
+      window.open(result.zaloUrl || SITE_CONFIG.primaryChannelHref, "_blank", "noopener,noreferrer");
+      toast.success(
+        result.linkCode
+          ? `${result.helperText} MÃ£ Ä‘Ã£ Ä‘Æ°á»£c copy: ${result.linkCode}`
+          : result.helperText,
+      );
     } catch (error) {
       toast.error(String((error as Error)?.message || "Không thể tạo yêu cầu link Zalo."));
     } finally {

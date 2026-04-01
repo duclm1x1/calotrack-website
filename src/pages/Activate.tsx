@@ -15,8 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchPortalSnapshot,
   portalCreateTelegramLinkToken,
+  portalCreateZaloLinkToken,
   portalGetOrderStatus,
-  portalRequestZaloLink,
   type PortalOrderStatus,
   type PortalSnapshot,
 } from "@/lib/portalApi";
@@ -142,8 +142,23 @@ export default function Activate() {
         toast.success("Lane Zalo đã sẵn trong UI và admin. Đăng nhập portal sau để gửi yêu cầu link chính thức.");
         return;
       }
-      const result = await portalRequestZaloLink();
-      toast.success(result.helperText);
+      const result = await portalCreateZaloLinkToken();
+      const linkCode = result.linkCode || result.linkToken || "";
+
+      if (linkCode && navigator?.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(linkCode);
+        } catch (error) {
+          void error;
+        }
+      }
+
+      window.open(result.zaloUrl || getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
+      toast.success(
+        result.linkCode
+          ? `${result.helperText} MÃ£ Ä‘Ã£ Ä‘Æ°á»£c copy: ${result.linkCode}`
+          : result.helperText,
+      );
     } catch (error) {
       toast.error(String((error as Error)?.message || "Không thể tạo yêu cầu link Zalo."));
     } finally {

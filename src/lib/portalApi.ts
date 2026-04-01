@@ -114,10 +114,13 @@ export type TelegramLinkResult = {
   status: "ready" | "fallback";
 };
 
-export type ZaloLinkRequestResult = {
-  status: "pending_review" | "linked";
+export type ZaloLinkResult = {
+  status: "ready" | "linked" | "pending_review" | "needs_support" | string;
   requestId: string | null;
+  linkToken: string | null;
+  linkCode: string | null;
   helperText: string;
+  zaloUrl: string;
 };
 
 function describeError(error: unknown): string {
@@ -439,16 +442,35 @@ export async function portalCreateTelegramLinkToken(): Promise<TelegramLinkResul
   }
 }
 
-export async function portalRequestZaloLink(): Promise<ZaloLinkRequestResult> {
+export async function portalCreateZaloLinkToken(): Promise<ZaloLinkResult> {
   try {
-    const { data, error } = await supabase.rpc("portal_request_zalo_link");
-    if (error) {
-      throw error;
+    const next = await supabase.rpc("portal_create_zalo_link_token");
+    if (!next.error) {
+      const row = (next.data ?? {}) as Record<string, unknown>;
+      return {
+        status: (row.status as ZaloLinkResult["status"]) ?? "ready",
+        requestId: (row.request_id as string | null) ?? null,
+        linkToken: (row.link_token as string | null) ?? null,
+        linkCode: (row.link_code as string | null) ?? null,
+        helperText:
+          (row.helper_text as string | null) ??
+          "Mo Zalo OA Calo Track va gui ma lien ket nay mot lan de noi tai khoan.",
+        zaloUrl: SITE_CONFIG.primaryChannelHref,
+      };
     }
-    const row = (data ?? {}) as Record<string, unknown>;
+
+    const legacy = await supabase.rpc("portal_request_zalo_link");
+    if (legacy.error) {
+      throw legacy.error;
+    }
+
+    const row = (legacy.data ?? {}) as Record<string, unknown>;
     return {
-      status: (row.status as ZaloLinkRequestResult["status"]) ?? "pending_review",
+      status: (row.status as ZaloLinkResult["status"]) ?? "pending_review",
       requestId: (row.request_id as string | null) ?? null,
+      linkToken: null,
+      linkCode: null,
+      zaloUrl: SITE_CONFIG.primaryChannelHref,
       helperText:
         (row.helper_text as string | null) ??
         "Yêu cầu link Zalo đã được ghi nhận để đội quản trị xác nhận.",

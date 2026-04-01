@@ -12,24 +12,18 @@ import {
   type BillingSku,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout, type PortalSnapshot } from "@/lib/portalApi";
-import { SITE_CONFIG } from "@/lib/siteConfig";
+import { SITE_CONFIG, buildVietQrImageUrl } from "@/lib/siteConfig";
 
-// ──────────────────────────────────────────
-// VietinBank account — connected via SePay
-// SePay requires "SEVQR" prefix in transfer note (API Banking)
-// ──────────────────────────────────────────
-const BANK = {
-  id: "vietinbank",       // VietQR bank slug
-  stk: "109884289129",
-  name: "LAI MINH DUC",
-  template: "qr_only",   // compact VietQR image
-};
-
-function buildVietQRUrl(amount: number, note: string) {
+// QR URL is built via shared siteConfig helper (consistent bank config)
+function buildCheckoutQRUrl(amount: number, note: string): string {
+  // Prefer siteConfig helper (uses env vars, correct bank)
+  const fromConfig = buildVietQrImageUrl(amount, note);
+  if (fromConfig) return fromConfig;
+  // Absolute fallback — should never hit if env configured
   const encoded = encodeURIComponent(note);
   return (
-    `https://img.vietqr.io/image/${BANK.id}-${BANK.stk}-${BANK.template}.png` +
-    `?amount=${amount}&addInfo=${encoded}&accountName=${encodeURIComponent(BANK.name)}`
+    `https://img.vietqr.io/image/vietinbank-${SITE_CONFIG.bankAccountNumber}-qr_only.png` +
+    `?amount=${amount}&addInfo=${encoded}&accountName=${encodeURIComponent(SITE_CONFIG.bankAccountName)}`
   );
 }
 
@@ -59,11 +53,13 @@ interface QRModalProps {
 }
 
 function QRModal({ amount, note, onConfirm, onClose, confirmLoading }: QRModalProps) {
-  const qrUrl = buildVietQRUrl(amount, note);
+  const qrUrl = buildCheckoutQRUrl(amount, note);
+  const stk = SITE_CONFIG.bankAccountNumber;
+  const bankName = SITE_CONFIG.bankAccountName;
 
   const rows = [
-    { label: "SỐ TÀI KHOẢN", value: BANK.stk, copy: true },
-    { label: "TÊN TÀI KHOẢN", value: BANK.name, copy: false },
+    { label: "SỐ TÀI KHOẢN", value: stk, copy: true },
+    { label: "TÊN TÀI KHOẢN", value: bankName, copy: false },
     {
       label: "SỐ TIỀN",
       value: amount.toLocaleString("vi-VN") + " ₫",
@@ -122,7 +118,7 @@ function QRModal({ amount, note, onConfirm, onClose, confirmLoading }: QRModalPr
               {row.copy && (
                 <button
                   onClick={() => copyToClipboard(
-                    row.label === "SỐ TÀI KHOẢN" ? BANK.stk : note,
+                    row.label === "SỐ TÀI KHOẢN" ? stk : note,
                     row.label.toLowerCase()
                   )}
                   className="ml-3 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -286,6 +282,12 @@ export default function Checkout() {
       if (order.phoneE164) params.set("phone", order.phoneE164);
       if (order.bankTransferNote) params.set("note", order.bankTransferNote);
       if (order.telegramLinkToken) params.set("tg", order.telegramLinkToken);
+
+      // Guard: never show a ₫0 QR (would indicate backend bug)
+      if (order.amount <= 0) {
+        toast.error("Số tiền đơn hàng không hợp lệ. Vui lòng thử lại hoặc liên hệ hỗ trợ.");
+        return;
+      }
 
       // Store order data and show QR modal
       setQRAmount(order.amount);

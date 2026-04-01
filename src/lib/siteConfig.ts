@@ -2,9 +2,9 @@ export const DEFAULT_TELEGRAM_BOT_URL = "https://t.me/CaloTrack_bot";
 export const DEFAULT_ZALO_OA_URL = "https://zalo.me/4423588403113387176";
 export const DEFAULT_SITE_URL = "https://calotrack-website.vercel.app";
 export const DEFAULT_ZALO_APP_ID = "1450975846052622442";
-export const DEFAULT_BANK_NAME = "Techcombank";
-export const DEFAULT_BANK_CODE = "TCB";
-export const DEFAULT_BANK_ACCOUNT_NUMBER = "19034065720011";
+export const DEFAULT_BANK_NAME = "VietinBank";
+export const DEFAULT_BANK_CODE = "vietinbank";
+export const DEFAULT_BANK_ACCOUNT_NUMBER = "109884289129";
 
 function readEnv(value: string | undefined): string {
   return value?.trim() || "";
@@ -21,8 +21,9 @@ export const SITE_CONFIG = {
   bankAccountNumber:
     readEnv(import.meta.env.VITE_BANK_ACCOUNT_NUMBER) || DEFAULT_BANK_ACCOUNT_NUMBER,
   bankAccountName: readEnv(import.meta.env.VITE_BANK_ACCOUNT_NAME) || "LAI MINH DUC",
+  // MoMo is deprecated — kept only as fallback config reference, not shown in UI
   momoCreateOrderWebhookUrl:
-    readEnv(import.meta.env.VITE_MOMO_CREATE_ORDER_WEBHOOK_URL) || "https://me.momo.vn/0342529111",
+    readEnv(import.meta.env.VITE_MOMO_CREATE_ORDER_WEBHOOK_URL) || "",
   pricingAnchor: "#pricing",
   productName: "CaloTrack",
   primaryChannelLabel: "Zalo",
