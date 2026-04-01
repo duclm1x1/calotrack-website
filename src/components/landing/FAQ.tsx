@@ -15,12 +15,12 @@ const faqs = [
   {
     question: "Telegram, website và Zalo khác nhau ra sao?",
     answer:
-      "Telegram đang là kênh tracking live mạnh nhất. Website là lớp account, billing, dashboard và admin. Zalo là channel kế tiếp đã được chừa chỗ sẵn ở frontend để nối workflow riêng khi backend hoàn tất.",
+      "Cả Zalo và Telegram đều là trợ lý Chat AI giúp bạn theo dõi bữa ăn. Website đóng vai trò bảo vệ tài khoản, truy xuất hóa đơn thanh toán và quản lý các thiết lập nâng cao.",
   },
   {
     question: "Portal web có thay thế trải nghiệm chat không?",
     answer:
-      "Không. Portal web được thiết kế để bổ trợ cho account, quota, payment, entitlement và recap. Layer tracking hàng ngày vẫn được tối ưu xoay quanh chat-first experience.",
+      "Website không sinh ra để thay thế thói quen chat của bạn. Hãy tiếp tục sử dụng Zalo hoặc Telegram để ghi chép món ăn nhanh nhất, và dùng Website để nhìn lại tiến độ của mình mỗi tuần.",
   },
   {
     question: "AI có hiểu món Việt không?",
@@ -29,12 +29,12 @@ const faqs = [
   },
   {
     question: "Khi nào tôi nên nâng cấp Pro hoặc Lifetime?",
-    answer: `Nếu bạn dùng CaloTrack thường xuyên, cần AI nhiều hơn hoặc muốn entitlement rõ ràng hơn trong portal, Pro và Lifetime sẽ hợp lý hơn. Nếu cần tư vấn thêm, bạn có thể liên hệ ${SITE_CONFIG.supportEmail}.`,
+    answer: `Nếu bạn sử dụng CaloTrack thường xuyên và muốn mở khóa toàn bộ giới hạn phân tích cũng như xem báo cáo nâng cao thì gói Pro hoặc Lifetime sẽ rất phù hợp. Liên hệ ${SITE_CONFIG.supportEmail} nếu bạn cần tư vấn.`,
   },
   {
-    question: "Dữ liệu có an toàn và quản trị được không?",
+    question: "Dữ liệu có an toàn và bảo mật không?",
     answer:
-      "CaloTrack đang đi theo hướng dữ liệu có cấu trúc, có lớp portal và admin backoffice để vừa phục vụ người dùng, vừa đảm bảo sản phẩm có thể vận hành như một SaaS thật.",
+      "Mọi dữ liệu của bạn đều được mã hóa riêng biệt. Hệ thống đăng nhập không sử dụng mật khẩu mà xác thực trực tiếp qua số điện thoại để đảm bảo tính an toàn mức cao nhất.",
   },
 ];
 
@@ -69,7 +69,10 @@ export const FAQ = () => {
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-muted/50"
+                aria-expanded={openIndex === index}
+                aria-controls={`faq-answer-${index}`}
+                id={`faq-question-${index}`}
+                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
               >
                 <span className="pr-4 font-semibold text-foreground">{faq.question}</span>
                 <motion.div animate={{ rotate: openIndex === index ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -77,6 +80,9 @@ export const FAQ = () => {
                 </motion.div>
               </button>
               <motion.div
+                id={`faq-answer-${index}`}
+                role="region"
+                aria-labelledby={`faq-question-${index}`}
                 initial={false}
                 animate={{ height: openIndex === index ? "auto" : 0, opacity: openIndex === index ? 1 : 0 }}
                 transition={{ duration: 0.3 }}

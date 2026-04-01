@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { CheckCircle2, Copy, ExternalLink, KeyRound, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +29,16 @@ export default function ZaloAuthCallback() {
   const statusTone = code && !error
     ? "border-primary/15 bg-primary/10 text-primary"
     : "border-accent/20 bg-accent/10 text-accent";
+
+  useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex, nofollow";
+    document.head.appendChild(meta);
+    return () => {
+      document.head.removeChild(meta);
+    };
+  }, []);
 
   async function copyValue(value: string, label: string) {
     try {

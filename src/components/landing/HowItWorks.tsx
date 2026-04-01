@@ -8,25 +8,25 @@ const steps = [
   {
     number: "01",
     icon: Camera,
-    title: "Gửi từ Telegram trước",
+    title: "Gửi ảnh qua Zalo / Telegram",
     description:
-      "Bắt đầu bằng ảnh bữa ăn hoặc câu chat ngắn trong Telegram. Bạn không phải đổi sang một app tracking riêng chỉ để log cho xong việc.",
+      "Chụp ảnh bữa ăn hoặc nhập tên món và số gram. Không cần tải app hay tìm kiếm rườm rà, mọi thao tác ghi chép diễn ra tự nhiên như đang nhắn tin cho bạn bè.",
     color: "primary",
   },
   {
     number: "02",
     icon: BrainCircuit,
-    title: "AI đọc món và follow-up",
+    title: "AI phân tích & tính toán",
     description:
-      "CaloTrack ước tính calories, macro, khẩu phần và giữ ngữ cảnh để bạn sửa tiếp hoặc log nhanh hơn ngay trong mạch trò chuyện.",
+      "Trí tuệ nhân tạo sẽ lập tức nhận diện món ăn thực tế tại Việt Nam, bóc tách khẩu phần, tính toán lượng calo và chỉ số Macro trả về ngay lập tức trong khung chat.",
     color: "flame",
   },
   {
     number: "03",
     icon: BarChart3,
-    title: "Portal gom account và recap",
+    title: "Theo dõi tiến độ chuyên sâu",
     description:
-      "Website lo phần pricing, account, billing, dashboard và admin backoffice. Về sau khi Zalo riêng sẵn sàng, frontend này không cần đổi lại.",
+      "Website đóng vai trò như một bảng điều khiển trung tâm giúp bạn xem biểu đồ dinh dưỡng chi tiết, báo cáo tiến độ theo tuần và thiết lập lại các mục tiêu cá nhân.",
     color: "primary",
   },
 ];
@@ -46,11 +46,10 @@ export const HowItWorks = () => {
           className="mb-16 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Một vòng đời <span className="text-gradient-primary">chat-first nhưng vận hành như SaaS</span>
+            Trải nghiệm mượt mà từ <span className="text-gradient-primary">Chat đến Website</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            CaloTrack không ép mọi thứ dồn vào website. Tracking đi qua chat để nhanh và tự nhiên, còn web
-            lo những thứ người dùng và đội vận hành cần cho account, billing, recap và backoffice.
+            CaloTrack kết hợp sự tiện lợi của tin nhắn và sức mạnh phân tích của website. Bạn chỉ cần gửi tin nhắn hoặc hình ảnh qua Zalo/Telegram để ghi chép, hệ thống AI sẽ tự động lo phần còn lại.
           </p>
         </motion.div>
 

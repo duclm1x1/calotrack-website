@@ -7,39 +7,39 @@ import { Bell, CreditCard, MessageCircle, PieChart, Shield, Utensils } from "luc
 const benefits = [
   {
     icon: MessageCircle,
-    title: "Chat-first tracking",
+    title: "Chat-first Tracking",
     description:
-      "Bạn có thể log bữa ăn bằng chat, ảnh hoặc follow-up ngắn mà không bị ép đi qua một form quá nặng nề.",
+      "Ghi chép bữa ăn siêu tốc bằng thao tác chat hoặc gửi hình ảnh. Tạm biệt các ứng dụng truyền thống ép bạn phải tự tìm kiếm và định lượng món ăn rườm rà.",
   },
   {
     icon: Utensils,
-    title: "AI hiểu món Việt",
+    title: "AI am hiểu Món Việt",
     description:
-      "CaloTrack được tối ưu để hiểu món Việt, đồ uống quen thuộc và các kiểu khẩu phần đời thường tốt hơn so với các cách track quá cơ học.",
+      "Nhận diện chính xác từ phở bò, bún riêu đến cơm tấm. Ước lượng khẩu phần sát thực tế so với các công cụ track thụ động, cơ học.",
   },
   {
     icon: PieChart,
     title: "Dashboard đọc nhanh",
     description:
-      "Từ tổng nạp hôm nay đến recap tuần, dữ liệu được gom lại trong một giao diện dễ đọc và đủ sâu khi bạn cần xem kỹ.",
+      "Trực quan hóa quá trình ăn uống. Từ tổng nạp hôm nay đến báo cáo trung bình tuần, dữ liệu được hiển thị sinh động, dễ đọc và đủ sâu khi bạn cần xem kỹ.",
   },
   {
     icon: Bell,
-    title: "Portal account + billing",
+    title: "Cá nhân hóa mục tiêu",
     description:
-      "Website lo phần account, quota, plan, payment và support thay vì cố thay thế hoàn toàn luồng tracking trong chat.",
+      "Tùy chỉnh linh hoạt chế độ ăn của riêng bạn (Tăng cơ, Giảm mỡ, Giữ dáng). AI sẽ tự động phân bổ lại lượng Calories và tỷ lệ Macro lý tưởng nhất.",
   },
   {
     icon: CreditCard,
-    title: "Thanh toán hybrid thật",
+    title: "Luôn luôn Đồng bộ",
     description:
-      "Pricing, payment CTA và entitlement được trình bày đúng với trạng thái vận hành thật: có online path, có admin fallback khi cần.",
+      "Mọi dữ liệu cá nhân của bạn được lưu trữ và cập nhật realtime trên tài khoản. Log bữa ăn khi đang đi ngoài đường, xem lại cặn kẽ biểu đồ khi về nhà.",
   },
   {
     icon: Shield,
-    title: "Zalo-ready architecture",
+    title: "Tối ưu Zalo hoạt động",
     description:
-      "Frontend, config và account surfaces đã được tổ chức quanh khái niệm channel để nối Zalo workflow riêng mà không phải đập lại UI.",
+      "Trải nghiệm trên Zalo được tối ưu hóa đặc biệt với các chức năng mở rộng như chế độ Tracking cơ bản, Nutrition chuyên sâu và cả Gym mode.",
   },
 ];
 
@@ -58,11 +58,10 @@ export const Benefits = () => {
           className="mb-16 text-center"
         >
           <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-            Một frontend SaaS <span className="text-gradient-primary">đúng với product thật</span>
+            Tính năng trọn vẹn để <span className="text-gradient-primary">làm chủ vóc dáng</span>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            CaloTrack không chỉ là landing page. Đây là lớp frontend cho acquisition, portal, pricing, admin
-            và khả năng mở rộng sang Zalo mà vẫn giữ tracking chính theo mô hình chat-first.
+            Từ việc đếm calo siêu tốc qua hình ảnh nền tảng chat đến các bản báo cáo Macro nâng cao, hệ sinh thái CaloTrack cung cấp đầy đủ công cụ thân thiện để giúp bạn chinh phục mọi mục tiêu sức khỏe.
           </p>
         </motion.div>
 

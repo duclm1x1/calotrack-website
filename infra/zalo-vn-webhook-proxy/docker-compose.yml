@@ -1,10 +1,26 @@
 services:
+  adapter:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+    command: ["node", "server.mjs"]
+    volumes:
+      - ./server.mjs:/app/server.mjs:ro
+
   caddy:
     image: caddy:2.11
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      - adapter
+    env_file:
+      - .env
     environment:
       ZALO_VN_HOST: ${ZALO_VN_HOST}
     volumes:

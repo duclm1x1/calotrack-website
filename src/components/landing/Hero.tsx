@@ -2,22 +2,17 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Check, MessageCircle, ShieldCheck } from "lucide-react";
+import { ArrowDown, Check, MessageCircle, PlayCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  SITE_CONFIG,
-  getPrimaryChannelCta,
-  getPrimaryChannelHref,
-  hasConfiguredZaloOa,
-} from "@/lib/siteConfig";
+import { SITE_CONFIG } from "@/lib/siteConfig";
 
 const logo3d = "/logo-3d.png";
 
 const bullets = [
-  "Log bữa ăn bằng ảnh hoặc chat tự nhiên, không cần form nặng nề.",
-  "Portal web lo account, billing, dashboard và admin vận hành.",
-  "Frontend đã sẵn để nối thêm Zalo workflow riêng khi backend hoàn tất.",
+  "Món Việt + ước lượng khẩu phần sát thực tế",
+  "Hỏi \"còn lại?\" ra ngay ngân sách kcal trong ngày",
+  "Tỉ lệ chuẩn xác lên tới >90%",
 ];
 
 export const Hero = () => {
@@ -62,23 +57,22 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2"
             >
-              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-              <span className="text-sm font-medium text-primary">{SITE_CONFIG.productStageLabel}</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-sm font-medium text-primary">Trợ lý dinh dưỡng AI qua chat</span>
             </motion.div>
 
-            <h1 className="mb-6 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl xl:text-6xl">
-              <span className="text-foreground">Gửi ảnh bữa ăn, </span>
-              <span className="text-gradient-brand">track calories</span>
-              <span className="text-foreground"> và quản lý account ngay trong </span>
-              <span className="text-accent">hệ CaloTrack</span>
+            <h1 className="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl xl:text-7xl tracking-[-0.04em]">
+              <span className="text-foreground">Gửi ảnh món ăn → biết kcal/macro trong </span>
+              <span className="text-gradient-flame">20 giây</span>
+              <br className="hidden lg:block md:hidden sm:hidden" />
+              <span className="text-foreground"> — ngay trên </span>
+              <span className="text-blue-500">Zalo</span>
             </h1>
 
             <p className="mx-auto mb-8 max-w-xl text-lg text-muted-foreground lg:mx-0">
-              CaloTrack là AI nutrition assistant theo mô hình chat-first. Telegram đang là kênh live mạnh
-              nhất, còn website đóng vai trò lớp SaaS cho pricing, login, billing, dashboard và admin
-              backoffice. Zalo là channel tiếp theo đã được chuẩn bị sẵn ở frontend.
+              CaloTrack là trợ lý dinh dưỡng qua chat (Zalo/Telegram). Nhắn ảnh hoặc "món + gram" để theo dõi calo chuẩn món Việt — không cần đếm tay.
             </p>
 
             <ul className="mb-8 space-y-3">
@@ -90,7 +84,7 @@ export const Hero = () => {
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-start gap-3 text-left"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/15">
                     <Check className="h-3 w-3 text-primary" />
                   </span>
                   <span className="text-muted-foreground">{bullet}</span>
@@ -98,37 +92,26 @@ export const Hero = () => {
               ))}
             </ul>
 
-            <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row">
-              <Button size="lg" asChild className="w-full gap-2 px-8 py-6 text-base sm:w-auto">
-                <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
+            <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row">
+              <Button size="lg" asChild className="w-full gap-2 px-8 py-6 text-base sm:w-auto rounded-xl bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg shadow-blue-500/25">
+                <a href={SITE_CONFIG.zaloOaUrl} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-5 w-5" />
-                  {getPrimaryChannelCta()}
+                  Chat trên Zalo
                 </a>
               </Button>
-              <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto" asChild>
-                <a href="/login">Vào portal web</a>
+              <Button size="lg" variant="outline" className="w-full px-8 py-6 text-base sm:w-auto rounded-xl gap-2 hover:bg-muted/50" asChild>
+                <a>
+                  <PlayCircle className="h-5 w-5" />
+                  Xem demo chat 20s
+                </a>
               </Button>
             </div>
 
-            <div className="mb-6 flex flex-wrap gap-3">
-              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                Free tier {SITE_CONFIG.freeDailyLimit} lượt AI/ngày
-              </span>
-              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                Telegram đang live
-              </span>
-              <span className="rounded-full border border-border bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                {hasConfiguredZaloOa() ? "Zalo OA đã sẵn link" : "Zalo sẵn để build phase sau"}
-              </span>
+            <div className="mb-2 text-sm text-muted-foreground text-center lg:text-left">
+              Mở Zalo → tìm "CaloTrack OA" → gửi "bắt đầu" hoặc gửi ảnh bữa ăn
             </div>
-
-            <div className="flex items-start gap-3 rounded-2xl border border-primary/10 bg-white/70 px-4 py-4 text-left shadow-sm backdrop-blur">
-              <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
-              <p className="text-sm leading-6 text-muted-foreground">
-                Frontend này không giả vờ thay thế trải nghiệm chat. Nó tập trung làm tốt acquisition,
-                account, billing, dashboard và vận hành, để layer chat trên Telegram và sau đó là Zalo tiếp tục
-                làm phần tracking chính.
-              </p>
+            <div className="text-xs italic text-muted-foreground/70 text-center lg:text-left max-w-md mx-auto lg:mx-0">
+              Không thay thế tư vấn y khoa. Bạn luôn có thể sửa và xóa dữ liệu bất cứ lúc nào.
             </div>
           </motion.div>
 
@@ -186,6 +169,8 @@ export const Hero = () => {
               <motion.img
                 src={logo3d}
                 alt="CaloTrack Logo"
+                width={448}
+                height={448}
                 className="h-80 w-80 object-contain drop-shadow-2xl md:h-96 md:w-96 lg:h-[28rem] lg:w-[28rem]"
                 animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -197,9 +182,9 @@ export const Hero = () => {
                 <p className="text-xs text-muted-foreground">P 96g • C 130g • F 42g</p>
               </div>
               <div className="absolute -bottom-2 right-0 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-                <p className="text-xs uppercase tracking-[0.2em] text-accent">Portal note</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">Account, billing và admin cùng một lớp giao diện</p>
-                <p className="text-xs text-muted-foreground">Trải nghiệm tracking chính vẫn đi qua chat.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-accent">Bảo mật hệ thống</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">Giao dịch an toàn, minh bạch</p>
+                <p className="text-xs text-muted-foreground">Dữ liệu thông tin được lưu trữ 100% bảo mật.</p>
               </div>
             </motion.div>
           </motion.div>

@@ -23,7 +23,13 @@ import {
   type PortalOrderStatus,
   type PortalSnapshot,
 } from "@/lib/portalApi";
-import { SITE_CONFIG, buildVietQrImageUrl, formatVnd, getPrimaryChannelHref } from "@/lib/siteConfig";
+import {
+  SITE_CONFIG,
+  buildVietQrImageUrl,
+  formatVnd,
+  getPrimaryChannelHref,
+  getTelegramLinkHref,
+} from "@/lib/siteConfig";
 
 function formatAmount(value: number): string {
   return value > 0 ? formatVnd(value) : "Đang chờ";
@@ -55,6 +61,7 @@ export default function Activate() {
   const transferNote = searchParams.get("note") || orderCode || "";
   const amount = Number(searchParams.get("amount") || 0);
   const phoneParam = searchParams.get("phone");
+  const orderBoundTelegramToken = searchParams.get("tg");
   const linkedCount = snapshot?.linkedChannels.filter((item) => item.linkStatus === "linked").length ?? 0;
 
   useEffect(() => {
@@ -111,6 +118,16 @@ export default function Activate() {
   async function handleTelegramLink() {
     setTelegramLoading(true);
     try {
+      const publicBuyerTelegramUrl = getTelegramLinkHref(
+        orderBoundTelegramToken || orderStatus?.telegramLinkToken || null,
+      );
+
+      if (!user && (orderBoundTelegramToken || orderStatus?.telegramLinkToken)) {
+        window.open(publicBuyerTelegramUrl, "_blank", "noopener,noreferrer");
+        toast.success("Đã mở Telegram bot với mã link của đơn hàng. Bạn có thể dùng ngay sau khi payment được xác nhận.");
+        return;
+      }
+
       if (user) {
         const result = await portalCreateTelegramLinkToken();
         window.open(result.url, "_blank", "noopener,noreferrer");
@@ -168,11 +185,11 @@ export default function Activate() {
             Activate & connect
           </div>
           <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">
-            Gói đã active thì bước tiếp theo phải là dùng được ngay trên Telegram.
+            Bắt đầu theo dõi dinh dưỡng đa nền tảng
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Quyền sử dụng nằm ở customer theo số điện thoại. Sau khi thanh toán, bạn chỉ còn một việc là mở Telegram để bắt
-            đầu dùng, còn portal sẽ là lớp account, billing và support.
+            Quyền sử dụng được gắn trực tiếp vào số điện thoại của bạn. Bạn mở phiên chat với Bot bằng Telegram hoặc Zalo
+            để bắt đầu, portal web sẽ là nơi quản lý cấu hình và thanh toán.
           </p>
           {!user ? (
             <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
@@ -191,18 +208,18 @@ export default function Activate() {
                   {snapshot ? snapshot.plan.toUpperCase() : orderStatus?.entitlementActive ? "PRO" : "Đang tải"}
                 </div>
                 <div className="mt-2 text-sm text-muted-foreground">
-                  {snapshot?.entitlementLabel || "Đang đồng bộ entitlement"}
+                  {snapshot?.entitlementLabel || "Đang đồng bộ gói cước"}
                 </div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT canonical</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT Đăng Ký</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">{displayPhone}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Phone là chìa khóa shared entitlement.</div>
+                <div className="mt-2 text-sm text-muted-foreground">Số điện thoại để quản lý gói cước.</div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Linked channels</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Web & Chat</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">{linkedCount}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Cần ít nhất 1 kênh active để dùng flow chat-first.</div>
+                <div className="mt-2 text-sm text-muted-foreground">Bạn cần link kênh vào tài khoản trước khi chat.</div>
               </div>
             </div>
 
@@ -210,18 +227,18 @@ export default function Activate() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-1 h-5 w-5" />
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.18em]">Activation state</div>
+                  <div className="text-sm font-semibold uppercase tracking-[0.18em]">Trạng Thái Gói</div>
                   <div className="mt-2 text-2xl font-semibold text-foreground">
                     {orderStatus?.entitlementActive || snapshot?.plan === "pro" || snapshot?.plan === "lifetime"
-                      ? "Plan đã active"
+                      ? "Gói đã được kích hoạt"
                       : loading
                         ? "Đang kiểm tra"
                         : "Đang chờ backend xác nhận"}
                   </div>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {orderStatus
-                      ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi backend xác nhận thành công, entitlement sẽ bật ngay ở cấp customer.`
-                      : "Nếu bạn vừa thanh toán, website sẽ dùng callback, IPN hoặc reconciliation backend làm nguồn sự thật cuối cùng trước khi cấp quyền."}
+                      ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi thanh toán thành công, hệ thống sẽ tự động kích hoạt gói của bạn.`
+                      : "Nếu bạn vừa thanh toán, website đang đợi đối soát từ giao dịch chuyển khoản vào tài khoản ngân hàng."}
                   </p>
                 </div>
               </div>
@@ -232,11 +249,11 @@ export default function Activate() {
                 <div className="flex items-start gap-3">
                   <Building2 className="mt-1 h-5 w-5 text-primary" />
                   <div className="flex-1">
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Techcombank transfer</div>
-                    <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển khoản đúng mã order để hệ thống đối soát</h2>
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Chuyển khoản Techcombank</div>
+                    <h2 className="mt-3 text-2xl font-semibold text-foreground">Chuyển đúng mã đơn hàng để đối soát</h2>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      Đây là lane đi live ngay được. Bạn chỉ cần chuyển đúng số tiền và giữ đúng nội dung, sau đó hệ thống sẽ
-                      auto-activate bằng webhook hoặc admin xác nhận nếu ngân hàng chưa đẩy callback.
+                      Hệ thống đối soát tự động khi nhận khoản chuyển khoản có ghi đúng nội dung ghi chú.
+                      Bạn sẽ được kích hoạt gói ngay lập tức không cần chờ đợi.
                     </p>
                   </div>
                 </div>
@@ -320,10 +337,10 @@ export default function Activate() {
           <div className="space-y-6">
             <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Bắt đầu sử dụng ngay</div>
-              <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối Telegram trước, Zalo là lane tiếp theo</h2>
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối nền tảng Chat yêu thích của bạn</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Bạn có thể chọn một hoặc cả hai kênh. Entitlement luôn map về phone/customer, nhưng nếu muốn sử dụng ngay
-                sau khi thanh toán thì Telegram là flow live ngắn nhất.
+                Khuyến nghị nên mở Telegram bot theo nút bấm bên dưới sau khi kích hoạt xong. Nền tảng Chat là nơi hệ thống AI
+                của CaloTrack đồng hành cùng bữa ăn mỗi ngày của bạn.
               </p>
 
               <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
@@ -353,12 +370,11 @@ export default function Activate() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-1 h-5 w-5 text-accent" />
                 <div>
-                  <div className="text-sm font-semibold text-foreground">Rule đã khóa</div>
+                  <div className="text-sm font-semibold text-foreground">Bảo mật tài khoản</div>
                   <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                    <li>1 số điện thoại = 1 customer canonical.</li>
-                    <li>1 Telegram account và 1 Zalo account chỉ link tối đa 1 customer.</li>
-                    <li>Pro entitlement nằm ở customer, không nằm ở channel.</li>
-                    <li>Không nên unlink sạch mọi thứ nếu chưa còn phone verified hoặc kênh active.</li>
+                    <li>1 số điện thoại = 1 quyền sở hữu duy nhất.</li>
+                    <li>Mỗi tài khoản Telegram và Zalo chỉ được kết nối với 1 số điện thoại.</li>
+                    <li>Thông tin đăng ký sẽ không bị ảnh hưởng nếu bạn đổi tài khoản mạng xã hội.</li>
                   </ul>
                 </div>
               </div>

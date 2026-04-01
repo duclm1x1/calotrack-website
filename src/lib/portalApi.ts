@@ -1,6 +1,5 @@
 import {
   LIFETIME_SENTINEL_ISO,
-  PUBLIC_CHECKOUT_PROVIDERS,
   getDefaultSkuForTier,
   getFreeDailyLimit,
   normalizePlanTier,
@@ -10,12 +9,8 @@ import {
 } from "@/lib/billing";
 import {
   SITE_CONFIG,
-  buildSiteUrl,
   buildVietQrImageUrl,
-  getPrimaryChannelHref,
   getTelegramLinkHref,
-  hasConfiguredBankTransfer,
-  hasConfiguredMomoCheckout,
 } from "@/lib/siteConfig";
 import { supabase } from "@/lib/supabase";
 
@@ -74,16 +69,23 @@ export type PortalCheckoutOrder = {
   bankName: string | null;
   bankAccountNumber: string | null;
   bankAccountName: string | null;
+  telegramLinkToken: string | null;
+  telegramLinkUrl: string | null;
   helperText: string;
   createdAt: string;
 };
 
 export type PortalOrderStatus = {
   orderId: string;
+  orderCode?: string | null;
   status: string;
   entitlementActive: boolean;
   premiumUntil: string | null;
   provider: string | null;
+  amount?: number | null;
+  phoneE164?: string | null;
+  telegramLinkToken?: string | null;
+  telegramLinkUrl?: string | null;
   updatedAt: string;
 };
 
@@ -99,30 +101,10 @@ export type ZaloLinkRequestResult = {
   helperText: string;
 };
 
-type PortalUserRow = {
-  id: number;
-  email: string | null;
-  plan: string | null;
-  premium_until: string | null;
-  daily_ai_usage_count: number | null;
-  customer_id?: number | null;
-};
-
-type MomoCheckoutResponse = {
-  payUrl?: string | null;
-  paymentUrl?: string | null;
-  deeplink?: string | null;
-  resultCode?: number | string | null;
-  message?: string | null;
-};
+// types removed
 
 function describeError(error: unknown): string {
   return String((error as { message?: string })?.message || error || "Unknown error");
-}
-
-function isMissingFunctionError(error: unknown): boolean {
-  const message = describeError(error);
-  return message.includes("Could not find the function") || message.includes("does not exist");
 }
 
 function buildEntitlementLabel(
@@ -179,212 +161,7 @@ function mapPortalChannels(items: unknown[]): PortalChannelLink[] {
   });
 }
 
-function buildFallbackOrder(
-  plan: PlanTier,
-  provider: PublicCheckoutProvider,
-  phoneE164: string | null,
-): PortalCheckoutOrder {
-  const billingSku = getDefaultSkuForTier(plan);
-  const amount = billingSku ? Number(billingSku === "lifetime" ? 990000 : 99000) : 0;
-  const orderCode = `CT${Date.now()}`;
-  const providerOption = PUBLIC_CHECKOUT_PROVIDERS.find((item) => item.value === provider);
-  return {
-    id: orderCode,
-    orderCode,
-    provider,
-    status: plan === "free" ? "active" : "pending_confirmation",
-    plan,
-    billingSku,
-    amount,
-    phoneE164,
-    paymentUrl: null,
-    qrContent: provider === "bank_transfer" ? orderCode : null,
-    qrImageUrl:
-      provider === "bank_transfer" && hasConfiguredBankTransfer()
-        ? buildVietQrImageUrl(amount, orderCode)
-        : null,
-    bankTransferNote: provider === "bank_transfer" ? orderCode : null,
-    bankName: provider === "bank_transfer" ? SITE_CONFIG.bankName : null,
-    bankAccountNumber:
-      provider === "bank_transfer" ? SITE_CONFIG.bankAccountNumber : null,
-    bankAccountName:
-      provider === "bank_transfer" ? SITE_CONFIG.bankAccountName || null : null,
-    helperText:
-      provider === "bank_transfer"
-        ? `Chuyển khoản đúng nội dung ${orderCode} để backend đối soát và kích hoạt tự động.`
-        : providerOption?.helper ?? "Đơn hàng đang ở trạng thái chờ backend xác nhận.",
-    createdAt: new Date().toISOString(),
-  };
-}
-
-async function enrichMomoOrder(order: PortalCheckoutOrder): Promise<PortalCheckoutOrder> {
-  if (order.provider !== "momo" || order.plan === "free" || order.paymentUrl) {
-    return order;
-  }
-
-  if (!hasConfiguredMomoCheckout()) {
-    return {
-      ...order,
-      helperText:
-        "MoMo đang chờ cấu hình webhook tạo payment session. Tạm thời dùng Techcombank chuyển khoản để đi live ngay.",
-    };
-  }
-
-  const response = await fetch(SITE_CONFIG.momoCreateOrderWebhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      orderId: order.id,
-      orderCode: order.orderCode,
-      amount: order.amount,
-      billingSku: order.billingSku,
-      phoneE164: order.phoneE164,
-      returnUrl: buildSiteUrl(
-        `${SITE_CONFIG.activatePath}?order=${encodeURIComponent(
-          order.id,
-        )}&provider=momo&status=pending_confirmation`,
-      ),
-      origin: buildSiteUrl("/"),
-    }),
-  });
-
-  const payload = (await response.json().catch(() => ({}))) as MomoCheckoutResponse;
-  if (!response.ok) {
-    throw new Error(
-      String(
-        payload.message ||
-          "Khong the tao payment session MoMo. Kiem tra webhook hoac merchant config.",
-      ),
-    );
-  }
-
-  return {
-    ...order,
-    paymentUrl: payload.payUrl || payload.paymentUrl || payload.deeplink || null,
-    helperText:
-      String(payload.message || "").trim() ||
-      "Đơn hàng MoMo đã được tạo. Hệ thống sẽ cấp quyền sau khi IPN xác nhận thành công.",
-  };
-}
-
-async function findLinkedUser(
-  authUserId: string,
-  phone: string | null | undefined,
-  email: string | null | undefined,
-) {
-  const byAuth = await supabase
-    .from("users")
-    .select("id,email,plan,premium_until,daily_ai_usage_count,customer_id")
-    .eq("auth_user_id", authUserId)
-    .limit(1)
-    .maybeSingle<PortalUserRow>();
-
-  if (!byAuth.error && byAuth.data) {
-    return { row: byAuth.data, source: "linked_user" as const };
-  }
-
-  if (phone) {
-    const byPhone = await supabase
-      .from("customers")
-      .select("id,plan,premium_until,phone_e164,phone_display,full_name")
-      .eq("phone_e164", phone)
-      .limit(1)
-      .maybeSingle<Record<string, unknown>>();
-
-    if (!byPhone.error && byPhone.data) {
-      return {
-        row: {
-          id: Number(byPhone.data.id),
-          email: email ?? null,
-          plan: String(byPhone.data.plan ?? "free"),
-          premium_until: (byPhone.data.premium_until as string | null) ?? null,
-          daily_ai_usage_count: 0,
-          customer_id: Number(byPhone.data.id),
-        },
-        source: "phone_match" as const,
-      };
-    }
-  }
-
-  if (!email) {
-    return { row: null, source: "auth_only" as const };
-  }
-
-  const byEmail = await supabase
-    .from("users")
-    .select("id,email,plan,premium_until,daily_ai_usage_count,customer_id")
-    .eq("email", email)
-    .limit(1)
-    .maybeSingle<PortalUserRow>();
-
-  if (!byEmail.error && byEmail.data) {
-    return { row: byEmail.data, source: "email_match" as const };
-  }
-
-  return { row: null, source: "auth_only" as const };
-}
-
-async function fallbackPortalSnapshot(authUser: {
-  id: string;
-  email?: string | null;
-  phone?: string | null;
-}): Promise<PortalSnapshot> {
-  const linked = await findLinkedUser(authUser.id, authUser.phone ?? null, authUser.email ?? null);
-  const row = linked.row;
-  const plan = normalizePlanTier(row?.plan);
-  let payments: PortalPaymentSummary[] = [];
-
-  if (row?.id) {
-    const paymentQuery = await supabase
-      .from("transaction_history")
-      .select("id,amount,status,payment_method,billing_sku,created_at,transaction_code")
-      .eq("user_id", row.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    if (!paymentQuery.error && Array.isArray(paymentQuery.data)) {
-      payments = paymentQuery.data.map((item) => ({
-        id: String(item.id),
-        amount: Number(item.amount ?? 0),
-        status: String(item.status ?? "unknown"),
-        paymentMethod: (item.payment_method as string | null) ?? null,
-        billingSku: (item.billing_sku as string | null) ?? null,
-        provider: null,
-        createdAt: (item.created_at as string | null) ?? null,
-        transactionCode: (item.transaction_code as string | null) ?? null,
-      }));
-    }
-  }
-
-  return {
-    customerId: row?.customer_id ?? null,
-    linkedUserId: row?.id ?? null,
-    email: row?.email ?? authUser.email ?? null,
-    phoneE164: authUser.phone ?? null,
-    phoneDisplay: authUser.phone ?? null,
-    fullName: null,
-    plan,
-    premiumUntil: row?.premium_until ?? null,
-    dailyAiUsageCount: Number(row?.daily_ai_usage_count ?? 0),
-    entitlementSource: linked.source === "linked_user" ? "compat_user" : linked.source,
-    entitlementLabel: buildEntitlementLabel(plan, row?.premium_until ?? null, linked.source),
-    quotaLabel: buildQuotaLabel(plan, Number(row?.daily_ai_usage_count ?? 0)),
-    source: linked.source,
-    payments,
-    linkedChannels: [
-      {
-        id: row?.id ? String(row.id) : "telegram-fallback",
-        channel: authUser.phone ? "web" : "telegram",
-        displayName: authUser.phone ?? authUser.email ?? null,
-        linkStatus: row ? "linked" : "unlinked",
-        platformUserId: row?.id ? String(row.id) : null,
-      },
-    ],
-    lastSyncAt: new Date().toISOString(),
-  };
-}
+// Removed unused fallback and findLinkedUser functions
 
 export function normalizeVietnamPhoneInput(value: string): string {
   const digits = value.replace(/[^\d+]/g, "");
@@ -473,10 +250,7 @@ export async function fetchPortalSnapshot(authUser: {
       lastSyncAt: String(row.last_sync_at ?? new Date().toISOString()),
     };
   } catch (error) {
-    if (isMissingFunctionError(error)) {
-      return fallbackPortalSnapshot(authUser);
-    }
-    throw error;
+    throw new Error(`Không thể lấy dữ liệu khách hàng: ${describeError(error)}`);
   }
 }
 
@@ -539,16 +313,15 @@ export async function portalStartCheckout(params: {
         (row.bank_account_name as string | null) ??
         (params.provider === "bank_transfer" ? SITE_CONFIG.bankAccountName || null : null),
       helperText: String(row.helper_text ?? "Đơn hàng đã được tạo và đang chờ backend xác nhận."),
+      telegramLinkToken: (row.telegram_link_token as string | null) ?? null,
+      telegramLinkUrl: getTelegramLinkHref((row.telegram_link_token as string | null) ?? null),
       createdAt: String(row.created_at ?? new Date().toISOString()),
     };
-    return await enrichMomoOrder(nextOrder);
+    // If momo gets re-enabled via config, we could call enrichMomoOrder here. 
+    // Right now we just return the order directly.
+    return nextOrder;
   } catch (error) {
-    if (isMissingFunctionError(error)) {
-      return await enrichMomoOrder(
-        buildFallbackOrder(params.plan, params.provider, phoneE164),
-      );
-    }
-    throw error;
+    throw new Error(`Không thể tạo đơn hàng: ${describeError(error)}`);
   }
 }
 
@@ -563,24 +336,19 @@ export async function portalGetOrderStatus(orderId: string): Promise<PortalOrder
     const row = (data ?? {}) as Record<string, unknown>;
     return {
       orderId: String(row.order_id ?? orderId),
+      orderCode: (row.order_code as string | null) ?? null,
       status: String(row.status ?? "pending_confirmation"),
       entitlementActive: row.entitlement_active === true,
       premiumUntil: (row.premium_until as string | null) ?? null,
       provider: (row.provider as string | null) ?? null,
+      amount: row.amount == null ? null : Number(row.amount),
+      phoneE164: (row.phone_e164 as string | null) ?? null,
+      telegramLinkToken: (row.telegram_link_token as string | null) ?? null,
+      telegramLinkUrl: getTelegramLinkHref((row.telegram_link_token as string | null) ?? null),
       updatedAt: String(row.updated_at ?? new Date().toISOString()),
     };
   } catch (error) {
-    if (isMissingFunctionError(error)) {
-      return {
-        orderId,
-        status: "pending_confirmation",
-        entitlementActive: false,
-        premiumUntil: null,
-        provider: null,
-        updatedAt: new Date().toISOString(),
-      };
-    }
-    throw error;
+    throw new Error(`Không thể tải trạng thái đơn hàng: ${describeError(error)}`);
   }
 }
 
@@ -598,14 +366,7 @@ export async function portalCreateTelegramLinkToken(): Promise<TelegramLinkResul
       status: "ready",
     };
   } catch (error) {
-    if (isMissingFunctionError(error)) {
-      return {
-        linkToken: null,
-        url: getPrimaryChannelHref(),
-        status: "fallback",
-      };
-    }
-    throw error;
+    throw new Error(`Lỗi kết nối nền tảng: ${describeError(error)}`);
   }
 }
 
@@ -621,17 +382,10 @@ export async function portalRequestZaloLink(): Promise<ZaloLinkRequestResult> {
       requestId: (row.request_id as string | null) ?? null,
       helperText:
         (row.helper_text as string | null) ??
-        "Yêu cầu link Zalo đã được ghi nhận để đội vận hành nối workflow riêng.",
+        "Yêu cầu link Zalo đã được ghi nhận để đội quản trị xác nhận.",
     };
   } catch (error) {
-    if (isMissingFunctionError(error)) {
-      return {
-        status: "pending_review",
-        requestId: null,
-        helperText: "Frontend và admin đã sẵn cho Zalo. Workflow n8n sẽ được nối ở phase sau.",
-      };
-    }
-    throw error;
+    throw new Error(`Không thể gửi yêu cầu: ${describeError(error)}`);
   }
 }
 

@@ -13,7 +13,7 @@ import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 function describeAuthIssue(error: unknown): string | null {
   const message = String((error as Error)?.message || error || "").toLowerCase();
   if (message.includes("unsupported phone provider")) {
-    return "SMS OTP trên Supabase production chưa bật. Bạn vẫn có thể thanh toán ngay ở website, sau đó dùng Telegram trước và quay lại portal khi SMS provider được cấu hình.";
+    return "Hệ thống gửi mã xác nhận đang bảo trì. Bạn có thể thanh toán trực tiếp để kích hoạt gói cước ngay mà không cần mã OTP.";
   }
   return null;
 }
@@ -72,36 +72,35 @@ export default function Login() {
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_420px]">
         <div className="rounded-[32px] border border-primary/10 bg-white/82 p-8 shadow-md backdrop-blur">
           <div className="mb-4 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Phone-first customer portal
+            Đăng Nhập Tài Khoản
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground">
-            Vào CaloTrack bằng số điện thoại để thanh toán, kích hoạt và dùng ngay trên Telegram.
+            Quản lý gói cước CaloTrack bằng số điện thoại của bạn.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Portal này dành cho account, billing, activation và trạng thái linked channels. Tracking hằng ngày vẫn mạnh
-            nhất trên Telegram, còn Zalo đang ở trạng thái sẵn sàng về UI và data model.
+            Đăng nhập để xem lịch sử giao dịch và kết nối hệ thống AI Bot trên Telegram hay Zalo OA!
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-primary/10 bg-primary/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Account model</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Phone canonical</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Bảo Mật Tối Đa</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">SĐT Định Danh</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Một số điện thoại giữ plan, quota và shared entitlement cho toàn bộ Telegram, Zalo và portal web.
+                Gói cước được bảo vệ bằng hệ thống cấp quyền qua số điện thoại duy nhất, dùng chung mọi kênh chat.
               </p>
             </div>
             <div className="rounded-3xl border border-primary/10 bg-white p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Live channel</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">{SITE_CONFIG.primaryChannelLabel}</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Đa Nền Tảng</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Zalo & Telegram</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Kênh tracking live mạnh nhất hiện tại và là lựa chọn nhanh nhất để dùng ngay sau khi gói active.
+                Gắn kết liền mạch dữ liệu bữa ăn dù bạn dùng bot ở bất cứ mạng lưới tin nhắn nào.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/15 bg-accent/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Portal role</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Account + billing</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Thống Kê Vóc Dáng</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Dashboard</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Portal dùng cho account, checkout, payment, activation và support. Không phải nơi tracking chính.
+                Quản lý lịch sử thanh toán và thống kê lượng Calo nạp vào hàng tuần một cách trực quan nhất.
               </p>
             </div>
           </div>
@@ -111,7 +110,7 @@ export default function Login() {
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng OTP</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Dùng số điện thoại để vào portal. Luồng admin đăng nhập riêng và không đi qua màn customer này.
+              Hệ thống sẽ gửi một tin nhắn chứa mã bảo mật tới số điện thoại của bạn.
             </p>
           </div>
 
@@ -175,8 +174,7 @@ export default function Login() {
           ) : null}
 
           <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
-            Flow chuẩn là <span className="font-medium text-foreground">{"Pay -> Activate -> Link Telegram"}</span>. Nếu OTP chưa bật,
-            bạn vẫn có thể tạo order ngay từ website và quay lại portal sau.
+            Nhập số điện thoại của bạn để nhận mã truy cập. Nếu bạn chưa rõ điều gì, có thể chuyển sang trang đăng ký bên dưới.
           </div>
 
           <div className="mt-6 grid gap-3">

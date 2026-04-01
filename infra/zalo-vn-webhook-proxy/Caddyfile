@@ -9,11 +9,9 @@
         format console
     }
 
-    @zaloWebhook path /webhook/calotrack-zalo-oa-v2*
+    @zaloWebhook path /zalo/oa/webhook*
     handle @zaloWebhook {
-        reverse_proxy https://n214.fastn8n.id.vn {
-            header_up Host n214.fastn8n.id.vn
-        }
+        reverse_proxy adapter:3000
     }
 
     respond /healthz 200 {

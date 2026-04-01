@@ -46,6 +46,7 @@ import {
   linkChannelAccount,
   linkPortalAuth,
   logPayment,
+  markOrderPaid,
   mergeCustomers,
   promoteFoodCandidate,
   resetCustomerQuota,
@@ -150,6 +151,13 @@ type PayFormState = {
   userId: string;
   amount: string;
   billingSku: BillingSku;
+  txCode: string;
+  note: string;
+};
+
+type OrderReviewFormState = {
+  orderCode: string;
+  amount: string;
   txCode: string;
   note: string;
 };
@@ -328,6 +336,12 @@ export default function Admin() {
     userId: "",
     amount: "",
     billingSku: "monthly",
+    txCode: "",
+    note: "",
+  });
+  const [orderReviewForm, setOrderReviewForm] = useState<OrderReviewFormState>({
+    orderCode: "",
+    amount: "",
     txCode: "",
     note: "",
   });
@@ -593,6 +607,24 @@ export default function Admin() {
       { refreshSupport: selectedCustomerId === Number(payForm.userId) },
     );
     setPayForm({ userId: "", amount: "", billingSku: "monthly", txCode: "", note: "" });
+  };
+
+  const handleMarkOrderPaid = async () => {
+    if (!orderReviewForm.orderCode.trim()) {
+      toast.error("Order code lÃ  báº¯t buá»™c");
+      return;
+    }
+    await withRefresh(
+      () =>
+        markOrderPaid(
+          orderReviewForm.orderCode.trim().toUpperCase(),
+          asNumberOrNull(orderReviewForm.amount),
+          orderReviewForm.txCode,
+          orderReviewForm.note,
+        ),
+      "ÄÃ£ xÃ¡c nháº­n order vÃ  grant entitlement",
+    );
+    setOrderReviewForm({ orderCode: "", amount: "", txCode: "", note: "" });
   };
 
   const handleSaveFood = async () => {
@@ -1053,8 +1085,11 @@ export default function Admin() {
                   onChannelFilterChange={(value) => setPayFilters((prev) => ({ ...prev, channel: value }))}
                   payForm={payForm}
                   onPayFormChange={(patch) => setPayForm((prev) => ({ ...prev, ...patch }))}
+                  orderReviewForm={orderReviewForm}
+                  onOrderReviewFormChange={(patch) => setOrderReviewForm((prev) => ({ ...prev, ...patch }))}
                   skuOptions={SKU_OPTIONS}
                   onSubmitManualPayment={handleLogPayment}
+                  onMarkOrderPaid={handleMarkOrderPaid}
                   canFinance={canFinance}
                   loading={loading}
                 />

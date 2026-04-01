@@ -25,7 +25,7 @@ const plans = [
       "Gửi ảnh món ăn hoặc nhắn tên món để ước tính calories",
       "Xem account và portal cơ bản sau khi đăng nhập",
     ],
-    cta: "Bắt đầu trên Telegram",
+    cta: "Bắt đầu Chat ngay",
     href: getPrimaryChannelHref(),
     external: true,
     popular: false,

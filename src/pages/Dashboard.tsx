@@ -17,6 +17,7 @@ import {
 } from "@/lib/portalApi";
 import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 import { supabase } from "@/lib/supabase";
+import { MacroTracker } from "../components/dashboard/MacroTracker";
 
 const SURFACE = "rounded-[32px] border border-primary/10 bg-white/85 p-6 shadow-md backdrop-blur";
 const SUBSURFACE = "rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm";
@@ -44,7 +45,7 @@ function fallbackSnapshot(user: { email?: string | null; phone?: string | null }
     premiumUntil: null,
     dailyAiUsageCount: 0,
     entitlementSource: null,
-    entitlementLabel: "Portal đã đăng nhập nhưng chưa linked customer canonical.",
+    entitlementLabel: "Tài khoản của bạn đã có trên hệ thống, vui lòng nhập số điện thoại để kết nối.",
     quotaLabel: "0/5 lượt AI hôm nay",
     source: "auth_only",
     payments: [],
@@ -114,10 +115,10 @@ export default function Dashboard() {
     setLinkingPhone(true);
     try {
       await linkPortalCustomerByPhone(phoneDraft.trim());
-      toast.success("Đã linked portal vào customer canonical theo số điện thoại.");
+      toast.success("Đã kết nối tài khoản với số điện thoại của bạn.");
       await handleRefresh();
     } catch (error) {
-      toast.error(String((error as Error)?.message || "Không thể link customer bằng số điện thoại."));
+      toast.error(String((error as Error)?.message || "Không thể lưu hồ sơ số điện thoại lúc này."));
     } finally {
       setLinkingPhone(false);
     }
@@ -159,14 +160,13 @@ export default function Dashboard() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-                Customer portal
+                Khu vực Quản Trị
               </div>
               <h1 className="text-3xl font-semibold tracking-[-0.04em] text-foreground">
-                Một customer, nhiều kênh sử dụng, một entitlement chung dùng được ngay.
+                Một tài khoản, nhiều mạng lưới, một số điện thoại duy nhất.
               </h1>
               <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                Portal web tập trung vào account, billing, activation và support. Tracking hằng ngày vẫn mạnh nhất trên
-                Telegram, còn Zalo đang ở trạng thái ready về UI + data model để nối workflow riêng mà không phá account layer.
+                Chào mừng bạn đến với hệ thống AI Tracking của CaloTrack. Sử dụng portal để quản lý gói cước, theo dõi dinh dưỡng và kết nối Telegram bot siêu tốc.
               </p>
             </div>
 
@@ -195,10 +195,10 @@ export default function Dashboard() {
 
         <div className="grid gap-4 lg:grid-cols-4">
           <div className={SUBSURFACE}>
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Portal account</div>
-            <div className="mt-3 text-xl font-semibold text-foreground">{user?.phone || snapshot?.phoneDisplay || "Phone-first"}</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Tài Khoản</div>
+            <div className="mt-3 text-xl font-semibold text-foreground">{user?.phone || snapshot?.phoneDisplay || "Chưa có SDT"}</div>
             <div className="mt-2 text-sm text-muted-foreground">
-              {snapshot?.source === "customer_linked" ? "Đã linked customer canonical" : "Đang dùng portal layer"}
+              {snapshot?.source === "customer_linked" ? "Đã xác nhận đầy đủ thông tin" : "Tài khoản của bạn thiếu SDT"}
             </div>
           </div>
           <div className={SUBSURFACE}>
@@ -213,12 +213,12 @@ export default function Dashboard() {
           <div className={SUBSURFACE}>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Quota hôm nay</div>
             <div className="mt-3 text-xl font-semibold text-foreground">{snapshot?.quotaLabel || "Đang tải quota"}</div>
-            <div className="mt-2 text-sm text-muted-foreground">Shared quota ở cấp customer, không tách theo từng channel.</div>
+            <div className="mt-2 text-sm text-muted-foreground">Giới hạn dùng thông minh tổng hợp từ mọi thiết bị.</div>
           </div>
           <div className={SUBSURFACE}>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Linked channels</div>
             <div className="mt-3 text-xl font-semibold text-foreground">{linkedChannelsCount}</div>
-            <div className="mt-2 text-sm text-muted-foreground">Cần ít nhất một kênh active để dùng flow chat-first.</div>
+            <div className="mt-2 text-sm text-muted-foreground">Kết nối ít nhất một ứng dụng Chat AI để bắt đầu theo dõi.</div>
           </div>
         </div>
 
@@ -239,11 +239,13 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+            
+            <MacroTracker linkedUserId={snapshot?.linkedUserId ?? null} />
 
             <div className={SURFACE}>
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-primary" />
-                <div className="text-sm font-semibold text-foreground">Payment summary</div>
+                <div className="text-sm font-semibold text-foreground">Lịch sử hóa đơn</div>
               </div>
               <div className="mt-4 space-y-3">
                 {loading ? (
@@ -269,7 +271,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <div className="rounded-2xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    Chưa có payment summary self-service hoặc dữ liệu canonical chưa được apply đầy đủ.
+                    Bạn chưa thực hiện thanh toán nào, hoặc đang dùng gói cước miễn phí hệ thống cấp.
                   </div>
                 )}
               </div>
@@ -278,11 +280,10 @@ export default function Dashboard() {
 
           <div className="space-y-6">
             <div className={SURFACE}>
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Phone canonical</div>
-              <h2 className="mt-3 text-2xl font-semibold text-foreground">Link portal vào đúng customer theo số điện thoại</h2>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Bảo Vệ Tài Khoản</div>
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">Xác nhận số điện thoại của bạn</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Nếu portal chưa linked customer canonical, hãy xác nhận số điện thoại ở đây để gom entitlement, quota và
-                linked channels vào cùng một customer.
+                Mọi thứ đều đi qua số điện thoại của bạn. Bổ sung ngay bây giờ để hệ thống của chúng tôi mở khóa các thiết lập nâng cao và giúp bạn xem hóa đơn của mình.
               </p>
               <div className="mt-5 space-y-3 rounded-[24px] border border-primary/10 bg-primary/5 p-4">
                 <Input
@@ -293,10 +294,10 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button onClick={handleLinkPhone} disabled={linkingPhone || !phoneDraft.trim()} className="sm:flex-1">
                     {linkingPhone ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
-                    Link customer bằng số điện thoại
+                    Cập nhật số điện thoại
                   </Button>
                   <Button variant="outline" onClick={handleRefresh} className="sm:flex-1">
-                    Làm mới snapshot
+                    Tải lại thông tin
                   </Button>
                 </div>
               </div>
@@ -304,10 +305,9 @@ export default function Dashboard() {
 
             <div className={SURFACE}>
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Kích hoạt kênh sử dụng</div>
-              <h2 className="mt-3 text-2xl font-semibold text-foreground">Dùng ngay trên Telegram, rồi mới mở rộng sang Zalo</h2>
+              <h2 className="mt-3 text-2xl font-semibold text-foreground">Liên kết kênh chat trực tiếp</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Nếu bạn vừa mua gói hoặc vừa link đúng customer, Telegram là lane nên dùng trước để kiểm tra entitlement,
-                quota và flow tracking thực tế.
+                Nếu bạn vừa đăng ký hoặc link số điện thoại, bạn có thể bắt đầu chat ngay trên Telegram hoặc Zalo OA để theo dõi lượng calories mỗi ngày.
               </p>
               <div className="mt-4 grid gap-3">
                 <Button onClick={handleTelegramLink} disabled={telegramLoading}>

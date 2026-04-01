@@ -5,11 +5,11 @@ primary n8n host resolves outside Vietnam.
 
 ## Goal
 
-Expose one HTTPS endpoint on a **Vietnam public IPv4** and forward raw Zalo
-payloads to the canonical n8n webhook:
+Expose one HTTPS endpoint on a **Vietnam public IPv4**, verify the inbound Zalo
+signature, then forward only trusted requests to the canonical internal n8n webhook:
 
 ```text
-https://n214.fastn8n.id.vn/webhook/calotrack-zalo-oa-v2
+https://n214.fastn8n.id.vn/webhook/calotrack-zalo-oa-v2-internal
 ```
 
 ## Requirements
@@ -21,8 +21,9 @@ https://n214.fastn8n.id.vn/webhook/calotrack-zalo-oa-v2
 
 ## Files
 
+- `server.mjs`: Zalo signature-verifying adapter
 - `Caddyfile`: HTTPS reverse proxy
-- `docker-compose.yml`: one-container deployment
+- `docker-compose.yml`: two-container deployment
 - `.env.example`: host configuration
 
 ## Deploy
@@ -33,6 +34,10 @@ https://n214.fastn8n.id.vn/webhook/calotrack-zalo-oa-v2
 
 ```text
 ZALO_VN_HOST=<your-vietnam-webhook-host>
+ZALO_APP_ID=1450975846052622442
+ZALO_OA_SECRET_KEY=<your-current-zalo-oa-secret-key>
+CALOTRACK_ZALO_INTERNAL_SECRET=ct_zalo_internal_a3f8c9d17b5e
+ZALO_OA_N8N_INTERNAL_WEBHOOK_URL=https://n214.fastn8n.id.vn/webhook/calotrack-zalo-oa-v2-internal
 ```
 
 4. Start the proxy:
@@ -50,7 +55,7 @@ https://<your-vietnam-webhook-host>/healthz
 6. Set the Zalo webhook URL to:
 
 ```text
-https://<your-vietnam-webhook-host>/webhook/calotrack-zalo-oa-v2
+https://<your-vietnam-webhook-host>/zalo/oa/webhook
 ```
 
 ## Why this is required
@@ -61,5 +66,6 @@ The current local network path is blocked by infrastructure constraints:
 - the detected public IPv4 path is behind CGNAT and cannot accept inbound `80/443`
 - Zalo rejects the current Cloudflare/Vercel endpoints because they geolocate outside Vietnam
 
-This proxy solves the last ingress blocker without changing the downstream n8n
-workflow contract.
+This adapter solves the last ingress blocker without depending on n8n Variables.
+It verifies `X-ZEvent-Signature` outside n8n, adds an internal trust header,
+and forwards the untouched raw payload to the internal webhook.

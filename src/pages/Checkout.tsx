@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Building2, CheckCircle2, Loader2, QrCode, Smartphone } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Loader2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,10 @@ export default function Checkout() {
         params.set("note", order.bankTransferNote);
       }
 
+      if (order.telegramLinkToken) {
+        params.set("tg", order.telegramLinkToken);
+      }
+
       toast.success("Đơn hàng đã được tạo. Tiếp tục sang màn activation để dùng ngay.");
       navigate(`${SITE_CONFIG.activatePath}?${params.toString()}`);
     } catch (error) {
@@ -136,19 +140,17 @@ export default function Checkout() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="rounded-[32px] border border-primary/10 bg-white/88 p-8 shadow-md backdrop-blur">
           <div className="mb-3 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            {"Pay -> Activate -> Link Telegram"}
+            Thanh toán &amp; Kích hoạt
           </div>
           <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">
-            Chốt gói theo số điện thoại trước, rồi dùng ngay trên Telegram.
+            Đăng ký gói cước qua số điện thoại và dùng ngay trên AI Chat.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Đây là flow ít ma sát nhất cho CaloTrack ở phase hiện tại: tạo order theo phone, thanh toán, sang activation và
-            mở Telegram để bắt đầu dùng ngay.
+            Thao tác đơn giản: chọn gói, thanh toán, kích hoạt và mở Telegram hoặc Zalo để bắt đầu ghi lại bữa ăn ngay lập tức.
           </p>
           {!user ? (
             <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-              Buyer có thể tạo order ngay cả khi chưa vào portal. Portal sẽ dùng sau cho account, billing và hỗ trợ; còn
-              lane sử dụng nhanh nhất hôm nay vẫn là Telegram.
+              Bạn có thể đăng ký ngay mà không cần tạo tài khoản mật khẩu. Hệ thống thẻ khóa thông tin bằng số điện thoại để bạn dùng chung được trên mọi thiết bị.
             </div>
           ) : null}
         </div>
@@ -204,18 +206,17 @@ export default function Checkout() {
           </div>
 
           <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
-            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Checkout orchestration</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Tiến hành thanh toán</div>
             <h2 className="mt-3 text-2xl font-semibold text-foreground">
-              {formatTierLabel(selectedPlan)} cho customer theo phone
+              Đăng ký gói {formatTierLabel(selectedPlan)}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Chọn provider thanh toán, xác nhận số điện thoại canonical và để backend xử lý activation bằng callback, IPN
-              hoặc reconciliation.
+              Nhập số điện thoại của bạn và hoàn tất thanh toán. Hệ thống sẽ tự động kích hoạt gói cước ngay lập tức.
             </p>
 
             <div className="mt-5 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Số điện thoại canonical</label>
+                <label className="text-sm font-medium text-foreground">Số điện thoại của bạn</label>
                 <Input
                   type="tel"
                   inputMode="tel"
@@ -226,9 +227,9 @@ export default function Checkout() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-sm font-medium text-foreground">Payment provider</div>
+                <div className="text-sm font-medium text-foreground">Phương thức thanh toán</div>
                 <div className="grid gap-3">
-                  {PUBLIC_CHECKOUT_PROVIDERS.map((option) => {
+                  {PUBLIC_CHECKOUT_PROVIDERS.filter((opt) => opt.value === "bank_transfer").map((option) => {
                     const active = provider === option.value;
                     const available =
                       option.value === "momo"
@@ -287,35 +288,16 @@ export default function Checkout() {
                         <span>Ngân hàng: {SITE_CONFIG.bankName}</span>
                       </div>
                       <div>Số tài khoản nhận tiền: {SITE_CONFIG.bankAccountNumber}</div>
-                      <div>{"Flow thật: tạo order -> hiện QR -> chuyển khoản -> webhook/Casso hoặc admin xác nhận."}</div>
+                      <div>Mã đơn hàng và QR chuyển khoản tự động sẽ hiện ra ngay bước tiếp theo.</div>
                     </div>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5">
-                <div className="flex items-start gap-3">
-                  <Smartphone className="mt-1 h-5 w-5 text-primary" />
-                  <div className="space-y-2 text-sm leading-6 text-muted-foreground">
-                    <div className="font-semibold text-foreground">MoMo wallet checkout</div>
-                    <div>
-                      Website tạo order trước, sau đó gọi webhook tạo payment session. Khi MoMo gửi IPN thành công,
-                      entitlement sẽ bật ngay ở cấp customer.
-                    </div>
-                    {!providerAvailability.momo ? (
-                      <div className="rounded-2xl border border-accent/20 bg-accent/10 p-4 text-accent">
-                        Merchant webhook chưa được cấu hình trên production, nên lane live hiện tại vẫn là Techcombank
-                        chuyển khoản.
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
 
             <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
               Gói đang chọn: <span className="font-semibold text-foreground">{currentCard.label}</span>. Sau khi thanh toán
-              thành công, website sẽ dẫn bạn tới trang activation để dùng ngay trên Telegram hoặc tạo yêu cầu link Zalo.
+              thành công, bạn sẽ được chuyển hướng tới trang hướng dẫn kết nối Zalo OA hoặc Telegram.
             </div>
 
             <div className="mt-6 flex gap-3">

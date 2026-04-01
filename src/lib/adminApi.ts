@@ -836,6 +836,21 @@ export async function logPayment(
   });
 }
 
+export async function markOrderPaid(
+  orderCode: string,
+  amount: number | null,
+  txCode: string,
+  note: string,
+): Promise<void> {
+  await assertSaasSchemaReady();
+  await callRpc("admin_mark_order_paid", {
+    p_order_code: orderCode,
+    p_amount: amount,
+    p_tx_code: txCode || null,
+    p_note: note || null,
+  });
+}
+
 export async function getSubscriptionEvents(userId: number): Promise<SubscriptionEvent[]> {
   const data = await callRpc<Record<string, unknown>[]>("admin_get_subscription_timeline", {
     p_user_id: userId,
@@ -1382,6 +1397,8 @@ export function formatAdminPaymentMethod(value: string | null | undefined): stri
   if (!value) return "Chưa rõ nguồn";
   if (value === "payos") return "PayOS";
   if (value === "stripe") return "Stripe";
+  if (value === "vnpay") return "VNPAY";
+  if (value === "momo") return "MoMo";
   if (value === "bank_transfer") return "Chuyển khoản";
   if (value === "manual_admin" || value === "admin") return "Admin thủ công";
   return value.replace(/_/g, " ");
@@ -1390,7 +1407,10 @@ export function formatAdminPaymentMethod(value: string | null | undefined): stri
 export function formatAdminPaymentStatus(value: string | null | undefined): string {
   if (!value) return "Không rõ";
   if (value === "completed") return "Hoàn thành";
+  if (value === "paid" || value === "active") return "Đã cấp quyền";
   if (value === "pending") return "Đang xử lý";
+  if (value === "pending_confirmation") return "Chờ xác nhận";
+  if (value === "needs_review") return "Cần review";
   if (value === "failed") return "Thất bại";
   if (value === "cancelled") return "Đã hủy";
   return value;
