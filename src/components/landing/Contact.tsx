@@ -1,21 +1,10 @@
 import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
-import { Send, Mail, MessageCircle } from "lucide-react";
+import { useRef } from "react";
+import { Mail, MessageCircle } from "lucide-react";
 
 export const Contact = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: "-100px" });
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
-  };
 
   return (
     <section ref={containerRef} id="contact" className="section-padding bg-mesh">
@@ -60,87 +49,28 @@ export const Contact = () => {
             </div>
           </motion.div>
 
-          {/* Right - Form */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
+            className="card-elevated p-8 md:p-12 rounded-[2rem] flex flex-col items-center justify-center text-center border-t-4 border-t-[#0068FF]"
           >
-            <form
-              onSubmit={handleSubmit}
-              className="card-elevated p-8 rounded-3xl"
+            <div className="w-20 h-20 bg-[#0068FF]/10 rounded-full flex items-center justify-center mb-6">
+              <MessageCircle className="w-10 h-10 text-[#0068FF]" />
+            </div>
+            <h3 className="text-2xl font-bold mb-4">Kết nối trực tiếp nhanh chóng</h3>
+            <p className="text-muted-foreground mb-8 text-lg">
+              Thay vì điền form, hãy nhắn tin trực tiếp với chuyên viên tư vấn của CaloTrack qua Zalo OA để được hỗ trợ setup gói cước và giải đáp ngay lập tức.
+            </p>
+            <a
+              href="https://zalo.me/4423588403113387176"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#0068FF] hover:bg-[#005AE0] text-white px-8 py-4 rounded-full font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 w-full max-w-sm"
             >
-              <div className="space-y-6">
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Họ và tên
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    placeholder="Nguyễn Văn A"
-                    required
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    placeholder="email@example.com"
-                    required
-                  />
-                </div>
-
-                {/* Message */}
-                <div>
-                  <label
-                    htmlFor="message"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Tin nhắn
-                  </label>
-                  <textarea
-                    id="message"
-                    rows={4}
-                    value={formData.message}
-                    onChange={(e) =>
-                      setFormData({ ...formData, message: e.target.value })
-                    }
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                    placeholder="Nội dung tin nhắn..."
-                    required
-                  />
-                </div>
-
-                {/* Submit */}
-                <button type="submit" className="btn-primary w-full py-4">
-                  <Send className="w-5 h-5" />
-                  Gửi tin nhắn
-                </button>
-              </div>
-            </form>
+              <MessageCircle className="w-5 h-5" />
+              Chat hỗ trợ trên Zalo
+            </a>
           </motion.div>
         </div>
       </div>

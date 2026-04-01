@@ -25,8 +25,8 @@ export const SITE_CONFIG = {
     readEnv(import.meta.env.VITE_MOMO_CREATE_ORDER_WEBHOOK_URL) || "https://me.momo.vn/0342529111",
   pricingAnchor: "#pricing",
   productName: "CaloTrack",
-  primaryChannelLabel: "Telegram",
-  secondaryChannelLabel: "Zalo OA",
+  primaryChannelLabel: "Zalo",
+  secondaryChannelLabel: "Telegram",
   secondaryChannelStatus: "Đã tích hợp n8n workflow đầy đủ",
   webPortalLabel: "Portal web",
   webPortalStatus: "Account, billing, activation và admin",
@@ -85,11 +85,11 @@ export function hasConfiguredBankTransfer(): boolean {
 }
 
 export function getPrimaryChannelHref(): string {
-  return SITE_CONFIG.telegramBotUrl;
+  return SITE_CONFIG.zaloOaUrl || DEFAULT_ZALO_OA_URL;
 }
 
 export function getPrimaryChannelCta(): string {
-  return `Mở ${SITE_CONFIG.primaryChannelLabel}`;
+  return `Chat trên ${SITE_CONFIG.primaryChannelLabel}`;
 }
 
 export function getSecondaryChannelCta(): string {

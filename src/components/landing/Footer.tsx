@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
-const logoSquare = "/logo-square.jpg";
+const logoSquare = "/logo.png";
 
 const footerGroups = [
   {
@@ -40,14 +40,14 @@ export const Footer = () => {
         <div className="grid gap-8 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
           <div>
             <motion.a href="/" whileHover={{ scale: 1.02 }} className="flex items-center gap-3">
-              <img src={logoSquare} alt="CaloTrack" width={40} height={40} className="h-10 w-10 rounded-lg object-cover" />
+              <img src={logoSquare} alt="CaloTrack" width={42} height={42} className="h-10 w-10 object-contain" />
               <div>
                 <span className="text-lg font-bold text-foreground">CaloTrack</span>
                 <p className="text-sm text-muted-foreground">{SITE_CONFIG.productStageLabel}</p>
               </div>
             </motion.a>
             <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
-              CaloTrack là Trợ lý Dinh dưỡng AI trên Zalo và Telegram, giúp bạn quản lý lượng Calo theo từng bữa ăn một cách trực quan và khoa học.
+              CaloTrack là Trợ lý Dinh dưỡng AI trên Zalo, giúp bạn quản lý lượng Calo theo từng bữa ăn một cách trực quan và khoa học.
             </p>
           </div>
 

@@ -5,9 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, MessageCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SITE_CONFIG, getPrimaryChannelCta, getPrimaryChannelHref } from "@/lib/siteConfig";
+import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 
-const logoSquare = "/logo-square.jpg";
+const logoSquare = "/logo.png";
 
 const navLinks = [
   { label: "Tính năng", href: "#features" },
@@ -45,7 +45,7 @@ export const Navbar = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <img src={logoSquare} alt="CaloTrack" className="h-10 w-10 rounded-xl object-cover" />
+              <img src={logoSquare} alt="CaloTrack" className="h-[42px] w-[42px] object-contain" />
               <div>
                 <span className="text-xl font-bold text-foreground">CaloTrack</span>
                 <p className="text-xs text-muted-foreground">{SITE_CONFIG.productStageLabel}</p>
@@ -66,13 +66,13 @@ export const Navbar = () => {
             </div>
 
             <div className="hidden items-center gap-3 md:flex">
-              <Button variant="outline" asChild>
+              <Button variant="ghost" className="font-medium text-muted-foreground hover:text-primary" asChild>
                 <a href="/login">Đăng nhập portal</a>
               </Button>
-              <Button asChild className="gap-2">
+              <Button asChild className="gap-2 rounded-full px-6 bg-[#0068FF] hover:bg-[#005AE0] text-white">
                 <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="h-4 w-4" />
-                  {getPrimaryChannelCta()}
+                  Chat trên Zalo
                 </a>
               </Button>
             </div>
@@ -118,10 +118,10 @@ export const Navbar = () => {
                   <Button asChild variant="outline" className="w-full">
                     <a href="/login">Đăng nhập portal</a>
                   </Button>
-                  <Button asChild className="w-full gap-2">
+                  <Button asChild className="w-full gap-2 rounded-full bg-[#0068FF] hover:bg-[#005AE0] text-white">
                     <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                       <MessageCircle className="h-4 w-4" />
-                      {getPrimaryChannelCta()}
+                      Chat trên Zalo
                     </a>
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
