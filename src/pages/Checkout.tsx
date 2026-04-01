@@ -9,26 +9,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   PUBLIC_CHECKOUT_PROVIDERS,
   PUBLIC_PLAN_CARDS,
-  formatTierLabel,
-  getDefaultSkuForTier,
   type PlanTier,
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
 import { SITE_CONFIG, hasConfiguredBankTransfer, hasConfiguredMomoCheckout } from "@/lib/siteConfig";
 
-function parsePlan(value: string | null): PlanTier {
-  if (value === "pro" || value === "lifetime") {
-    return value;
-  }
-  return "free";
-}
 
 export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [selectedPlan, setSelectedPlan] = useState<PlanTier>(parsePlan(searchParams.get("plan")));
+  const initialSku = searchParams.get("sku") || searchParams.get("plan");
+  const defaultCardId = PUBLIC_PLAN_CARDS.find((c) => c.id === initialSku || c.plan === initialSku)?.id || "free";
+  const [selectedCardId, setSelectedCardId] = useState<string>(defaultCardId);
   const [provider, setProvider] = useState<PublicCheckoutProvider>(
     hasConfiguredMomoCheckout() ? "momo" : "bank_transfer",
   );
@@ -63,8 +57,8 @@ export default function Checkout() {
   }, [user]);
 
   const currentCard = useMemo(
-    () => PUBLIC_PLAN_CARDS.find((card) => card.plan === selectedPlan) ?? PUBLIC_PLAN_CARDS[0],
-    [selectedPlan],
+    () => PUBLIC_PLAN_CARDS.find((card) => card.id === selectedCardId) ?? PUBLIC_PLAN_CARDS[0],
+    [selectedCardId],
   );
 
   const providerAvailability = useMemo(
@@ -76,7 +70,8 @@ export default function Checkout() {
   );
 
   async function handleCheckout() {
-    if (selectedPlan === "free") {
+    const activeTier = currentCard.plan;
+    if (activeTier === "free") {
       navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath);
       return;
     }
@@ -94,8 +89,8 @@ export default function Checkout() {
     setLoading(true);
     try {
       const order = await portalStartCheckout({
-        plan: selectedPlan,
-        billingSku: getDefaultSkuForTier(selectedPlan),
+        plan: activeTier,
+        billingSku: currentCard.defaultSku,
         provider,
         phoneInput: phoneDraft,
       });
@@ -108,7 +103,7 @@ export default function Checkout() {
       const params = new URLSearchParams({
         order: order.id,
         orderCode: order.orderCode,
-        plan: selectedPlan,
+        plan: activeTier,
         provider,
         status: order.status,
         amount: String(order.amount),
@@ -159,12 +154,12 @@ export default function Checkout() {
           <div className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-3">
               {PUBLIC_PLAN_CARDS.map((card) => {
-                const active = card.plan === selectedPlan;
+                const active = card.id === selectedCardId;
                 return (
                   <button
-                    key={card.plan}
+                    key={card.id}
                     type="button"
-                    onClick={() => setSelectedPlan(card.plan)}
+                    onClick={() => setSelectedCardId(card.id)}
                     className={`rounded-[28px] border p-5 text-left transition ${
                       active
                         ? "border-primary bg-primary text-primary-foreground shadow-glow-teal"
@@ -208,7 +203,7 @@ export default function Checkout() {
           <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Tiến hành thanh toán</div>
             <h2 className="mt-3 text-2xl font-semibold text-foreground">
-              Đăng ký gói {formatTierLabel(selectedPlan)}
+              Đăng ký gói {currentCard.label}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Nhập số điện thoại của bạn và hoàn tất thanh toán. Hệ thống sẽ tự động kích hoạt gói cước ngay lập tức.
@@ -303,7 +298,7 @@ export default function Checkout() {
             <div className="mt-6 flex gap-3">
               <Button className="flex-1" onClick={handleCheckout} disabled={loading || !phoneDraft.trim()}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                {selectedPlan === "free" ? "Vào dashboard" : "Thanh toán và sang activation"}
+                {currentCard.plan === "free" ? "Vào dashboard" : "Thanh toán và sang activation"}
               </Button>
               <Button
                 variant="outline"

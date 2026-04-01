@@ -11,19 +11,19 @@ import {
   getBillingCheckoutLabel,
   getBillingProviderSummary,
 } from "@/lib/billing";
-import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
+import { getPrimaryChannelHref } from "@/lib/siteConfig";
 
 const plans = [
   {
     name: "Free",
     price: 0,
     period: "mãi mãi",
-    description: "Bắt đầu miễn phí để dùng CaloTrack theo kiểu chat-first và làm quen với portal account.",
+    description: "Bắt đầu miễn phí để làm quen với việc theo dõi bữa ăn nhanh chóng.",
     icon: Clock3,
     features: [
-      `Tối đa ${SITE_CONFIG.freeDailyLimit} lượt AI mỗi ngày`,
-      "Gửi ảnh món ăn hoặc nhắn tên món để ước tính calories",
-      "Xem account và portal cơ bản sau khi đăng nhập",
+      "Giới hạn 2 lượt phân tích ảnh mỗi ngày",
+      "Giới hạn 5 lượt tin nhắn mỗi ngày",
+      "Log bữa ăn cơ bản",
     ],
     cta: "Bắt đầu Chat ngay",
     href: getPrimaryChannelHref(),
@@ -31,34 +31,51 @@ const plans = [
     popular: false,
   },
   {
-    name: "Pro",
+    name: "Pro Tháng",
     price: BILLING_OFFERS.monthly.priceVnd,
     period: "/ tháng",
-    description: "Dành cho người dùng thường xuyên muốn tracking đều đặn và đi sâu hơn vào các flow AI.",
+    description: "Nâng cấp trải nghiệm toàn diện và mở khóa toàn bộ tính năng hữu ích.",
     icon: Crown,
     features: [
-      "Ưu tiên hơn cho image review và follow-up nhiều bước",
-      "Phù hợp để giữ nhịp track hàng ngày",
-      "Đi vào portal để xem billing và entitlement rõ hơn",
+      "Không giới hạn AI tracking",
+      "Gym mode chuyên sâu cho tập luyện",
+      "Log tuần, log tháng và báo cáo",
+      "Hỗ trợ tính toán định mức dinh dưỡng",
     ],
     cta: getBillingCheckoutLabel("monthly"),
-    href: "/checkout?plan=pro",
+    href: "/checkout?sku=monthly",
     external: false,
     popular: true,
+  },
+  {
+    name: "Pro Năm",
+    price: BILLING_OFFERS.yearly.priceVnd,
+    period: "/ năm",
+    description: "Tiết kiệm tối đa cho hành trình duy trì vóc dáng dài vợi của bạn.",
+    icon: Crown,
+    features: [
+      "Bao gồm toàn bộ tính năng Pro",
+      "Hỗ trợ tính toán định mức chi tiết",
+      "Chỉ khoảng ~74k/tháng siêu tiết kiệm",
+    ],
+    cta: getBillingCheckoutLabel("yearly"),
+    href: "/checkout?sku=yearly",
+    external: false,
+    popular: false,
   },
   {
     name: "Lifetime",
     price: BILLING_OFFERS.lifetime.priceVnd,
     period: "một lần",
-    description: "Một lần thanh toán, dùng dài hạn nếu bạn muốn CaloTrack trở thành lớp nutrition support thường trực.",
+    description: "Đầu tư một lần, sử dụng vĩnh viễn hệ sinh thái theo dõi sức khỏe chuyên sâu.",
     icon: Gem,
     features: [
-      "Không cần theo dõi chu kỳ gia hạn",
-      "Rõ entitlement dài hạn trong portal và admin",
-      "Phù hợp nếu bạn gắn bó lâu dài với hệ thống",
+      "Thanh toán duy nhất một lần",
+      "Mở khóa vĩnh viễn mọi chức năng",
+      "Hưởng ưu đãi cho tính năng AI mới",
     ],
     cta: getBillingCheckoutLabel("lifetime"),
-    href: "/checkout?plan=lifetime",
+    href: "/checkout?sku=lifetime",
     external: false,
     popular: false,
     badge: "Thanh toán một lần",
@@ -89,7 +106,7 @@ export const Pricing = () => {
           </p>
         </motion.div>
 
-        <div className="mb-8 grid gap-6 md:grid-cols-3">
+        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan, index) => {
             const Icon = plan.icon;
             return (
