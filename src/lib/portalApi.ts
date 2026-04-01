@@ -2,6 +2,7 @@ import {
   LIFETIME_SENTINEL_ISO,
   getDefaultSkuForTier,
   getFreeDailyLimit,
+  getFreeImageDailyLimit,
   normalizePlanTier,
   type BillingSku,
   type PlanTier,
@@ -126,7 +127,7 @@ function buildEntitlementLabel(
 
 function buildQuotaLabel(plan: PlanTier, usage: number): string {
   if (plan === "free") {
-    return `${usage}/${getFreeDailyLimit()} lượt AI hôm nay`;
+    return `${usage}/${getFreeDailyLimit()} tin nhắn hôm nay • ${getFreeImageDailyLimit()} ảnh/ngày`;
   }
   return `${usage} lượt AI đã dùng hôm nay • quota shared theo customer`;
 }
@@ -239,9 +240,7 @@ export async function fetchPortalSnapshot(authUser: {
           (row.premium_until as string | null) ?? null,
           (row.entitlement_source as string | null) ?? null,
         ),
-      quotaLabel:
-        (row.quota_label as string | null) ??
-        buildQuotaLabel(plan, Number(row.quota_used_today ?? row.daily_ai_usage_count ?? 0)),
+      quotaLabel: buildQuotaLabel(plan, Number(row.quota_used_today ?? row.daily_ai_usage_count ?? 0)),
       source: ((row.source as PortalSnapshot["source"]) ?? "customer_linked"),
       payments: Array.isArray(row.payments) ? mapPortalPayments(row.payments as unknown[]) : [],
       linkedChannels: Array.isArray(row.linked_channels)
@@ -393,21 +392,21 @@ export function getPortalChannelCards(snapshot?: PortalSnapshot | null) {
   const linkedChannels = new Set((snapshot?.linkedChannels ?? []).map((item) => item.channel));
   return [
     {
-      key: "telegram",
+      key: "zalo",
       label: SITE_CONFIG.primaryChannelLabel,
-      status: linkedChannels.has("telegram") ? "Đã linked" : "Sẵn sàng kết nối",
-      helper: linkedChannels.has("telegram")
+      status: linkedChannels.has("zalo") ? "Đã linked" : "Sẵn sàng kết nối",
+      helper: linkedChannels.has("zalo")
         ? "Kênh này đã nối vào customer canonical."
-        : "Kênh tracking mạnh nhất hiện tại và là lựa chọn nhanh nhất để dùng ngay.",
+        : "Kênh chat chính cho người dùng Việt, đi cùng flow kích hoạt và support hiện tại.",
       tone: "primary" as const,
     },
     {
-      key: "zalo",
+      key: "telegram",
       label: SITE_CONFIG.secondaryChannelLabel,
-      status: linkedChannels.has("zalo") ? "Đã linked" : SITE_CONFIG.secondaryChannelStatus,
-      helper: linkedChannels.has("zalo")
+      status: linkedChannels.has("telegram") ? "Đã linked" : SITE_CONFIG.secondaryChannelStatus,
+      helper: linkedChannels.has("telegram")
         ? "Kênh này đã nằm trong shared entitlement của customer."
-        : "UI và data model đã sẵn, workflow riêng sẽ được cắm bằng n8n.",
+        : "Giữ cùng entitlement và hữu ích cho người dùng muốn tracking liên tục trên Telegram.",
       tone: "accent" as const,
     },
     {

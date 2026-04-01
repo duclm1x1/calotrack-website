@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
-const logoSquare = "/logo-new.png";
+const logoSquare = "/logo-new-main.png";
 
 const footerGroups = [
   {

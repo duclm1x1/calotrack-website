@@ -7,12 +7,15 @@ import { ArrowDown, Check, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE_CONFIG } from "@/lib/siteConfig";
 
-const logo3d = "/logo-3d.png";
+const logo3d = "/logo-new-main.png";
 
 const bullets = [
-  "Không cần cài app mới",
-  "Ghi món bằng chat hoặc ảnh",
-  "Phù hợp cho người muốn giảm mỡ / giữ cân / tăng cơ",
+  <span key="1">AI coach qua chat, không cần app riêng</span>,
+  <span key="2">Ghi món ăn trực tiếp bằng chat, Ảnh</span>,
+  <span key="3">Database các món ăn Việt, độ chính xác <strong className="text-orange-500 text-lg">95%</strong></span>,
+  <span key="4">Phù hợp cho người muốn giảm mỡ / giữ cân / tăng cơ</span>,
+  <span key="5">/Gym Mode dành riêng cho ai muốn hướng dẫn, tracking gym</span>,
+  <span key="6">Free 7 ngày không cần đổi trả</span>,
 ];
 
 export const Hero = () => {
@@ -98,7 +101,7 @@ export const Hero = () => {
             <ul className="mb-8 space-y-3 flex flex-col items-center lg:items-start">
               {bullets.map((bullet, index) => (
                 <motion.li
-                  key={bullet}
+                  key={index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}

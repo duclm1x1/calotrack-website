@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   PUBLIC_CHECKOUT_PROVIDERS,
   PUBLIC_PLAN_CARDS,
+  PUBLIC_PRO_CADENCE_OPTIONS,
+  type BillingSku,
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
@@ -20,8 +22,13 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialSku = searchParams.get("sku") || searchParams.get("plan");
-  const defaultCardId = PUBLIC_PLAN_CARDS.find((c) => c.id === initialSku || c.plan === initialSku)?.id || "free";
+  const defaultCardId =
+    PUBLIC_PLAN_CARDS.find((card) => card.id === initialSku || card.plan === initialSku)?.id ||
+    (["monthly", "semiannual", "yearly"].includes(String(initialSku)) ? "pro" : "free");
   const [selectedCardId, setSelectedCardId] = useState<string>(defaultCardId);
+  const [selectedProSku, setSelectedProSku] = useState<BillingSku>(
+    ["monthly", "semiannual", "yearly"].includes(String(initialSku)) ? (initialSku as BillingSku) : "monthly",
+  );
   const [provider, setProvider] = useState<PublicCheckoutProvider>("momo");
   const [phoneDraft, setPhoneDraft] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +64,10 @@ export default function Checkout() {
     () => PUBLIC_PLAN_CARDS.find((card) => card.id === selectedCardId) ?? PUBLIC_PLAN_CARDS[0],
     [selectedCardId],
   );
+  const activeBillingSku = currentCard.plan === "pro" ? selectedProSku : currentCard.defaultSku;
+  const activeProOption =
+    PUBLIC_PRO_CADENCE_OPTIONS.find((option) => option.sku === selectedProSku) ??
+    PUBLIC_PRO_CADENCE_OPTIONS[0];
 
   const providerAvailability = useMemo(
     () => ({
@@ -87,7 +98,7 @@ export default function Checkout() {
     try {
       const order = await portalStartCheckout({
         plan: activeTier,
-        billingSku: currentCard.defaultSku,
+        billingSku: activeBillingSku,
         provider,
         phoneInput: phoneDraft,
       });
@@ -148,7 +159,7 @@ export default function Checkout() {
 
         <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               {PUBLIC_PLAN_CARDS.map((card) => {
                 const active = card.id === selectedCardId;
                 return (
@@ -194,6 +205,44 @@ export default function Checkout() {
                 );
               })}
             </div>
+
+            {currentCard.plan === "pro" ? (
+              <div className="rounded-[28px] border border-primary/10 bg-white/90 p-5 shadow-sm">
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Chu kỳ Pro</div>
+                <h3 className="mt-3 text-xl font-semibold text-foreground">Chọn cadence cho gói Pro</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Public site vẫn chỉ có một tier Pro. Ở checkout, bạn chọn chu kỳ 1 tháng, 6 tháng hoặc 12 tháng để hệ thống tính tiền đúng và audit dễ hơn.
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  {PUBLIC_PRO_CADENCE_OPTIONS.map((option) => {
+                    const active = option.sku === selectedProSku;
+                    return (
+                      <button
+                        key={option.sku}
+                        type="button"
+                        onClick={() => setSelectedProSku(option.sku)}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          active
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-primary/10 bg-white hover:border-primary/25"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-foreground">{option.label}</div>
+                          {option.badge ? (
+                            <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                              {option.badge}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-3 text-lg font-semibold text-foreground">{option.priceLabel}</div>
+                        <div className="mt-1 text-sm leading-6 text-muted-foreground">{option.helper}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
@@ -202,8 +251,15 @@ export default function Checkout() {
               Đăng ký gói {currentCard.label}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Nhập số điện thoại của bạn và hoàn tất thanh toán. Hệ thống sẽ tự động kích hoạt gói cước ngay lập tức.
+              Nhập số điện thoại của bạn và hoàn tất thanh toán. Hệ thống sẽ cấp entitlement theo customer truth, sau đó bạn dùng ngay trên Zalo hoặc Telegram.
             </p>
+
+            {currentCard.plan === "pro" ? (
+              <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
+                <div className="font-semibold text-foreground">Gói đang chọn: Pro {activeProOption.label}</div>
+                <div className="mt-1">{activeProOption.priceLabel} • {activeProOption.helper}</div>
+              </div>
+            ) : null}
 
             <div className="mt-5 space-y-4">
               <div className="space-y-2">
@@ -220,7 +276,7 @@ export default function Checkout() {
               <div className="space-y-2">
                 <div className="text-sm font-medium text-foreground">Phương thức thanh toán</div>
                 <div className="grid gap-3">
-                  {PUBLIC_CHECKOUT_PROVIDERS.filter((opt) => opt.value === "bank_transfer").map((option) => {
+                  {PUBLIC_CHECKOUT_PROVIDERS.map((option) => {
                     const active = provider === option.value;
                     const available =
                       option.value === "momo"
@@ -254,6 +310,7 @@ export default function Checkout() {
                             ? "Thanh toán qua ví điện tử MoMo."
                             : "Thanh toán qua chuyển khoản ngân hàng Techcombank."}
                         </div>
+                        <div className="mt-2 text-xs text-muted-foreground">{option.helper}</div>
                       </button>
                     );
                   })}
@@ -282,9 +339,9 @@ export default function Checkout() {
             <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
               <span className="font-semibold text-foreground">Sau khi thanh toán:</span>
               <ul className="mt-2 list-disc pl-5 space-y-1">
-                <li>Kích hoạt trên Telegram/Zalo</li>
-                <li>Liên kết bằng số điện thoại</li>
-                <li>Quyền lợi áp dụng cho tài khoản chính</li>
+                <li>Kích hoạt theo số điện thoại canonical</li>
+                <li>Quyền lợi áp dụng chung cho Zalo, Telegram và portal</li>
+                <li>Dễ support, dễ audit và không bị lệch entitlement giữa các kênh</li>
               </ul>
             </div>
 

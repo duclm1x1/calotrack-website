@@ -19,7 +19,7 @@ export const PLANS = {
   },
   PRO: {
     id: "pro",
-    name: BILLING_OFFERS.monthly.label,
+    name: "Pro",
     price: BILLING_OFFERS.monthly.priceVnd,
     duration: BILLING_OFFERS.monthly.days ?? 30,
     features: [
