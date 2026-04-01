@@ -188,13 +188,18 @@ export const Pricing = () => {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ delay: 0.8 }}
-          className="space-y-2 text-center"
+          className="rounded-[20px] border border-primary/10 bg-white/80 px-6 py-4 text-center shadow-sm backdrop-blur"
         >
-          <p className="text-xs text-muted-foreground">Hỗ trợ thanh toán: {getBillingProviderSummary()}</p>
+          <div className="mb-2 text-sm font-semibold text-foreground">⚡ Kích hoạt tự động 24/7</div>
           <p className="text-xs text-muted-foreground">
-            Payment có thể đi qua portal hoặc được hỗ trợ theo channel đang dùng. Frontend chỉ hiển thị những
-            gì backend và admin layer hiện thực sự support.
+            Chuyển khoản đúng nội dung → SePay phát hiện → hệ thống kích hoạt gói ngay, không cần chờ admin.
           </p>
+          <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+            <span>✓ Miễn phí 7 ngày thử</span>
+            <span>✓ Không cần thẻ tín dụng</span>
+            <span>✓ Chuyển khoản VietinBank</span>
+            <span>✓ {getBillingProviderSummary()}</span>
+          </div>
         </motion.div>
       </div>
     </section>

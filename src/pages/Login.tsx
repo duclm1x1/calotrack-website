@@ -85,26 +85,32 @@ export default function Login() {
             Số điện thoại đã verify là định danh duy nhất của tài khoản. Sau bước này, hệ thống sẽ tạo hoặc liên kết customer truth, bật dùng thử 7 ngày và đồng bộ quyền dùng trên Zalo, Telegram và portal.
           </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 flex flex-wrap gap-3">
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Miễn phí 7 ngày — không cần thẻ</span>
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Kích hoạt ngay sau OTP</span>
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Dùng chung Zalo, Telegram &amp; Portal</span>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-primary/10 bg-primary/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Định danh chuẩn</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Phone-first truth</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Không cần app</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Chat là xong</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Mọi plan, trial, payment và link Zalo hoặc Telegram đều bám vào số điện thoại đã xác thực.
+                Dùng Zalo hoặc Telegram bạn đã có sẵn — không cần tải thêm app nào.
               </p>
             </div>
             <div className="rounded-3xl border border-primary/10 bg-white p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Hard gate</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Chưa verify thì khóa bot</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Dùng thử ngay</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">7 ngày Free sau OTP</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Nếu chưa xác thực số điện thoại hoặc chưa có trial, bot sẽ không mở meal log, stats, gym hay image analysis.
+                Verify xong là trial bắt đầu ngay. Không cần thẻ, không cần thanh toán trước.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/15 bg-accent/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Dùng thử</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">7 ngày ngay sau OTP</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Đồng bộ đa kênh</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">1 SĐT — Dùng mọi nơi</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Verify OTP xong là trial bắt đầu ngay. Hết trial, tài khoản quay về Free giới hạn 2 ảnh và 5 tin nhắn mỗi ngày.
+                Số điện thoại là định danh duy nhất. Quyền lợi đồng bộ chung cho Zalo, Telegram và portal.
               </p>
             </div>
           </div>

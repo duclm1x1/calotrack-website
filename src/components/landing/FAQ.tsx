@@ -33,6 +33,14 @@ const faqs = [
     question: "Lifetime có thật sự giới hạn 50 suất không?",
     answer: "Có. Gói Lifetime là ưu đãi giới hạn và hiện chỉ mở 50 suất. Đây không phải gói bán đại trà lâu dài, nên khi đủ số lượng, CaloTrack có thể đóng gói này bất kỳ lúc nào.",
   },
+  {
+    question: "Tại sao CaloTrack rẻ hơn các app nutrition khác?",
+    answer: "Vì CaloTrack không có app riêng — không tốn chi phí App Store, phân phối, hay đội ngũ mobile. Bạn dùng qua Zalo hoặc Telegram bạn đã có sẵn. Chi phí tiết kiệm được chúng tôi chuyển lại cho giá gói.",
+  },
+  {
+    question: "Thanh toán xong có được kích hoạt ngay không?",
+    answer: "Có. Sau khi chuyển khoản đúng nội dung, SePay sẽ phát hiện giao dịch và hệ thống tự động kích hoạt gói của bạn — thường trong vài phút, không cần chờ admin xác nhận thủ công.",
+  },
 ];
 
 export const FAQ = () => {
