@@ -177,16 +177,29 @@ export const Hero = () => {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 style={{ filter: "drop-shadow(0 0 30px hsl(var(--primary) / 0.4))" }}
               />
-              <div className="absolute -left-8 top-8 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-                <p className="text-xs uppercase tracking-[0.2em] text-primary">Hôm nay</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">1.420 kcal</p>
-                <p className="text-xs text-muted-foreground">P 96g • C 130g • F 42g</p>
+              {/* Card 1: Nutrition Today — top-left */}
+              <div className="absolute -left-10 top-6 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[160px]">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-semibold">Nutrition Hôm nay</p>
+                <p className="mt-1 text-xl font-bold text-foreground leading-tight">1.420 / 2.471 kcal</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Protein 96g • Carb 130g • Fat 42g</p>
               </div>
-              <div className="absolute -bottom-2 right-0 rounded-2xl border border-white/40 bg-white/80 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-                <p className="text-xs uppercase tracking-[0.2em] text-accent">Bảo mật hệ thống</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">Giao dịch an toàn, minh bạch</p>
-                <p className="text-xs text-muted-foreground">Dữ liệu thông tin được lưu trữ 100% bảo mật.</p>
+
+              {/* Card 2: Progress — bottom-left */}
+              <div className="absolute -left-8 -bottom-4 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[190px]">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-orange-500 font-semibold">Tiến độ</p>
+                <p className="mt-1 text-xs font-medium text-foreground">TDEE 2471 · Đã nạp <span className="text-primary font-bold">1.730</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">🏃 Chạy bộ: <span className="font-semibold text-foreground">352 kcal</span></p>
               </div>
+
+              {/* Card 3: Gym Mode — bottom-right */}
+              <div className="absolute -right-6 bottom-10 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[160px]">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600 font-semibold">Gym Mode</p>
+                <p className="mt-1 text-sm font-bold text-foreground">
+                  <span className="text-emerald-500">●</span> ON
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Coach chuyên sâu cho workout</p>
+              </div>
+
             </motion.div>
           </motion.div>
         </div>
