@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Building2, CheckCircle2, Loader2, QrCode } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
-import { SITE_CONFIG, hasConfiguredBankTransfer, hasConfiguredMomoCheckout } from "@/lib/siteConfig";
+import { SITE_CONFIG } from "@/lib/siteConfig";
 
 
 export default function Checkout() {
@@ -22,9 +22,7 @@ export default function Checkout() {
   const initialSku = searchParams.get("sku") || searchParams.get("plan");
   const defaultCardId = PUBLIC_PLAN_CARDS.find((c) => c.id === initialSku || c.plan === initialSku)?.id || "free";
   const [selectedCardId, setSelectedCardId] = useState<string>(defaultCardId);
-  const [provider, setProvider] = useState<PublicCheckoutProvider>(
-    hasConfiguredMomoCheckout() ? "momo" : "bank_transfer",
-  );
+  const [provider, setProvider] = useState<PublicCheckoutProvider>("momo");
   const [phoneDraft, setPhoneDraft] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,8 +60,8 @@ export default function Checkout() {
 
   const providerAvailability = useMemo(
     () => ({
-      momo: hasConfiguredMomoCheckout(),
-      bank_transfer: hasConfiguredBankTransfer(),
+      momo: true,
+      bank_transfer: true,
     }),
     [],
   );
@@ -252,11 +250,9 @@ export default function Checkout() {
                           ) : null}
                         </div>
                         <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                          {available
-                            ? option.helper
-                            : option.value === "momo"
-                              ? "Chưa set webhook tạo payment session trên production."
-                              : "Chưa set tài khoản ngân hàng nhận tiền trên production."}
+                          {option.value === "momo"
+                            ? "Thanh toán qua ví điện tử MoMo."
+                            : "Thanh toán qua chuyển khoản ngân hàng Techcombank."}
                         </div>
                       </button>
                     );
@@ -266,25 +262,20 @@ export default function Checkout() {
             </div>
 
             {provider === "bank_transfer" ? (
-              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5">
-                <div className="flex items-start gap-3">
-                  <Building2 className="mt-1 h-5 w-5 text-primary" />
-                  <div className="space-y-2 text-sm leading-6 text-muted-foreground">
-                    <div className="font-semibold text-foreground">Chuyển khoản Techcombank</div>
-                    <div>
-                      Mỗi order sẽ có một mã riêng. Sau khi bấm tạo order, màn activation sẽ hiện VietQR, số tài khoản và
-                      nội dung chuyển khoản đúng để đối soát.
-                    </div>
-                    <div className="grid gap-2 rounded-2xl border border-primary/10 bg-white/80 p-4 text-sm">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <QrCode className="h-4 w-4 text-primary" />
-                        <span>Ngân hàng: {SITE_CONFIG.bankName}</span>
-                      </div>
-                      <div>Số tài khoản nhận tiền: {SITE_CONFIG.bankAccountNumber}</div>
-                      <div>Mã đơn hàng và QR chuyển khoản tự động sẽ hiện ra ngay bước tiếp theo.</div>
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5 text-center shadow-sm">
+                <div className="text-sm font-semibold text-foreground mb-4 uppercase tracking-widest text-primary">Quét mã QR Techcombank</div>
+                <img src="/qr-tcb.png" alt="Techcombank QR" className="mx-auto w-full max-w-[240px] rounded-xl border border-primary/10 bg-white" />
+                <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                  Ghi chú <strong>số điện thoại của bạn</strong> khi chuyển khoản.
+                </p>
+              </div>
+            ) : provider === "momo" ? (
+              <div className="mt-5 rounded-[28px] border border-primary/10 bg-primary/5 p-5 text-center shadow-sm">
+                <div className="text-sm font-semibold text-foreground mb-4 uppercase tracking-widest text-[#A50064]">Quét mã QR MoMo</div>
+                <img src="/qr-momo.jpg" alt="MoMo QR" className="mx-auto w-full max-w-[240px] rounded-xl border border-primary/10 bg-white" />
+                <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                  Ghi chú <strong>số điện thoại của bạn</strong> khi chuyển tiền.
+                </p>
               </div>
             ) : null}
 
@@ -300,7 +291,7 @@ export default function Checkout() {
             <div className="mt-6 flex gap-3">
               <Button className="flex-1" onClick={handleCheckout} disabled={loading || !phoneDraft.trim()}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                {currentCard.plan === "free" ? "Vào dashboard" : "Thanh toán và sang activation"}
+                {currentCard.plan === "free" ? "Vào dashboard" : "Tôi Đã Thanh Toán - Hoàn Tất Đăng Ký"}
               </Button>
               <Button
                 variant="outline"

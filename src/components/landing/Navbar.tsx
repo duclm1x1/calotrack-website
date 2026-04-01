@@ -7,7 +7,7 @@ import { Menu, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
 
-const logoSquare = "/logo.png";
+const logoSquare = "/logo-new.png";
 
 const navLinks = [
   { label: "Tính năng", href: "#features" },
