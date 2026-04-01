@@ -191,8 +191,8 @@ export const Hero = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">🏃 Chạy bộ: <span className="font-semibold text-foreground">352 kcal</span></p>
               </div>
 
-              {/* Card 3: Gym Mode — bottom-right */}
-              <div className="absolute -right-6 bottom-10 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[160px]">
+              {/* Card 3: Gym Mode — top-right */}
+              <div className="absolute -right-6 top-6 rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 min-w-[160px]">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600 font-semibold">Gym Mode</p>
                 <p className="mt-1 text-sm font-bold text-foreground">
                   <span className="text-emerald-500">●</span> ON

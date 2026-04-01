@@ -122,6 +122,7 @@ export type ZaloLinkRequestResult = {
 
 function describeError(error: unknown): string {
   const message = String((error as { message?: string })?.message || error || "Unknown error");
+  const normalized = message.toLowerCase();
   if (message.includes("phone_verification_required")) {
     return "Bạn cần xác thực số điện thoại trước khi dùng portal, checkout hoặc bot.";
   }
@@ -130,6 +131,21 @@ function describeError(error: unknown): string {
   }
   if (message.includes("auth_required")) {
     return "Bạn cần đăng nhập bằng OTP trước khi tiếp tục.";
+  }
+  if (normalized.includes("otp_expired") || normalized.includes("token has expired or is invalid")) {
+    return "Mã OTP đã hết hạn hoặc không còn hợp lệ. Bạn hãy gửi lại mã mới rồi thử lại.";
+  }
+  if (normalized.includes("sms send rate limit") || normalized.includes("over_sms_send_rate_limit")) {
+    return "Bạn vừa yêu cầu mã quá nhanh. Hãy chờ một chút rồi gửi lại OTP.";
+  }
+  if (normalized.includes("phone provider is disabled") || normalized.includes("unsupported phone provider")) {
+    return "Hệ thống gửi mã xác thực đang tạm bảo trì. Bạn thử lại sau hoặc liên hệ hỗ trợ.";
+  }
+  if (normalized.includes("invalid phone number")) {
+    return "Số điện thoại chưa đúng định dạng. Hãy nhập số Việt Nam theo dạng 09... hoặc +84...";
+  }
+  if (normalized.includes("captcha")) {
+    return "Yêu cầu xác thực cần thêm bước bảo mật. Hãy thử lại sau ít phút.";
   }
   return message;
 }

@@ -140,6 +140,9 @@ export default function Login() {
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-muted-foreground">
                 OTP đã được gửi tới <span className="font-semibold text-foreground">{phoneInput}</span>.
+                <div className="mt-1 text-xs text-muted-foreground/90">
+                  Mã có hiệu lực trong 3 phút. Nếu chưa nhận được SMS, hãy chờ một chút rồi gửi lại.
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Nhập mã xác thực</label>
