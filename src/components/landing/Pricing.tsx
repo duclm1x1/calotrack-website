@@ -17,13 +17,13 @@ const plans = [
   {
     name: "Free",
     price: 0,
-    period: "mãi mãi",
-    description: "Bắt đầu miễn phí để làm quen với việc theo dõi bữa ăn nhanh chóng.",
+    period: "7 ngày",
+    description: "Bắt đầu miễn phí để làm quen với việc theo dõi bữa ăn nhanh chóng trong 7 ngày đầu.",
     icon: Clock3,
     features: [
+      "Trải nghiệm AI miễn phí trong 7 ngày",
       "Giới hạn 2 lượt phân tích ảnh mỗi ngày",
       "Giới hạn 5 lượt tin nhắn mỗi ngày",
-      "Log bữa ăn cơ bản",
     ],
     cta: "Bắt đầu Chat ngay",
     href: getPrimaryChannelHref(),
@@ -62,6 +62,7 @@ const plans = [
     href: "/checkout?sku=yearly",
     external: false,
     popular: false,
+    badge: "Giá ưu đãi nhất",
   },
   {
     name: "Lifetime",
@@ -78,7 +79,7 @@ const plans = [
     href: "/checkout?sku=lifetime",
     external: false,
     popular: false,
-    badge: "Thanh toán một lần",
+    badge: "Chỉ 50 slot",
   },
 ];
 

@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   PUBLIC_CHECKOUT_PROVIDERS,
   PUBLIC_PLAN_CARDS,
-  type PlanTier,
   type PublicCheckoutProvider,
 } from "@/lib/billing";
 import { fetchPortalSnapshot, portalStartCheckout } from "@/lib/portalApi";
@@ -152,7 +151,7 @@ export default function Checkout() {
 
         <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
           <div className="space-y-6">
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {PUBLIC_PLAN_CARDS.map((card) => {
                 const active = card.id === selectedCardId;
                 return (
