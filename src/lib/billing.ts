@@ -197,7 +197,7 @@ export const PUBLIC_CHECKOUT_PROVIDERS: CheckoutProviderOption[] = [
   },
   {
     value: "bank_transfer",
-    label: "Techcombank chuyển khoản",
+    label: "Chuyển khoản Ngân Hàng",
     helper: "VietQR + mã đơn hàng để đối soát và kích hoạt tự động.",
     accent: "neutral",
   },
@@ -290,7 +290,7 @@ export function getBillingTierBadge(tier: PlanTier): string {
 }
 
 export function getBillingProviderSummary(): string {
-  return "MoMo • Techcombank chuyển khoản";
+  return "MoMo • Chuyển khoản Ngân Hàng";
 }
 
 export function getFreeDailyLimit(): number {
