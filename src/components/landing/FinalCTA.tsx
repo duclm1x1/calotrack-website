@@ -30,7 +30,7 @@ export const FinalCTA = () => {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="lg" asChild className="gap-2 px-10 py-7 text-lg">
+            <Button size="lg" asChild className="gap-2 px-10 py-7 text-lg bg-[#0068FF] hover:bg-[#005AE0] text-white border-0 shadow-lg">
               <a href={getPrimaryChannelHref()} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="h-6 w-6" />
                 {getPrimaryChannelCta()}
@@ -58,8 +58,8 @@ export const FinalCTA = () => {
             </div>
             <div className="rounded-2xl border border-border bg-background/80 p-5 backdrop-blur">
               <p className="text-sm text-muted-foreground">Trạng thái channel</p>
-              <div className="mt-2 font-semibold text-foreground">
-                Telegram live • {SITE_CONFIG.secondaryChannelLabel} {SITE_CONFIG.secondaryChannelStatus.toLowerCase()}
+              <div className="mt-2 text-sm font-semibold text-foreground">
+                Telegram• Zalo đã tích hợp công nghệ AI mới nhất ChatGPT, Claude, Gemini
               </div>
             </div>
           </div>

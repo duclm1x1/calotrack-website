@@ -611,7 +611,7 @@ export default function Admin() {
 
   const handleMarkOrderPaid = async () => {
     if (!orderReviewForm.orderCode.trim()) {
-      toast.error("Order code lÃ  báº¯t buá»™c");
+      toast.error("Order code là bắt buộc");
       return;
     }
     await withRefresh(
@@ -622,7 +622,7 @@ export default function Admin() {
           orderReviewForm.txCode,
           orderReviewForm.note,
         ),
-      "ÄÃ£ xÃ¡c nháº­n order vÃ  grant entitlement",
+      "Đã xác nhận order và grant entitlement",
     );
     setOrderReviewForm({ orderCode: "", amount: "", txCode: "", note: "" });
   };

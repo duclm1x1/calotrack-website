@@ -1,4 +1,4 @@
-﻿import { ChangeEvent, Dispatch, ReactNode, SetStateAction } from "react";
+import { ChangeEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -43,7 +43,7 @@ const SURFACE = "rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-
 const SUBSURFACE = "rounded-3xl border border-primary/10 bg-white/80 p-4 shadow-sm";
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return "â€”";
+  if (!value) return "—";
   return new Date(value).toLocaleString("vi-VN");
 }
 
@@ -122,10 +122,10 @@ export function OverviewPanel({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Tá»•ng users" value={stats?.totalUsers ?? users.length} helper="Bao gá»“m Telegram, Zalo vÃ  Web-linked" />
-        <MetricCard label="Free / Pro" value={`${freeUsers} / ${stats?.premiumUsers ?? users.filter((user) => user.plan === "pro").length}`} helper="Theo entitlement hiá»‡n táº¡i" />
+        <MetricCard label="Tổng users" value={stats?.totalUsers ?? users.length} helper="Bao gồm Telegram, Zalo và Web-linked" />
+        <MetricCard label="Free / Pro" value={`${freeUsers} / ${stats?.premiumUsers ?? users.filter((user) => user.plan === "pro").length}`} helper="Theo entitlement hiện tại" />
         <MetricCard label="Lifetime" value={stats?.lifetimeUsers ?? users.filter((user) => user.plan === "lifetime").length} helper="One-time entitlement" tone="accent" />
-        <MetricCard label="Doanh thu thÃ¡ng" value={formatBillingPriceVnd(stats?.monthRevenue ?? 0)} helper={`Tá»•ng doanh thu ${formatBillingPriceVnd(stats?.totalRevenue ?? 0)}`} />
+        <MetricCard label="Doanh thu tháng" value={formatBillingPriceVnd(stats?.monthRevenue ?? 0)} helper={`Tổng doanh thu ${formatBillingPriceVnd(stats?.totalRevenue ?? 0)}`} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
@@ -133,7 +133,7 @@ export function OverviewPanel({
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Channel mix</div>
-              <h3 className="mt-2 text-xl font-semibold">Telegram, Zalo vÃ  lá»›p web portal</h3>
+              <h3 className="mt-2 text-xl font-semibold">Telegram, Zalo và lớp web portal</h3>
             </div>
             <Button variant="outline" size="sm" onClick={onRefresh}>
               <RefreshCcw className="mr-2 h-4 w-4" />
@@ -142,11 +142,11 @@ export function OverviewPanel({
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div className={SUBSURFACE}>
-              <div className="flex items-center gap-3"><div className="rounded-2xl bg-primary/10 p-3 text-primary"><Bot className="h-5 w-5" /></div><div><div className="text-sm font-semibold">Telegram</div><div className="text-xs text-zinc-500">KÃªnh máº¡nh nháº¥t hiá»‡n táº¡i</div></div></div>
+              <div className="flex items-center gap-3"><div className="rounded-2xl bg-primary/10 p-3 text-primary"><Bot className="h-5 w-5" /></div><div><div className="text-sm font-semibold">Telegram</div><div className="text-xs text-zinc-500">Kênh mạnh nhất hiện tại</div></div></div>
               <div className="mt-4 text-3xl font-semibold text-primary">{telegramUsers}</div>
             </div>
             <div className={SUBSURFACE}>
-              <div className="flex items-center gap-3"><div className="rounded-2xl bg-accent/10 p-3 text-accent"><Wallet className="h-5 w-5" /></div><div><div className="text-sm font-semibold">Zalo</div><div className="text-xs text-zinc-500">ÄÆ°a vÃ o ops scope</div></div></div>
+              <div className="flex items-center gap-3"><div className="rounded-2xl bg-accent/10 p-3 text-accent"><Wallet className="h-5 w-5" /></div><div><div className="text-sm font-semibold">Zalo</div><div className="text-xs text-zinc-500">Đưa vào ops scope</div></div></div>
               <div className="mt-4 text-3xl font-semibold text-accent">{zaloUsers}</div>
             </div>
             <div className={SUBSURFACE}>
@@ -160,9 +160,9 @@ export function OverviewPanel({
           <div className={`rounded-3xl border px-4 py-3 text-sm ${schema?.ready ? "border-primary/15 bg-primary/8 text-primary" : "border-accent/25 bg-accent/10 text-accent"}`}>
             {describeSchemaReadiness(schema)}
           </div>
-          <div className={`${SUBSURFACE} flex items-start gap-3`}><ShieldAlert className="mt-1 h-4 w-4 text-accent" /><div><div className="font-semibold">Payment queue</div><div className="text-sm text-zinc-500">{health?.pendingPayments ?? pendingPayments.length} giao dá»‹ch cáº§n rÃ  láº¡i.</div></div></div>
-          <div className={`${SUBSURFACE} flex items-start gap-3`}><AlertTriangle className="mt-1 h-4 w-4 text-accent" /><div><div className="font-semibold">Quota anomalies</div><div className="text-sm text-zinc-500">{quotaHotspots.length} free users Ä‘Ã£ cháº¡m ngÆ°á»¡ng {getFreeDailyLimit()} lÆ°á»£t/ngÃ y.</div></div></div>
-          <div className={`${SUBSURFACE} flex items-start gap-3`}><BadgeCheck className="mt-1 h-4 w-4 text-primary" /><div><div className="font-semibold">Expiring soon</div><div className="text-sm text-zinc-500">{expiringSoon.length} Pro users sáº¯p háº¿t háº¡n trong 7 ngÃ y tá»›i.</div></div></div>
+          <div className={`${SUBSURFACE} flex items-start gap-3`}><ShieldAlert className="mt-1 h-4 w-4 text-accent" /><div><div className="font-semibold">Payment queue</div><div className="text-sm text-zinc-500">{health?.pendingPayments ?? pendingPayments.length} giao dịch cần rà lại.</div></div></div>
+          <div className={`${SUBSURFACE} flex items-start gap-3`}><AlertTriangle className="mt-1 h-4 w-4 text-accent" /><div><div className="font-semibold">Quota anomalies</div><div className="text-sm text-zinc-500">{quotaHotspots.length} free users đã chạm ngưỡng {getFreeDailyLimit()} lượt/ngày.</div></div></div>
+          <div className={`${SUBSURFACE} flex items-start gap-3`}><BadgeCheck className="mt-1 h-4 w-4 text-primary" /><div><div className="font-semibold">Expiring soon</div><div className="text-sm text-zinc-500">{expiringSoon.length} Pro users sắp hết hạn trong 7 ngày tới.</div></div></div>
         </div>
       </div>
     </div>
@@ -213,12 +213,12 @@ export function UsersPanel({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <Input className="pl-9" placeholder="TÃ¬m theo tÃªn, email, chat_id, platform_id..." value={search} onChange={(event) => onSearchChange(event.target.value)} />
+          <Input className="pl-9" placeholder="Tìm theo tên, email, chat_id, platform_id..." value={search} onChange={(event) => onSearchChange(event.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
-          <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value as "all" | AdminUser["plan"])} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Má»i plan</option><option value="free">Free</option><option value="pro">Pro</option><option value="lifetime">Lifetime</option></select>
-          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value as "all" | "telegram" | "zalo" | "web")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Má»i kÃªnh</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
-          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value as "all" | "active" | "banned")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Má»i tráº¡ng thÃ¡i</option><option value="active">Äang active</option><option value="banned">Äang ban</option></select>
+          <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value as "all" | AdminUser["plan"])} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi plan</option><option value="free">Free</option><option value="pro">Pro</option><option value="lifetime">Lifetime</option></select>
+          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value as "all" | "telegram" | "zalo" | "web")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi kênh</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
+          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value as "all" | "active" | "banned")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi trạng thái</option><option value="active">Đang active</option><option value="banned">Đang ban</option></select>
           <Button variant="outline" onClick={onExport}>CSV</Button>
         </div>
       </div>
@@ -235,13 +235,13 @@ export function UsersPanel({
                 <td className="p-3"><MiniBadge tone={user.platform === "zalo" ? "accent" : user.platform === "web" ? "neutral" : "primary"}>{user.platform || "telegram"}</MiniBadge></td>
                 <td className="p-3"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${planTone(user.plan)}`}>{user.plan}</span></td>
                 <td className="p-3 text-sm text-zinc-600">{user.plan === "lifetime" ? "Lifetime sentinel" : formatDate(user.premium_until)}</td>
-                <td className="p-3"><div className="text-sm font-semibold">{user.daily_ai_usage_count}/{getFreeDailyLimit()}</div><div className="mt-2 h-2 rounded-full bg-primary/10"><div className="h-full rounded-full bg-primary" style={{ width: `${getQuotaProgressPercent(user.daily_ai_usage_count)}%` }} /></div><div className="mt-2 text-xs text-zinc-500">{getQuotaThresholdNotice(user.daily_ai_usage_count) || "Trong ngÆ°á»¡ng free"}</div></td>
-                <td className="p-3 text-sm text-zinc-600">{user.auth_user_id ? "ÄÃ£ linked" : "ChÆ°a linked"}</td>
+                <td className="p-3"><div className="text-sm font-semibold">{user.daily_ai_usage_count}/{getFreeDailyLimit()}</div><div className="mt-2 h-2 rounded-full bg-primary/10"><div className="h-full rounded-full bg-primary" style={{ width: `${getQuotaProgressPercent(user.daily_ai_usage_count)}%` }} /></div><div className="mt-2 text-xs text-zinc-500">{getQuotaThresholdNotice(user.daily_ai_usage_count) || "Trong ngưỡng free"}</div></td>
+                <td className="p-3 text-sm text-zinc-600">{user.auth_user_id ? "Đã linked" : "Chưa linked"}</td>
                 <td className="p-3 text-sm text-zinc-600">{formatDate(user.last_active || user.created_at)}</td>
                 <td className="p-3"><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => onOpenTimeline(user)}>Timeline</Button><Button size="sm" variant="outline" onClick={() => onOpenSupport(user)}>Support</Button>{canSupport ? <Button size="sm" variant="outline" className={user.is_banned ? "border-primary/20 text-primary" : "border-red-200 text-red-600"} onClick={() => onBanToggle(user)}>{user.is_banned ? "Unban" : "Ban"}</Button> : null}{canFinance ? <><Button size="sm" onClick={() => onAddDays(user.id, 30, "monthly")} disabled={loading}>+30d</Button><Button size="sm" variant="outline" onClick={() => onRemoveDays(user.id, 7)} disabled={loading}>-7d</Button></> : null}</div></td>
               </tr>
             ))}
-            {filteredUsers.length === 0 ? <tr><td colSpan={8} className="p-8 text-center text-zinc-500">KhÃ´ng cÃ³ user nÃ o khá»›p filter hiá»‡n táº¡i.</td></tr> : null}
+            {filteredUsers.length === 0 ? <tr><td colSpan={8} className="p-8 text-center text-zinc-500">Không có user nào khớp filter hiện tại.</td></tr> : null}
           </tbody>
         </table>
       </div>
@@ -424,44 +424,44 @@ export function CatalogPanel({
             <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onRefresh}><RefreshCcw className="mr-2 h-4 w-4" />Refresh</Button><Button variant="outline" onClick={onResetFoodForms}>Food má»›i</Button></div>
           </div>
           <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_220px]">
-            <Input placeholder="TÃ¬m food theo tÃªn, brand, alias..." value={catalogSearch} onChange={(event) => onCatalogSearchChange(event.target.value)} />
-            <select value={candidateStatus} onChange={(event) => onCandidateStatusChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="pending">Pending candidates</option><option value="promoted">Promoted</option><option value="all">Táº¥t cáº£ tráº¡ng thÃ¡i</option></select>
+            <Input placeholder="Tìm food theo tên, brand, alias..." value={catalogSearch} onChange={(event) => onCatalogSearchChange(event.target.value)} />
+            <select value={candidateStatus} onChange={(event) => onCandidateStatusChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="pending">Pending candidates</option><option value="promoted">Promoted</option><option value="all">Tất cả trạng thái</option></select>
           </div>
           <div className="overflow-x-auto rounded-[24px] border border-primary/10">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-primary/5 text-xs uppercase tracking-[0.18em] text-zinc-500"><tr>{["Food", "Type", "Serving", "Macros", "Source", "Aliases"].map((header) => <th key={header} className="whitespace-nowrap p-3">{header}</th>)}</tr></thead>
               <tbody>
-                {foods.map((food) => <tr key={food.id} className={`cursor-pointer border-t border-primary/8 hover:bg-primary/5 ${selectedFoodId === food.id ? "bg-primary/8" : ""}`} onClick={() => onSelectFood(food)}><td className="p-3"><div className="font-semibold">{food.name}</div><div className="text-xs text-zinc-500">{food.brand_name || food.category || "â€”"}</div></td><td className="p-3 text-sm text-zinc-600">{food.food_type || "generic"}</td><td className="p-3 text-sm text-zinc-600">{food.default_serving_grams ?? "â€”"}g Â· {food.default_portion_label || "â€”"}</td><td className="p-3 text-sm text-zinc-600">{food.calories ?? 0} kcal Â· P {food.protein ?? 0} Â· C {food.carbs ?? 0} Â· F {food.fat ?? 0}</td><td className="p-3 text-sm text-zinc-600">{food.primary_source_type || "â€”"}</td><td className="p-3 text-sm text-zinc-600">{food.alias_count}</td></tr>)}
-                {foods.length === 0 ? <tr><td colSpan={6} className="p-8 text-center text-zinc-500">ChÆ°a cÃ³ food nÃ o hoáº·c migration catalog chÆ°a apply.</td></tr> : null}
+                {foods.map((food) => <tr key={food.id} className={`cursor-pointer border-t border-primary/8 hover:bg-primary/5 ${selectedFoodId === food.id ? "bg-primary/8" : ""}`} onClick={() => onSelectFood(food)}><td className="p-3"><div className="font-semibold">{food.name}</div><div className="text-xs text-zinc-500">{food.brand_name || food.category || "—"}</div></td><td className="p-3 text-sm text-zinc-600">{food.food_type || "generic"}</td><td className="p-3 text-sm text-zinc-600">{food.default_serving_grams ?? "—"}g · {food.default_portion_label || "—"}</td><td className="p-3 text-sm text-zinc-600">{food.calories ?? 0} kcal · P {food.protein ?? 0} · C {food.carbs ?? 0} · F {food.fat ?? 0}</td><td className="p-3 text-sm text-zinc-600">{food.primary_source_type || "—"}</td><td className="p-3 text-sm text-zinc-600">{food.alias_count}</td></tr>)}
+                {foods.length === 0 ? <tr><td colSpan={6} className="p-8 text-center text-zinc-500">Chưa có food nào hoặc migration catalog chưa apply.</td></tr> : null}
               </tbody>
             </table>
           </div>
         </div>
 
         <div className={`${SURFACE} space-y-4`}>
-          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Candidate queue</div><h3 className="mt-2 text-xl font-semibold">MÃ³n bot chÆ°a biáº¿t trong DB</h3></div><MiniBadge tone="accent">{candidates.length} candidates</MiniBadge></div>
+          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Candidate queue</div><h3 className="mt-2 text-xl font-semibold">Món bot chưa biết trong DB</h3></div><MiniBadge tone="accent">{candidates.length} candidates</MiniBadge></div>
           <div className="grid gap-3">
-            {candidates.map((candidate) => <div key={candidate.id} className={`${SUBSURFACE} flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between`}><div><div className="font-semibold">{candidate.suggested_food_name || candidate.raw_name}</div><div className="mt-1 text-sm text-zinc-500">{candidate.raw_portion || "KhÃ´ng rÃµ kháº©u pháº§n"} Â· {candidate.candidate_type || "search_estimate"} Â· seen {candidate.usage_count} láº§n</div></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onLoadCandidateIntoForm(candidate)}>Náº¡p vÃ o form</Button><Button onClick={() => onQuickPromoteCandidate(candidate)} disabled={!canCatalogWrite || loading || !schemaReady}>Promote nhanh</Button></div></div>)}
-            {candidates.length === 0 ? <div className="text-sm text-zinc-500">KhÃ´ng cÃ²n candidate pending nÃ o.</div> : null}
+            {candidates.map((candidate) => <div key={candidate.id} className={`${SUBSURFACE} flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between`}><div><div className="font-semibold">{candidate.suggested_food_name || candidate.raw_name}</div><div className="mt-1 text-sm text-zinc-500">{candidate.raw_portion || "Không rõ khẩu phần"} · {candidate.candidate_type || "search_estimate"} · seen {candidate.usage_count} lần</div></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => onLoadCandidateIntoForm(candidate)}>Nạp vào form</Button><Button onClick={() => onQuickPromoteCandidate(candidate)} disabled={!canCatalogWrite || loading || !schemaReady}>Promote nhanh</Button></div></div>)}
+            {candidates.length === 0 ? <div className="text-sm text-zinc-500">Không còn candidate pending nào.</div> : null}
           </div>
         </div>
       </div>
 
       <div className="space-y-6">
         <div className={`${SURFACE} space-y-4`}>
-          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Catalog editor</div><h3 className="mt-2 text-xl font-semibold">{selectedFoodId ? `Chá»‰nh food #${selectedFoodId}` : "Táº¡o food má»›i"}</h3></div>{!canCatalogWrite ? <MiniBadge tone="accent">Read-only</MiniBadge> : null}</div>
-          <Input placeholder="TÃªn mÃ³n" value={foodForm.name} onChange={(event) => setFoodForm({ ...foodForm, name: event.target.value })} />
+          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Catalog editor</div><h3 className="mt-2 text-xl font-semibold">{selectedFoodId ? `Chỉnh food #${selectedFoodId}` : "Tạo food mới"}</h3></div>{!canCatalogWrite ? <MiniBadge tone="accent">Read-only</MiniBadge> : null}</div>
+          <Input placeholder="Tên món" value={foodForm.name} onChange={(event) => setFoodForm({ ...foodForm, name: event.target.value })} />
           <div className="grid gap-3 md:grid-cols-2"><Input placeholder="Category" value={foodForm.category} onChange={(event) => setFoodForm({ ...foodForm, category: event.target.value })} /><Input placeholder="Food type" value={foodForm.foodType} onChange={(event) => setFoodForm({ ...foodForm, foodType: event.target.value })} /></div>
           <div className="grid gap-3 md:grid-cols-2"><Input placeholder="Brand name" value={foodForm.brandName} onChange={(event) => setFoodForm({ ...foodForm, brandName: event.target.value })} /><Input placeholder="Default portion label" value={foodForm.defaultPortionLabel} onChange={(event) => setFoodForm({ ...foodForm, defaultPortionLabel: event.target.value })} /></div>
           <div className="grid gap-3 md:grid-cols-3"><Input placeholder="Serving grams" value={foodForm.defaultServingGrams} onChange={(event) => setFoodForm({ ...foodForm, defaultServingGrams: event.target.value })} /><Input placeholder="Source type" value={foodForm.primarySourceType} onChange={(event) => setFoodForm({ ...foodForm, primarySourceType: event.target.value })} /><Input placeholder="Confidence" value={foodForm.primarySourceConfidence} onChange={(event) => setFoodForm({ ...foodForm, primarySourceConfidence: event.target.value })} /></div>
           <textarea value={foodForm.editorNotes} onChange={(event) => setFoodForm({ ...foodForm, editorNotes: event.target.value })} placeholder="Editor notes..." className="min-h-24 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" />
-          <label className="flex items-center gap-2 text-sm text-zinc-600"><input type="checkbox" checked={foodForm.isActive} onChange={(event) => setFoodForm({ ...foodForm, isActive: event.target.checked })} />Food Ä‘ang active</label>
-          <Button className="w-full" onClick={onSaveFood} disabled={!canCatalogWrite || loading || !schemaReady}>LÆ°u food</Button>
-          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Alias</div><div className="flex gap-2"><Input placeholder="Alias má»›i..." value={aliasInput} onChange={(event) => onAliasInputChange(event.target.value)} /><Button variant="outline" onClick={onAddAlias} disabled={!canCatalogWrite || loading || !schemaReady}>ThÃªm</Button></div></div>
-          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Nutrition baseline</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="Serving label" value={nutritionForm.servingLabel} onChange={(event) => setNutritionForm({ ...nutritionForm, servingLabel: event.target.value })} /><Input placeholder="Serving grams" value={nutritionForm.servingGrams} onChange={(event) => setNutritionForm({ ...nutritionForm, servingGrams: event.target.value })} /><Input placeholder="Calories" value={nutritionForm.calories} onChange={(event) => setNutritionForm({ ...nutritionForm, calories: event.target.value })} /><Input placeholder="Protein" value={nutritionForm.protein} onChange={(event) => setNutritionForm({ ...nutritionForm, protein: event.target.value })} /><Input placeholder="Carbs" value={nutritionForm.carbs} onChange={(event) => setNutritionForm({ ...nutritionForm, carbs: event.target.value })} /><Input placeholder="Fat" value={nutritionForm.fat} onChange={(event) => setNutritionForm({ ...nutritionForm, fat: event.target.value })} /></div><Button variant="outline" className="mt-3" onClick={onSaveNutrition} disabled={!canCatalogWrite || loading || !schemaReady}>LÆ°u nutrition</Button></div>
-          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Portion mapping</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="Label (vd: 1 lon 250ml)" value={portionForm.label} onChange={(event) => setPortionForm({ ...portionForm, label: event.target.value })} /><Input placeholder="Grams" value={portionForm.grams} onChange={(event) => setPortionForm({ ...portionForm, grams: event.target.value })} /><Input placeholder="Quantity value" value={portionForm.quantityValue} onChange={(event) => setPortionForm({ ...portionForm, quantityValue: event.target.value })} /><Input placeholder="Quantity unit" value={portionForm.quantityUnit} onChange={(event) => setPortionForm({ ...portionForm, quantityUnit: event.target.value })} /></div><Button variant="outline" className="mt-3" onClick={onSavePortion} disabled={!canCatalogWrite || loading || !schemaReady}>LÆ°u portion</Button></div>
-          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Promote candidate thÃ nh food tháº­t</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="TÃªn food" value={promoteForm.name} onChange={(event) => setPromoteForm({ ...promoteForm, name: event.target.value })} /><Input placeholder="Category" value={promoteForm.category} onChange={(event) => setPromoteForm({ ...promoteForm, category: event.target.value })} /><Input placeholder="Food type" value={promoteForm.foodType} onChange={(event) => setPromoteForm({ ...promoteForm, foodType: event.target.value })} /><Input placeholder="Brand name" value={promoteForm.brandName} onChange={(event) => setPromoteForm({ ...promoteForm, brandName: event.target.value })} /></div><Input className="mt-3" placeholder="Aliases, cÃ¡ch nhau bá»Ÿi dáº¥u pháº©y" value={promoteForm.aliases} onChange={(event) => setPromoteForm({ ...promoteForm, aliases: event.target.value })} /><Button className="mt-3 w-full" onClick={onPromoteCandidate} disabled={!canCatalogWrite || loading || !schemaReady}>Promote candidate</Button></div>
-          <div className={SUBSURFACE}><div className="mb-3 flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">CSV import</div><div className="text-xs text-zinc-500">Dry-run trÆ°á»›c, commit sau khi kiá»ƒm tra duplicate.</div></div><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-primary"><Upload className="h-4 w-4" />Chá»n CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={onCsvFile} /></label></div>{csvFileName ? <div className="mb-3 text-xs text-zinc-500">File: {csvFileName}</div> : null}<textarea value={csvText} onChange={(event) => onCsvTextChange(event.target.value)} placeholder="food_name,alias_list,brand_name,category,serving_label,serving_grams,calories,protein,carbs,fat,source_type,confidence" className="min-h-40 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" /><div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" onClick={onCsvDryRun} disabled={!canCatalogWrite || loading || !schemaReady}>Dry-run CSV</Button><Button onClick={onCsvCommit} disabled={!canCatalogWrite || loading || !schemaReady}>Commit CSV</Button></div>{csvDryRun ? <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-zinc-600"><div className="grid gap-2 md:grid-cols-2"><div>Total rows: <strong>{csvDryRun.totalRows}</strong></div><div>Valid: <strong>{csvDryRun.validCount}</strong></div><div>Duplicate: <strong>{csvDryRun.duplicateCount}</strong></div><div>New: <strong>{csvDryRun.newCount}</strong></div></div></div> : null}</div>
+          <label className="flex items-center gap-2 text-sm text-zinc-600"><input type="checkbox" checked={foodForm.isActive} onChange={(event) => setFoodForm({ ...foodForm, isActive: event.target.checked })} />Food đang active</label>
+          <Button className="w-full" onClick={onSaveFood} disabled={!canCatalogWrite || loading || !schemaReady}>Lưu food</Button>
+          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Alias</div><div className="flex gap-2"><Input placeholder="Alias mới..." value={aliasInput} onChange={(event) => onAliasInputChange(event.target.value)} /><Button variant="outline" onClick={onAddAlias} disabled={!canCatalogWrite || loading || !schemaReady}>Thêm</Button></div></div>
+          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Nutrition baseline</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="Serving label" value={nutritionForm.servingLabel} onChange={(event) => setNutritionForm({ ...nutritionForm, servingLabel: event.target.value })} /><Input placeholder="Serving grams" value={nutritionForm.servingGrams} onChange={(event) => setNutritionForm({ ...nutritionForm, servingGrams: event.target.value })} /><Input placeholder="Calories" value={nutritionForm.calories} onChange={(event) => setNutritionForm({ ...nutritionForm, calories: event.target.value })} /><Input placeholder="Protein" value={nutritionForm.protein} onChange={(event) => setNutritionForm({ ...nutritionForm, protein: event.target.value })} /><Input placeholder="Carbs" value={nutritionForm.carbs} onChange={(event) => setNutritionForm({ ...nutritionForm, carbs: event.target.value })} /><Input placeholder="Fat" value={nutritionForm.fat} onChange={(event) => setNutritionForm({ ...nutritionForm, fat: event.target.value })} /></div><Button variant="outline" className="mt-3" onClick={onSaveNutrition} disabled={!canCatalogWrite || loading || !schemaReady}>Lưu nutrition</Button></div>
+          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Portion mapping</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="Label (vd: 1 lon 250ml)" value={portionForm.label} onChange={(event) => setPortionForm({ ...portionForm, label: event.target.value })} /><Input placeholder="Grams" value={portionForm.grams} onChange={(event) => setPortionForm({ ...portionForm, grams: event.target.value })} /><Input placeholder="Quantity value" value={portionForm.quantityValue} onChange={(event) => setPortionForm({ ...portionForm, quantityValue: event.target.value })} /><Input placeholder="Quantity unit" value={portionForm.quantityUnit} onChange={(event) => setPortionForm({ ...portionForm, quantityUnit: event.target.value })} /></div><Button variant="outline" className="mt-3" onClick={onSavePortion} disabled={!canCatalogWrite || loading || !schemaReady}>Lưu portion</Button></div>
+          <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Promote candidate thành food thật</div><div className="grid gap-3 md:grid-cols-2"><Input placeholder="Tên food" value={promoteForm.name} onChange={(event) => setPromoteForm({ ...promoteForm, name: event.target.value })} /><Input placeholder="Category" value={promoteForm.category} onChange={(event) => setPromoteForm({ ...promoteForm, category: event.target.value })} /><Input placeholder="Food type" value={promoteForm.foodType} onChange={(event) => setPromoteForm({ ...promoteForm, foodType: event.target.value })} /><Input placeholder="Brand name" value={promoteForm.brandName} onChange={(event) => setPromoteForm({ ...promoteForm, brandName: event.target.value })} /></div><Input className="mt-3" placeholder="Aliases, cách nhau bởi dấu phẩy" value={promoteForm.aliases} onChange={(event) => setPromoteForm({ ...promoteForm, aliases: event.target.value })} /><Button className="mt-3 w-full" onClick={onPromoteCandidate} disabled={!canCatalogWrite || loading || !schemaReady}>Promote candidate</Button></div>
+          <div className={SUBSURFACE}><div className="mb-3 flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">CSV import</div><div className="text-xs text-zinc-500">Dry-run trước, commit sau khi kiểm tra duplicate.</div></div><label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-primary"><Upload className="h-4 w-4" />Chọn CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={onCsvFile} /></label></div>{csvFileName ? <div className="mb-3 text-xs text-zinc-500">File: {csvFileName}</div> : null}<textarea value={csvText} onChange={(event) => onCsvTextChange(event.target.value)} placeholder="food_name,alias_list,brand_name,category,serving_label,serving_grams,calories,protein,carbs,fat,source_type,confidence" className="min-h-40 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" /><div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" onClick={onCsvDryRun} disabled={!canCatalogWrite || loading || !schemaReady}>Dry-run CSV</Button><Button onClick={onCsvCommit} disabled={!canCatalogWrite || loading || !schemaReady}>Commit CSV</Button></div>{csvDryRun ? <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-zinc-600"><div className="grid gap-2 md:grid-cols-2"><div>Total rows: <strong>{csvDryRun.totalRows}</strong></div><div>Valid: <strong>{csvDryRun.validCount}</strong></div><div>Duplicate: <strong>{csvDryRun.duplicateCount}</strong></div><div>New: <strong>{csvDryRun.newCount}</strong></div></div></div> : null}</div>
         </div>
       </div>
     </div>
@@ -505,23 +505,23 @@ export function SupportPanel({
   return (
     <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
       <div className={`${SURFACE} space-y-4`}>
-        <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Support console</div><h3 className="mt-2 text-xl font-semibold">User 360, notes vÃ  repair</h3></div>
-        <select value={selectedUserId ?? ""} onChange={(event) => onSelectUser(Number(event.target.value))} className="w-full rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="">Chá»n user Ä‘á»ƒ xem</option>{users.map((user) => <option key={user.id} value={user.id}>{user.first_name || user.username || `User ${user.id}`} Â· {user.platform || "telegram"}</option>)}</select>
+        <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Support console</div><h3 className="mt-2 text-xl font-semibold">User 360, notes và repair</h3></div>
+        <select value={selectedUserId ?? ""} onChange={(event) => onSelectUser(Number(event.target.value))} className="w-full rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="">Chọn user để xem</option>{users.map((user) => <option key={user.id} value={user.id}>{user.first_name || user.username || `User ${user.id}`} · {user.platform || "telegram"}</option>)}</select>
         <Button variant="outline" onClick={onRefresh} disabled={!selectedUserId || loading}><RefreshCcw className="mr-2 h-4 w-4" />Refresh user 360</Button>
-        {!canSupport ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Role hiá»‡n táº¡i chá»‰ xem Ä‘Æ°á»£c, khÃ´ng thá»±c hiá»‡n support actions.</div> : null}
+        {!canSupport ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Role hiện tại chỉ xem được, không thực hiện support actions.</div> : null}
         {selectedUser ? <div className={SUBSURFACE}><div className="font-semibold">{selectedUser.first_name || selectedUser.username || `User ${selectedUser.id}`}</div><div className="text-sm text-zinc-500">{selectedUser.email || selectedUser.platform_id || `#${selectedUser.id}`}</div><div className="mt-3 flex flex-wrap gap-2"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${planTone(selectedUser.plan)}`}>{selectedUser.plan}</span><MiniBadge tone={selectedUser.platform === "zalo" ? "accent" : selectedUser.platform === "web" ? "neutral" : "primary"}>{selectedUser.platform || "telegram"}</MiniBadge></div></div> : null}
-        <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Actions</div><div className="flex flex-col gap-2"><Button variant="outline" onClick={() => selectedUser && onBanToggle(selectedUser)} disabled={!selectedUser || !canSupport}>{selectedUser?.is_banned ? "Unban user" : "Ban user"}</Button><Button variant="outline" onClick={onResetQuota} disabled={!selectedUser || !canSupport}>Reset daily quota</Button><Input placeholder="Auth user id Ä‘á»ƒ repair link" value={linkAuthValue} onChange={(event) => onLinkAuthValueChange(event.target.value)} /><Button variant="outline" onClick={onLinkUser} disabled={!selectedUser || !canSupport || !linkAuthValue.trim()}><Link2 className="mr-2 h-4 w-4" />Link account</Button></div></div>
+        <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Actions</div><div className="flex flex-col gap-2"><Button variant="outline" onClick={() => selectedUser && onBanToggle(selectedUser)} disabled={!selectedUser || !canSupport}>{selectedUser?.is_banned ? "Unban user" : "Ban user"}</Button><Button variant="outline" onClick={onResetQuota} disabled={!selectedUser || !canSupport}>Reset daily quota</Button><Input placeholder="Auth user id để repair link" value={linkAuthValue} onChange={(event) => onLinkAuthValueChange(event.target.value)} /><Button variant="outline" onClick={onLinkUser} disabled={!selectedUser || !canSupport || !linkAuthValue.trim()}><Link2 className="mr-2 h-4 w-4" />Link account</Button></div></div>
       </div>
 
       <div className="space-y-6">
         <div className={`${SURFACE} space-y-4`}>
-          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">User 360</div><h3 className="mt-2 text-xl font-semibold">Entitlement, activity, notes</h3></div>{loading ? <MiniBadge tone="accent">Äang táº£i</MiniBadge> : null}</div>
-          {!selectedUser ? <div className="text-sm text-zinc-500">Chá»n má»™t user Ä‘á»ƒ má»Ÿ user 360.</div> : null}
-          {selectedUser ? <div className="grid gap-4 md:grid-cols-2"><div className={SUBSURFACE}><div className="text-sm font-semibold">Entitlement snapshot</div><div className="mt-3 space-y-2 text-sm text-zinc-600"><div>Plan hiá»‡n táº¡i: <strong>{selectedUser.plan}</strong></div><div>Premium until: <strong>{selectedUser.plan === "lifetime" ? "Lifetime sentinel" : formatDate(selectedUser.premium_until)}</strong></div><div>AI usage hÃ´m nay: <strong>{selectedUser.daily_ai_usage_count}/{getFreeDailyLimit()}</strong></div><div>Linked auth: <strong>{user360?.linkedAuthState?.auth_user_id ? "ÄÃ£ linked" : "ChÆ°a linked"}</strong></div></div></div><div className={SUBSURFACE}><div className="text-sm font-semibold">Conversation state</div>{user360?.conversationState ? <div className="mt-3 space-y-2 text-sm text-zinc-600"><div>Surface: <strong>{String(user360.conversationState.response_surface ?? "â€”")}</strong></div><div>Focus: <strong>{String(user360.conversationState.conversation_focus ?? "â€”")}</strong></div><div>Updated: <strong>{formatDate(user360.conversationState.updated_at as string | null)}</strong></div></div> : <div className="mt-3 text-sm text-zinc-500">ChÆ°a cÃ³ snapshot conversation state.</div>}</div></div> : null}
+          <div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">User 360</div><h3 className="mt-2 text-xl font-semibold">Entitlement, activity, notes</h3></div>{loading ? <MiniBadge tone="accent">Đang tải</MiniBadge> : null}</div>
+          {!selectedUser ? <div className="text-sm text-zinc-500">Chọn một user để mở user 360.</div> : null}
+          {selectedUser ? <div className="grid gap-4 md:grid-cols-2"><div className={SUBSURFACE}><div className="text-sm font-semibold">Entitlement snapshot</div><div className="mt-3 space-y-2 text-sm text-zinc-600"><div>Plan hiện tại: <strong>{selectedUser.plan}</strong></div><div>Premium until: <strong>{selectedUser.plan === "lifetime" ? "Lifetime sentinel" : formatDate(selectedUser.premium_until)}</strong></div><div>AI usage hôm nay: <strong>{selectedUser.daily_ai_usage_count}/{getFreeDailyLimit()}</strong></div><div>Linked auth: <strong>{user360?.linkedAuthState?.auth_user_id ? "Đã linked" : "Chưa linked"}</strong></div></div></div><div className={SUBSURFACE}><div className="text-sm font-semibold">Conversation state</div>{user360?.conversationState ? <div className="mt-3 space-y-2 text-sm text-zinc-600"><div>Surface: <strong>{String(user360.conversationState.response_surface ?? "—")}</strong></div><div>Focus: <strong>{String(user360.conversationState.conversation_focus ?? "—")}</strong></div><div>Updated: <strong>{formatDate(user360.conversationState.updated_at as string | null)}</strong></div></div> : <div className="mt-3 text-sm text-zinc-500">Chưa có snapshot conversation state.</div>}</div></div> : null}
         </div>
         <div className="grid gap-6 xl:grid-cols-2">
-          <div className={`${SURFACE} space-y-4`}><div className="flex items-center gap-2"><NotebookPen className="h-4 w-4 text-primary" /><div className="text-sm font-semibold">Support notes</div></div><textarea value={noteDraft} onChange={(event) => onNoteDraftChange(event.target.value)} placeholder="Ghi note há»— trá»£ cho user nÃ y..." className="min-h-28 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" /><Button onClick={onAddNote} disabled={!selectedUser || !canSupport || !noteDraft.trim()}>LÆ°u note</Button><div className="space-y-3">{(user360?.supportNotes ?? []).map((note) => <div key={note.id} className={SUBSURFACE}><div className="text-sm text-zinc-700">{note.note}</div><div className="mt-2 text-xs text-zinc-500">{note.actor_display_name || "Admin"} Â· {formatDate(note.created_at)}</div></div>)}{selectedUser && (user360?.supportNotes?.length ?? 0) === 0 ? <div className="text-sm text-zinc-500">ChÆ°a cÃ³ support note nÃ o.</div> : null}</div></div>
-          <div className={`${SURFACE} space-y-4`}><div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /><div className="text-sm font-semibold">Payments & timeline</div></div><div className="space-y-3">{(user360?.recentPayments ?? []).slice(0, 5).map((payment) => <div key={payment.id} className={SUBSURFACE}><div className="flex items-center justify-between gap-3"><div className="font-semibold">{formatAdminSkuLabel(payment.billing_sku || payment.plan_granted)}</div><span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusTone(payment.status)}`}>{formatAdminPaymentStatus(payment.status)}</span></div><div className="mt-1 text-sm text-zinc-500">{formatBillingPriceVnd(payment.amount)} Â· {formatAdminPaymentMethod(payment.payment_method)}</div></div>)}{(user360?.subscriptionEvents ?? []).slice(0, 5).map((event: SubscriptionEvent) => <div key={event.id} className={SUBSURFACE}><div className="font-semibold">{event.event_type}</div><div className="mt-1 text-sm text-zinc-500">{event.plan_from || "free"} â†’ {event.plan_to || "free"} Â· {formatDate(event.created_at)}</div></div>)}{selectedUser && (user360?.recentPayments?.length ?? 0) === 0 && (user360?.subscriptionEvents?.length ?? 0) === 0 ? <div className="text-sm text-zinc-500">ChÆ°a cÃ³ payment hoáº·c timeline cho user nÃ y.</div> : null}</div></div>
+          <div className={`${SURFACE} space-y-4`}><div className="flex items-center gap-2"><NotebookPen className="h-4 w-4 text-primary" /><div className="text-sm font-semibold">Support notes</div></div><textarea value={noteDraft} onChange={(event) => onNoteDraftChange(event.target.value)} placeholder="Ghi note hỗ trợ cho user này..." className="min-h-28 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" /><Button onClick={onAddNote} disabled={!selectedUser || !canSupport || !noteDraft.trim()}>Lưu note</Button><div className="space-y-3">{(user360?.supportNotes ?? []).map((note) => <div key={note.id} className={SUBSURFACE}><div className="text-sm text-zinc-700">{note.note}</div><div className="mt-2 text-xs text-zinc-500">{note.actor_display_name || "Admin"} · {formatDate(note.created_at)}</div></div>)}{selectedUser && (user360?.supportNotes?.length ?? 0) === 0 ? <div className="text-sm text-zinc-500">Chưa có support note nào.</div> : null}</div></div>
+          <div className={`${SURFACE} space-y-4`}><div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-primary" /><div className="text-sm font-semibold">Payments & timeline</div></div><div className="space-y-3">{(user360?.recentPayments ?? []).slice(0, 5).map((payment) => <div key={payment.id} className={SUBSURFACE}><div className="flex items-center justify-between gap-3"><div className="font-semibold">{formatAdminSkuLabel(payment.billing_sku || payment.plan_granted)}</div><span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusTone(payment.status)}`}>{formatAdminPaymentStatus(payment.status)}</span></div><div className="mt-1 text-sm text-zinc-500">{formatBillingPriceVnd(payment.amount)} · {formatAdminPaymentMethod(payment.payment_method)}</div></div>)}{(user360?.subscriptionEvents ?? []).slice(0, 5).map((event: SubscriptionEvent) => <div key={event.id} className={SUBSURFACE}><div className="font-semibold">{event.event_type}</div><div className="mt-1 text-sm text-zinc-500">{event.plan_from || "free"} → {event.plan_to || "free"} · {formatDate(event.created_at)}</div></div>)}{selectedUser && (user360?.recentPayments?.length ?? 0) === 0 && (user360?.subscriptionEvents?.length ?? 0) === 0 ? <div className="text-sm text-zinc-500">Chưa có payment hoặc timeline cho user này.</div> : null}</div></div>
         </div>
       </div>
     </div>
@@ -542,8 +542,8 @@ export function SystemPanel({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Schema" value={health?.schemaReady ? "Ready" : "Pending"} helper={schema?.ready ? "Core tables and RPCs ready" : `${schema?.missing.length ?? 0} háº¡ng má»¥c cÃ²n thiáº¿u`} />
-        <MetricCard label="Webhook gáº§n nháº¥t" value={health?.lastWebhookAt ? new Date(health.lastWebhookAt).toLocaleDateString("vi-VN") : "â€”"} helper="DÃ¹ng Ä‘á»ƒ rÃ  ingest/payment sync" />
+        <MetricCard label="Schema" value={health?.schemaReady ? "Ready" : "Pending"} helper={schema?.ready ? "Core tables and RPCs ready" : `${schema?.missing.length ?? 0} hạng mục còn thiếu`} />
+        <MetricCard label="Webhook gần nhất" value={health?.lastWebhookAt ? new Date(health.lastWebhookAt).toLocaleDateString("vi-VN") : "—"} helper="Dùng để rà ingest/payment sync" />
         <MetricCard label="Audit rows" value={auditLogs.length} helper="Recent admin write actions" tone="neutral" />
         <MetricCard label="Failed events" value={health?.failedPaymentEvents ?? 0} helper="Failed payment / provider anomalies" tone="accent" />
       </div>
@@ -551,7 +551,7 @@ export function SystemPanel({
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className={`${SURFACE} space-y-4`}>
           <div className="flex items-center justify-between gap-3">
-            <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">System health</div><h3 className="mt-2 text-xl font-semibold">Schema, sync vÃ  pipeline signals</h3></div>
+            <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">System health</div><h3 className="mt-2 text-xl font-semibold">Schema, sync và pipeline signals</h3></div>
             <Button variant="outline" onClick={onRefresh}><RefreshCcw className="mr-2 h-4 w-4" />Refresh</Button>
           </div>
           <div className={`${SUBSURFACE} space-y-2 text-sm text-zinc-600`}>
@@ -559,16 +559,16 @@ export function SystemPanel({
             <div className="flex items-center justify-between"><span>Pending payments</span><strong>{health?.pendingPayments ?? 0}</strong></div>
             <div className="flex items-center justify-between"><span>Duplicate-like payments</span><strong>{health?.duplicateLikePayments ?? 0}</strong></div>
             <div className="flex items-center justify-between"><span>Catalog candidates pending</span><strong>{health?.catalogCandidatesPending ?? 0}</strong></div>
-            <div className="flex items-center justify-between"><span>AI calls hÃ´m nay</span><strong>{health?.aiCallsToday ?? 0}</strong></div>
+            <div className="flex items-center justify-between"><span>AI calls hôm nay</span><strong>{health?.aiCallsToday ?? 0}</strong></div>
           </div>
           {!schema?.ready ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">{describeSchemaReadiness(schema)}</div> : null}
         </div>
 
         <div className={`${SURFACE} space-y-4`}>
-          <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Audit log</div><h3 className="mt-2 text-xl font-semibold">Admin actions gáº§n Ä‘Ã¢y</h3></div>
+          <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Audit log</div><h3 className="mt-2 text-xl font-semibold">Admin actions gần đây</h3></div>
           <div className="space-y-3">
-            {auditLogs.map((log) => <div key={log.id} className={SUBSURFACE}><div className="flex items-center justify-between gap-3"><div className="font-semibold">{log.action}</div><div className="text-xs text-zinc-500">{formatDate(log.created_at)}</div></div><div className="mt-2 text-sm text-zinc-500">{log.actor_display_name || "Admin"} Â· {log.target_type || "general"} {log.target_id ? `#${log.target_id}` : ""}</div></div>)}
-            {auditLogs.length === 0 ? <div className="text-sm text-zinc-500">ChÆ°a cÃ³ audit log hoáº·c RPC chÆ°a apply.</div> : null}
+            {auditLogs.map((log) => <div key={log.id} className={SUBSURFACE}><div className="flex items-center justify-between gap-3"><div className="font-semibold">{log.action}</div><div className="text-xs text-zinc-500">{formatDate(log.created_at)}</div></div><div className="mt-2 text-sm text-zinc-500">{log.actor_display_name || "Admin"} · {log.target_type || "general"} {log.target_id ? `#${log.target_id}` : ""}</div></div>)}
+            {auditLogs.length === 0 ? <div className="text-sm text-zinc-500">Chưa có audit log hoặc RPC chưa apply.</div> : null}
           </div>
         </div>
       </div>
@@ -600,8 +600,8 @@ export function SettingsPanel({
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className={`${SURFACE} space-y-4`}>
-        <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Settings</div><h3 className="mt-2 text-xl font-semibold">Admin members vÃ  quyá»n háº¡n</h3></div>
-        {!canManageMembers ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Chá»‰ bootstrap owner má»›i quáº£n lÃ½ admin members.</div> : null}
+        <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Settings</div><h3 className="mt-2 text-xl font-semibold">Admin members và quyền hạn</h3></div>
+        {!canManageMembers ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Chỉ bootstrap owner mới quản lý admin members.</div> : null}
         <Input placeholder="Linked user ID" value={memberForm.linkedUserId} onChange={(event) => onMemberFormChange({ linkedUserId: event.target.value })} />
         <Input placeholder="Auth user id (optional)" value={memberForm.authUserId} onChange={(event) => onMemberFormChange({ authUserId: event.target.value })} />
         <Input placeholder="Display name" value={memberForm.displayName} onChange={(event) => onMemberFormChange({ displayName: event.target.value })} />
@@ -612,17 +612,17 @@ export function SettingsPanel({
           })}
         </div>
         <label className="flex items-center gap-2 text-sm text-zinc-600"><input type="checkbox" checked={memberForm.isOwner} onChange={(event) => onMemberFormChange({ isOwner: event.target.checked })} />Bootstrap owner / break-glass account</label>
-        <Button onClick={onSaveMember} disabled={!canManageMembers}>LÆ°u admin member</Button>
+        <Button onClick={onSaveMember} disabled={!canManageMembers}>Lưu admin member</Button>
       </div>
 
       <div className="space-y-6">
         <div className={`${SURFACE} space-y-4`}>
-          <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Members</div><h3 className="mt-2 text-xl font-semibold">Danh sÃ¡ch admin hiá»‡n táº¡i</h3></div>
+          <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Members</div><h3 className="mt-2 text-xl font-semibold">Danh sách admin hiện tại</h3></div>
           <div className="space-y-3">
             {members.map((member) => (
               <div key={member.id} className={SUBSURFACE}>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div><div className="font-semibold">{member.display_name || member.email || member.username || `Member ${member.id}`}</div><div className="text-sm text-zinc-500">{member.email || member.username || `linked user ${member.linked_user_id ?? "â€”"}`}</div></div>
+                  <div><div className="font-semibold">{member.display_name || member.email || member.username || `Member ${member.id}`}</div><div className="text-sm text-zinc-500">{member.email || member.username || `linked user ${member.linked_user_id ?? "—"}`}</div></div>
                   <div className="flex flex-wrap gap-2">{member.roles.map((role) => <MiniBadge key={role} tone={role === "content_admin" || role === "super_admin" ? "accent" : "primary"}>{role}</MiniBadge>)}{member.is_owner ? <MiniBadge tone="accent">owner</MiniBadge> : null}</div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -634,14 +634,14 @@ export function SettingsPanel({
                 </div>
               </div>
             ))}
-            {members.length === 0 ? <div className="text-sm text-zinc-500">ChÆ°a cÃ³ member nÃ o ngoÃ i bootstrap owner fallback.</div> : null}
+            {members.length === 0 ? <div className="text-sm text-zinc-500">Chưa có member nào ngoài bootstrap owner fallback.</div> : null}
           </div>
         </div>
 
         <div className={`${SURFACE} space-y-4`}>
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Readonly billing config</div>
-          <div className="grid gap-3 md:grid-cols-2">{skuOptions.map((option) => <div key={option.value} className={SUBSURFACE}><div className="font-semibold">{option.label}</div><div className="mt-1 text-sm text-zinc-500">{option.priceLabel} Â· {option.helper}</div><div className="mt-3 text-xs uppercase tracking-[0.18em] text-primary">{option.tier}</div></div>)}</div>
-          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Logged in as <strong>{access?.email || "unknown"}</strong>. Role model dÃ¹ng Super / Billing / Support / Content / Analyst, cÃ²n <strong>users.is_admin</strong> giá»¯ lÃ m bootstrap owner gate.</div>
+          <div className="grid gap-3 md:grid-cols-2">{skuOptions.map((option) => <div key={option.value} className={SUBSURFACE}><div className="font-semibold">{option.label}</div><div className="mt-1 text-sm text-zinc-500">{option.priceLabel} · {option.helper}</div><div className="mt-3 text-xs uppercase tracking-[0.18em] text-primary">{option.tier}</div></div>)}</div>
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Logged in as <strong>{access?.email || "unknown"}</strong>. Role model dùng Super / Billing / Support / Content / Analyst, còn <strong>users.is_admin</strong> giữ làm bootstrap owner gate.</div>
         </div>
       </div>
     </div>
