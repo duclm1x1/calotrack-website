@@ -1,0 +1,418 @@
+{
+  "name": "CaloTrack - Zalo Browserbase QR Bootstrap",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizeBaseUrl(value) {\n  return String(value || '').trim().replace(/\\/+$/, '');\n}\n\nconst siteUrl = normalizeBaseUrl('https://calotrack-website.vercel.app');\nconst browserbaseRegion = String('ap-southeast-1').trim() || 'ap-southeast-1';\nconst explorerUrl = 'https://developers.zalo.me/tools/explorer/1450975846052622442';\n\nreturn [{\n  json: {\n    siteUrl,\n    explorerUrl,\n    brokerStateUrl: `${siteUrl}/api/zalo-oa-browserbase-state`,\n    browserbaseApiBase: 'https://api.browserbase.com/v1',\n    browserbaseApiKey: String('').trim(),\n    browserbaseProjectId: String('').trim(),\n    browserbaseRegion,\n    internalKey: String('').trim(),\n    timestampIso: new Date().toISOString(),\n  },\n}];"
+      },
+      "id": "prepare_bootstrap_context",
+      "name": "Prepare Bootstrap Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.brokerStateUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "get_browserbase_state",
+      "name": "Get Browserbase State",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare Bootstrap Context').first().json || {};\nconst source = $input.first().json || {};\nconst payload = source.data && typeof source.data === 'object' ? source.data : source;\nconst contextId = String(payload.browserbaseContextId || payload.browserbase_context_id || '').trim();\n\nreturn [{\n  json: {\n    ...base,\n    currentState: payload,\n    hasContext: Boolean(contextId),\n    contextId,\n  },\n}];"
+      },
+      "id": "derive_context",
+      "name": "Derive Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-context",
+              "leftValue": "={{ $json.hasContext === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "context_exists",
+      "name": "Context Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.browserbaseApiBase + '/contexts' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-BB-API-Key",
+              "value": "={{ $json.browserbaseApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"projectId\":\"{{$json.browserbaseProjectId}}\"}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "create_browserbase_context",
+      "name": "Create Browserbase Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Derive Context').first().json || {};\nconst created = $input.first()?.json || {};\nconst existingContextId = String(base.contextId || '').trim();\nconst createdContextId = String(created.id || created.contextId || created.context_id || created.data?.id || '').trim();\nconst contextId = existingContextId || createdContextId;\nif (!contextId) {\n  throw new Error('browserbase_context_missing');\n}\n\nreturn [{\n  json: {\n    ...base,\n    contextId,\n  },\n}];"
+      },
+      "id": "normalize_context",
+      "name": "Normalize Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.browserbaseApiBase + '/sessions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-BB-API-Key",
+              "value": "={{ $json.browserbaseApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"projectId\":\"{{$json.browserbaseProjectId}}\",\"keepAlive\":true,\"region\":\"{{$json.browserbaseRegion}}\",\"timeout\":300,\"proxies\":true,\"browserSettings\":{\"context\":{\"id\":\"{{$json.contextId}}\",\"persist\":true}}}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "create_live_session",
+      "name": "Create Live Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.browserbaseApiBase + '/sessions/' + ($json.id || $json.sessionId || $json.data?.id) + '/debug' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-BB-API-Key",
+              "value": "={{ $json.browserbaseApiKey }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "get_live_urls",
+      "name": "Get Live URLs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2020,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Normalize Context').first().json || {};\nconst session = $('Create Live Session').first().json || {};\nconst debug = $input.first().json || {};\nconst sessionId = String(session.id || session.sessionId || session.data?.id || '').trim();\nconst debuggerFullscreenUrl = String(debug.debuggerFullscreenUrl || debug.fullscreenUrl || debug.liveUrl || '').trim();\nconst inspectorUrl = String(debug.inspectorUrl || debug.debuggerUrl || '').trim();\n\nreturn [{\n  json: {\n    ...base,\n    sessionId,\n    debuggerFullscreenUrl,\n    inspectorUrl,\n  },\n}];"
+      },
+      "id": "format_session_details",
+      "name": "Format Session Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.brokerStateUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"browserbase_context_id\":\"{{$json.contextId}}\",\"last_browserbase_session_id\":\"{{$json.sessionId}}\",\"last_reauth_status\":\"qr_pending\",\"last_reauth_error\":\"\",\"last_reauth_at\":\"{{$json.timestampIso}}\"}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "save_qr_pending_state",
+      "name": "Save QR Pending State",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Format Session Details').first().json || {};\nreturn [{\n  json: {\n    ok: true,\n    browserbase_context_id: source.contextId,\n    last_browserbase_session_id: source.sessionId,\n    debuggerFullscreenUrl: source.debuggerFullscreenUrl,\n    inspectorUrl: source.inspectorUrl,\n    next_step: 'Open debuggerFullscreenUrl, scan the Zalo QR inside Browserbase Live View, then run CaloTrack - Zalo Token Keeper manually once to scrape and bootstrap tokens.',\n  },\n}];"
+      },
+      "id": "format_result",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Bootstrap Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Bootstrap Context": {
+      "main": [
+        [
+          {
+            "node": "Get Browserbase State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Browserbase State": {
+      "main": [
+        [
+          {
+            "node": "Derive Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Derive Context": {
+      "main": [
+        [
+          {
+            "node": "Context Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context Exists?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Browserbase Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Browserbase Context": {
+      "main": [
+        [
+          {
+            "node": "Normalize Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Context": {
+      "main": [
+        [
+          {
+            "node": "Create Live Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Live Session": {
+      "main": [
+        [
+          {
+            "node": "Get Live URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Live URLs": {
+      "main": [
+        [
+          {
+            "node": "Format Session Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Session Details": {
+      "main": [
+        [
+          {
+            "node": "Save QR Pending State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save QR Pending State": {
+      "main": [
+        [
+          {
+            "node": "Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

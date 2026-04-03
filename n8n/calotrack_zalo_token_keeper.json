@@ -1,0 +1,690 @@
+{
+  "name": "CaloTrack - Zalo Token Keeper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule_trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -120
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizeBaseUrl(value) {\n  return String(value || '').trim().replace(/\\/+$/, '');\n}\n\nconst siteUrl = normalizeBaseUrl('https://calotrack-website.vercel.app');\nconst browserbaseRegion = String('ap-southeast-1').trim() || 'ap-southeast-1';\nconst explorerUrl = 'https://developers.zalo.me/tools/explorer/1450975846052622442';\n\nreturn [{\n  json: {\n    siteUrl,\n    explorerUrl,\n    healthUrl: `${siteUrl}/api/zalo-oa-health`,\n    refreshUrl: `${siteUrl}/api/zalo-oa-force-refresh`,\n    bootstrapUrl: `${siteUrl}/api/zalo-oa-bootstrap`,\n    brokerStateUrl: `${siteUrl}/api/zalo-oa-browserbase-state`,\n    browserbaseApiBase: 'https://api.browserbase.com/v1',\n    browserbaseApiKey: String('').trim(),\n    browserbaseProjectId: String('').trim(),\n    browserbaseRegion,\n    internalKey: String('').trim(),\n  },\n}];"
+      },
+      "id": "prepare_ops_context",
+      "name": "Prepare Ops Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.healthUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "get_broker_health",
+      "name": "Get Broker Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Prepare Ops Context').first().json || {};\nconst source = $input.first().json || {};\nconst payload = source.data && typeof source.data === 'object' ? source.data : source;\nconst tokenStatus = String(payload.tokenStatus || payload.token_status || '').trim();\nconst hasAccessToken = payload.hasAccessToken !== false;\nconst hasRefreshToken = payload.hasRefreshToken !== false;\nconst browserbaseContextId = String(payload.browserbaseContextId || payload.browserbase_context_id || '').trim();\nconst needsRefresh = !hasAccessToken || !hasRefreshToken || ['expired', 'expiring_soon', 'refresh_failed'].includes(tokenStatus);\nconst needsReauth = ['reauthorization_required', 'bootstrap_required'].includes(tokenStatus);\n\nreturn [{\n  json: {\n    ...base,\n    health: payload,\n    tokenStatus,\n    hasAccessToken,\n    hasRefreshToken,\n    browserbaseContextId,\n    browserbaseReady: Boolean(browserbaseContextId),\n    needsRefresh,\n    needsReauth,\n    needsAction: needsRefresh || needsReauth,\n  },\n}];"
+      },
+      "id": "evaluate_health",
+      "name": "Evaluate Health",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "needs-action",
+              "leftValue": "={{ $json.needsAction === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "needs_action",
+      "name": "Needs Action?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const health = $('Evaluate Health').first().json || {};\nreturn [{\n  json: {\n    ok: true,\n    action: 'noop',\n    token_status: health.tokenStatus || 'healthy',\n    summary: 'Zalo OA token is healthy. No refresh or reauthorization needed.',\n  },\n}];"
+      },
+      "id": "format_noop",
+      "name": "Format Noop Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "needs-reauth",
+              "leftValue": "={{ $json.needsReauth === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "needs_reauth",
+      "name": "Needs Reauth?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.refreshUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"source\":\"n8n_token_keeper\"}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "force_refresh",
+      "name": "Force Refresh Via Broker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.healthUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "verify_health_after_refresh",
+      "name": "Verify Health After Refresh",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json || {};\nconst payload = source.data && typeof source.data === 'object' ? source.data : source;\nreturn [{\n  json: {\n    tokenStatus: String(payload.tokenStatus || payload.token_status || '').trim(),\n    browserbaseReady: Boolean(payload.browserbaseReady || payload.browserbase_ready || payload.browserbaseContextId || payload.browserbase_context_id),\n    browserbaseContextId: String(payload.browserbaseContextId || payload.browserbase_context_id || '').trim(),\n    data: payload,\n  },\n}];"
+      },
+      "id": "evaluate_refresh_result",
+      "name": "Evaluate Refresh Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 1,
+            "typeValidation": "strict",
+            "leftValue": "",
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true,
+              "id": "refresh-restored-health",
+              "leftValue": "={{ ['healthy', 'expiring_soon'].includes(String($json.tokenStatus || '').trim()) }}"
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "refresh_restored_health",
+      "name": "Refresh Restored Health?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json || {};\nconst payload = source.data && typeof source.data === 'object' ? source.data : source;\nreturn [{\n  json: {\n    ok: ['healthy', 'expiring_soon'].includes(String(payload.tokenStatus || payload.token_status || '').trim()),\n    action: 'refresh',\n    token_status: payload.tokenStatus || payload.token_status || 'unknown',\n    summary: ['healthy', 'expiring_soon'].includes(String(payload.tokenStatus || payload.token_status || '').trim())\n      ? 'Broker refresh completed successfully.'\n      : 'Broker refresh did not restore a healthy token state.',\n    data: payload,\n  },\n}];"
+      },
+      "id": "format_refresh_outcome",
+      "name": "Format Refresh Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-browserbase-context",
+              "leftValue": "={{ $json.browserbaseReady === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has_browserbase_context",
+      "name": "Has Browserbase Context?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "agent",
+        "operation": "execute",
+        "url": "={{ $json.explorerUrl }}",
+        "instruction": "Open the page and make sure the selected application is Calo Track Nutrition Coach and the token type is OA Access Token. Read the full values from the Access token and Refresh token fields. Return only strict JSON with keys accessToken and refreshToken. Do not mask, shorten, or explain anything.",
+        "driverModel": "google/gemini-2.5-flash",
+        "mode": "dom",
+        "modelDom": "google/gemini-2.5-flash",
+        "options": {
+          "maxSteps": 25,
+          "systemPrompt": "You are extracting Zalo OA token values for a production token broker. Return exact token strings only in strict JSON."
+        },
+        "browserOptions": {
+          "advancedStealth": true,
+          "blockAds": true,
+          "logSession": true,
+          "recordSession": true,
+          "solveCaptchas": false,
+          "viewportWidth": 1288,
+          "viewportHeight": 711
+        },
+        "sessionOptions": {
+          "contextId": "={{ $json.browserbaseContextId }}",
+          "keepAlive": false,
+          "persistContext": true,
+          "region": "ap-southeast-1",
+          "timeout": 300,
+          "proxies": true
+        }
+      },
+      "id": "browserbase_scrape_tokens",
+      "name": "Browserbase Scrape Tokens",
+      "type": "n8n-nodes-browserbase.browserbase",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        -20
+      ],
+      "credentials": {
+        "browserbaseApi": {
+          "name": "Browserbase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Evaluate Health').first().json || {};\nconst result = $input.first().json || {};\nconst rawMessage = String(result.message || result.output || '').trim();\nconst codeFenceMatch = rawMessage.match(/```json\\s*([\\s\\S]*?)```/i);\nconst candidate = (codeFenceMatch ? codeFenceMatch[1] : rawMessage).trim();\nlet parsed = {};\ntry {\n  parsed = JSON.parse(candidate);\n} catch {\n  const accessMatch = candidate.match(/\\\"?accessToken\\\"?\\s*[:=]\\s*\\\"([^\\\"]+)\\\"/i) || candidate.match(/access[_\\s-]?token\\s*[:=]\\s*([A-Za-z0-9_\\-.]+)/i);\n  const refreshMatch = candidate.match(/\\\"?refreshToken\\\"?\\s*[:=]\\s*\\\"([^\\\"]+)\\\"/i) || candidate.match(/refresh[_\\s-]?token\\s*[:=]\\s*([A-Za-z0-9_\\-.]+)/i);\n  parsed = {\n    accessToken: accessMatch?.[1] || '',\n    refreshToken: refreshMatch?.[1] || '',\n  };\n}\n\nconst accessToken = String(parsed.accessToken || parsed.access_token || '').trim();\nconst refreshToken = String(parsed.refreshToken || parsed.refresh_token || '').trim();\nif (!accessToken || !refreshToken) {\n  throw new Error('browserbase_scrape_failed');\n}\n\nreturn [{\n  json: {\n    ...base,\n    accessToken,\n    refreshToken,\n  },\n}];"
+      },
+      "id": "parse_scraped_tokens",
+      "name": "Parse Scraped Tokens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.bootstrapUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"access_token\":\"{{$json.accessToken}}\",\"refresh_token\":\"{{$json.refreshToken}}\",\"browserbase_context_id\":\"{{$json.browserbaseContextId}}\",\"last_reauth_status\":\"ok\",\"last_reauth_error\":\"\"}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "bootstrap_broker",
+      "name": "Bootstrap Broker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.healthUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-calotrack-internal-key",
+              "value": "={{ $json.internalKey }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "verify_health_after_bootstrap",
+      "name": "Verify Health After Bootstrap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json || {};\nconst payload = source.data && typeof source.data === 'object' ? source.data : source;\nreturn [{\n  json: {\n    ok: ['healthy', 'expiring_soon'].includes(String(payload.tokenStatus || payload.token_status || '').trim()),\n    action: 'reauth',\n    token_status: payload.tokenStatus || payload.token_status || 'unknown',\n    summary: ['healthy', 'expiring_soon'].includes(String(payload.tokenStatus || payload.token_status || '').trim())\n      ? 'Browserbase reauthorization succeeded and broker is healthy again.'\n      : 'Browserbase reauthorization ran but broker is still not healthy.',\n    data: payload,\n  },\n}];"
+      },
+      "id": "format_reauth_outcome",
+      "name": "Format Reauth Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Evaluate Health').first().json || {};\nreturn [{\n  json: {\n    ok: false,\n    action: 'manual_qr_required',\n    token_status: base.tokenStatus || 'reauthorization_required',\n    summary: 'Browserbase context is missing. Run CaloTrack - Zalo Browserbase QR Bootstrap, scan the QR in Live View, then rerun this workflow manually.',\n  },\n}];"
+      },
+      "id": "format_qr_required",
+      "name": "Format QR Required",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Ops Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Ops Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Ops Context": {
+      "main": [
+        [
+          {
+            "node": "Get Broker Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Broker Health": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Health": {
+      "main": [
+        [
+          {
+            "node": "Needs Action?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Action?": {
+      "main": [
+        [
+          {
+            "node": "Needs Reauth?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Noop Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Reauth?": {
+      "main": [
+        [
+          {
+            "node": "Has Browserbase Context?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Force Refresh Via Broker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Force Refresh Via Broker": {
+      "main": [
+        [
+          {
+            "node": "Verify Health After Refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Health After Refresh": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Refresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Browserbase Context?": {
+      "main": [
+        [
+          {
+            "node": "Browserbase Scrape Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format QR Required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Browserbase Scrape Tokens": {
+      "main": [
+        [
+          {
+            "node": "Parse Scraped Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Scraped Tokens": {
+      "main": [
+        [
+          {
+            "node": "Bootstrap Broker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bootstrap Broker": {
+      "main": [
+        [
+          {
+            "node": "Verify Health After Bootstrap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Refresh Result": {
+      "main": [
+        [
+          {
+            "node": "Refresh Restored Health?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Restored Health?": {
+      "main": [
+        [
+          {
+            "node": "Format Refresh Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Browserbase Context?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Health After Bootstrap": {
+      "main": [
+        [
+          {
+            "node": "Format Reauth Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

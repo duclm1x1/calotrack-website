@@ -15,23 +15,25 @@ export const SITE_CONFIG = {
   telegramBotUrl: readEnv(import.meta.env.VITE_TELEGRAM_BOT_URL) || DEFAULT_TELEGRAM_BOT_URL,
   zaloOaUrl: readEnv(import.meta.env.VITE_ZALO_OA_URL) || DEFAULT_ZALO_OA_URL,
   zaloAppId: readEnv(import.meta.env.VITE_ZALO_APP_ID) || DEFAULT_ZALO_APP_ID,
+  zaloPhoneOtpEnabled: readEnv(import.meta.env.VITE_ENABLE_ZALO_PHONE_OTP).toLowerCase() === "true",
+  emailDevBypassEnabled:
+    readEnv(import.meta.env.VITE_PORTAL_EMAIL_DEV_BYPASS || "true").toLowerCase() !== "false",
   supportEmail: readEnv(import.meta.env.VITE_SUPPORT_EMAIL) || "support@calotrack.vn",
   bankName: readEnv(import.meta.env.VITE_BANK_NAME) || DEFAULT_BANK_NAME,
   bankCode: readEnv(import.meta.env.VITE_BANK_CODE) || DEFAULT_BANK_CODE,
   bankAccountNumber:
     readEnv(import.meta.env.VITE_BANK_ACCOUNT_NUMBER) || DEFAULT_BANK_ACCOUNT_NUMBER,
   bankAccountName: readEnv(import.meta.env.VITE_BANK_ACCOUNT_NAME) || "LAI MINH DUC",
-  // MoMo is deprecated — kept only as fallback config reference, not shown in UI
   momoCreateOrderWebhookUrl:
     readEnv(import.meta.env.VITE_MOMO_CREATE_ORDER_WEBHOOK_URL) || "",
   pricingAnchor: "#pricing",
   productName: "CaloTrack",
   primaryChannelLabel: "Zalo",
   secondaryChannelLabel: "Telegram",
-  secondaryChannelStatus: "Đã tích hợp flow chat và activation",
+  secondaryChannelStatus: "Chat tracking và activation đã sẵn sàng",
   webPortalLabel: "Portal web",
-  webPortalStatus: "Billing, activation, audit và hỗ trợ vận hành",
-  productStageLabel: "Đa Nền Tảng • Zalo & Telegram",
+  webPortalStatus: "Email-first portal cho billing, linked channels và backoffice",
+  productStageLabel: "Email-first dev phase • Zalo & Telegram",
   freeDailyLimit: 5,
   freeImageDailyLimit: 2,
   loginPath: "/login",
@@ -41,6 +43,8 @@ export const SITE_CONFIG = {
   dashboardPath: "/dashboard",
   adminPath: "/admin",
   zaloAuthCallbackPath: "/zalo-auth-callback",
+  zaloOauthStartPath: "/api/zalo-oa-oauth/start",
+  zaloOauthCallbackApiPath: "/api/zalo-oa-oauth/callback",
 };
 
 function trimTrailingSlash(value: string): string {
@@ -70,6 +74,14 @@ export function buildZaloAuthCallbackUrl(): string {
   return buildSiteUrl(SITE_CONFIG.zaloAuthCallbackPath);
 }
 
+export function buildZaloOauthStartUrl(): string {
+  return buildSiteUrl(SITE_CONFIG.zaloOauthStartPath);
+}
+
+export function buildZaloOauthCallbackApiUrl(): string {
+  return buildSiteUrl(SITE_CONFIG.zaloOauthCallbackApiPath);
+}
+
 export function formatVnd(value: number): string {
   return `${value.toLocaleString("vi-VN")}đ`;
 }
@@ -91,7 +103,7 @@ export function getPrimaryChannelHref(): string {
 }
 
 export function getPrimaryChannelCta(): string {
-  return `Chat trên ${SITE_CONFIG.primaryChannelLabel}`;
+  return `Mở ${SITE_CONFIG.primaryChannelLabel}`;
 }
 
 export function getSecondaryChannelCta(): string {
