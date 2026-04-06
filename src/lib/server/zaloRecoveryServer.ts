@@ -113,6 +113,7 @@ const AI_ENDPOINT_HEADER = "x-calotrack-ai-endpoint";
 const IMAGE_FOLLOWUP_TTL_MS = 10 * 60 * 1000;
 const INBODY_CAPTURE_TTL_MS = 15 * 60 * 1000;
 const PENDING_INTENT_SCHEMA_VERSION = 1;
+const RETRYABLE_AI_STATUS_CODES = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
 
 const DETERMINISTIC_CATALOG: Array<{
   key: string;
@@ -135,7 +136,7 @@ const DETERMINISTIC_CATALOG: Array<{
   {
     key: "white_rice",
     label: "cơm trắng",
-    aliases: ["com trang", "com"],
+    aliases: ["com trang"],
     defaultGrams: 180,
     defaultUnit: "phần",
     defaultPortionText: "1 phần cơm",
@@ -270,6 +271,10 @@ function cloneRecord<T>(value: T): T {
   return JSON.parse(JSON.stringify(value ?? null));
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function parsePendingIntent(candidate: unknown) {
   if (!candidate) return {};
   if (typeof candidate === "object" && !Array.isArray(candidate)) {
@@ -301,9 +306,10 @@ function basePendingIntent(candidate: unknown) {
 }
 
 function findDeterministicEntry(normalizedMessage: string) {
+  const padded = ` ${normalizedMessage} `;
   return (
     DETERMINISTIC_CATALOG.find((entry) =>
-      entry.aliases.some((alias) => normalizedMessage.includes(alias)),
+      entry.aliases.some((alias) => padded.includes(` ${alias.trim()} `)),
     ) || null
   );
 }
@@ -432,6 +438,10 @@ async function callAiJson(
   messages: AnyRecord[],
   model: string,
   temperature = 0.2,
+  options?: {
+    maxAttempts?: number;
+    retryModels?: string[];
+  },
 ) {
   const endpoint = getAiEndpoint(req);
   const authorization = getAiAuthorization(req);
@@ -439,67 +449,97 @@ async function callAiJson(
     throw Object.assign(new Error("ai_provider_unavailable"), { statusCode: 503 });
   }
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: authorization,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature,
-      response_format: { type: "json_object" },
-      messages,
-    }),
-  });
+  const retryModels = Array.isArray(options?.retryModels)
+    ? options?.retryModels.filter(Boolean)
+    : [];
+  const attemptModels = [model, ...retryModels];
+  const maxAttempts = Math.max(
+    1,
+    Number.isFinite(options?.maxAttempts) ? Number(options?.maxAttempts) : attemptModels.length,
+  );
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message =
-      safeString(payload?.error?.message) ||
-      safeString(payload?.message) ||
-      "ai_provider_error";
-    throw Object.assign(new Error(message), {
-      statusCode: response.status,
-      payload,
-    });
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const attemptModel = attemptModels[Math.min(attempt, attemptModels.length - 1)] || model;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: authorization,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: attemptModel,
+          temperature,
+          response_format: { type: "json_object" },
+          messages,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          safeString(payload?.error?.message) ||
+          safeString(payload?.message) ||
+          "ai_provider_error";
+        throw Object.assign(new Error(message), {
+          statusCode: response.status,
+          payload,
+        });
+      }
+
+      let content = "";
+      if (typeof payload?.choices?.[0]?.message?.content === "string") {
+        content = payload.choices[0].message.content;
+      } else if (typeof payload?.content === "string") {
+        content = payload.content;
+      }
+
+      content = String(content || "")
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+      if (!content) {
+        throw Object.assign(new Error("ai_empty_content"), {
+          statusCode: response.status,
+          payload,
+        });
+      }
+
+      let parsed: AnyRecord;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw Object.assign(new Error("ai_invalid_json"), {
+          statusCode: response.status,
+          payload,
+        });
+      }
+
+      return {
+        parsed,
+        statusCode: response.status,
+        payload,
+      };
+    } catch (error: any) {
+      lastError = error;
+      const statusCode = Number(error?.statusCode || 0);
+      const shouldRetry =
+        RETRYABLE_AI_STATUS_CODES.has(statusCode) && attempt < maxAttempts - 1;
+
+      if (!shouldRetry) {
+        throw error;
+      }
+
+      await delay(Math.min(4000, 500 * 2 ** attempt));
+    }
   }
 
-  let content = "";
-  if (typeof payload?.choices?.[0]?.message?.content === "string") {
-    content = payload.choices[0].message.content;
-  } else if (typeof payload?.content === "string") {
-    content = payload.content;
-  }
-
-  content = String(content || "")
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-
-  if (!content) {
-    throw Object.assign(new Error("ai_empty_content"), {
-      statusCode: response.status,
-      payload,
-    });
-  }
-
-  let parsed: AnyRecord;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw Object.assign(new Error("ai_invalid_json"), {
-      statusCode: response.status,
-      payload,
-    });
-  }
-
-  return {
-    parsed,
-    statusCode: response.status,
-    payload,
-  };
+  throw lastError || Object.assign(new Error("ai_provider_unavailable"), { statusCode: 503 });
 }
 
 async function callAiImageJson(
@@ -531,6 +571,10 @@ async function callAiImageJson(
     ],
     model,
     0.1,
+    {
+      maxAttempts: 3,
+      retryModels: ["gpt-4o-mini"],
+    },
   );
 }
 
@@ -726,6 +770,39 @@ function normalizeImageFoods(rawFoods: unknown): ImageFood[] {
     .filter((food) => food.name);
 }
 
+function buildImageReviewBundleFromNutrition(
+  sourceMessageId: string | null,
+  traceId: string | null,
+  title: string,
+  foods: NutritionFood[],
+  totals: NutritionResult["totals"],
+): ImageReviewBundle {
+  return {
+    review_id: `image:${sourceMessageId || traceId || Date.now()}`,
+    kind: "caption_fallback",
+    title: safeString(title) || foods[0]?.name || "Bữa ăn",
+    confidence: 0.55,
+    meal_scope: "single_plate",
+    primary_plate_only: true,
+    foods: foods.map((food) => ({
+      name: food.name,
+      name_en: null,
+      quantity: food.quantity,
+      unit: food.unit,
+      estimated_weight_g: food.estimated_weight_g ?? null,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+      notes: food.portion_text,
+    })),
+    total_calories: Math.max(0, Math.round(toNumber(totals.calories, 0))),
+    total_protein: roundNumber(toNumber(totals.protein, 0), 1),
+    total_carbs: roundNumber(toNumber(totals.carbs, 0), 1),
+    total_fat: roundNumber(toNumber(totals.fat, 0), 1),
+  };
+}
+
 function buildImageReviewText(bundle: ImageReviewBundle, approximateNotice = false) {
   const lines = ["📸 Phân tích ảnh", ""];
   for (const food of bundle.foods) {
@@ -854,6 +931,19 @@ function extractImageSource(body: AnyRecord) {
     safeString(body.context?.image_data_url) ||
     safeString(body.context?.image_url) ||
     null
+  );
+}
+
+function extractImageCaptionText(body: AnyRecord) {
+  return safeString(
+    body.caption ||
+      body.caption_text ||
+      body.message_text ||
+      body.current_message_text ||
+      body.text ||
+      body.context?.caption ||
+      body.context?.caption_text ||
+      body.context?.message_text,
   );
 }
 
@@ -1129,6 +1219,42 @@ export async function analyzeZaloImage(
       provider_status: statusCode,
     };
   } catch (error: any) {
+    if (modeHint !== "inbody") {
+      const captionText = extractImageCaptionText(body);
+      if (captionText) {
+        const captionNutrition = await estimateZaloNutrition(req, {
+          ...body,
+          message_text: captionText,
+          food_name: captionText,
+        }).catch(() => null);
+
+        if (
+          captionNutrition?.ok &&
+          captionNutrition.insert_allowed &&
+          Array.isArray(captionNutrition.foods) &&
+          captionNutrition.foods.length
+        ) {
+          const bundle = buildImageReviewBundleFromNutrition(
+            safeString(body.source_message_id),
+            safeString(body.trace_id),
+            captionText,
+            captionNutrition.foods,
+            captionNutrition.totals,
+          );
+          const updatedPendingIntent = buildImagePendingState(body, bundle, null);
+          return {
+            ok: true,
+            status: "review_ready",
+            error_code: "image_caption_fallback",
+            reply_text: buildImageReviewText(bundle, true),
+            updated_pending_intent: updatedPendingIntent,
+            review_bundle: bundle,
+            provider_status: Number(error?.statusCode || 0) || null,
+          };
+        }
+      }
+    }
+
     return {
       ok: true,
       status: modeHint === "inbody" ? "inbody_missing" : "busy",
@@ -1163,17 +1289,21 @@ function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyR
     const profile = summary.profile || {};
     const requested = summary.requestedPeriod || {};
     const items = Array.isArray(requested.items) ? requested.items : [];
+    const goalKcal = toNumber(daily.goalKcal ?? profile.dailyGoalKcal, 0);
+    const intakeKcal = toNumber(daily.intakeKcal, 0);
+    const exerciseKcal = toNumber(daily.exerciseKcal, 0);
+    const netKcal = toNumber(daily.netKcal, 0);
     return [
       `📊 Hôm nay của bạn (${requested.endDate || requested.startDate || "?"})`,
       "━━━━━━━━━━━━━━━━━━━━━━",
-      `🔥 Đã nạp: ${formatKcal(daily.totalCalories)} kcal`,
-      `🏃 Calories vận động: ${formatKcal(daily.exerciseCalories)} kcal`,
-      `📉 Net intake: ${formatKcal(daily.netCalories)} kcal`,
-      `🧭 TDEE: ${formatKcal(profile.tdee)} kcal | Daily goal: ${formatKcal(profile.dailyGoalKcal)} kcal`,
-      `✅ Chênh lệch so với daily goal: ${formatKcal((profile.dailyGoalKcal || 0) - (daily.totalCalories || 0))} kcal`,
-      `💪 Protein ${formatGram(daily.totalProtein)}g/${formatGram(profile.macroTargets?.proteinG)}g`,
-      `🥑 Fat ${formatGram(daily.totalFat)}g/tối thiểu ${formatGram(profile.macroTargets?.fatG)}g`,
-      `🍚 Carb ${formatGram(daily.totalCarbs)}g`,
+      `🔥 Đã nạp: ${formatKcal(intakeKcal)} kcal`,
+      `🏃 Calories vận động: ${formatKcal(exerciseKcal)} kcal`,
+      `📉 Net intake: ${formatKcal(netKcal)} kcal`,
+      `🧭 TDEE: ${formatKcal(profile.tdee)} kcal | Daily goal: ${formatKcal(goalKcal)} kcal`,
+      `✅ Chênh lệch so với daily goal: ${formatKcal(goalKcal - intakeKcal)} kcal`,
+      `💪 Protein ${formatGram(daily.consumedProteinG)}g/${formatGram(daily.targetProteinG)}g`,
+      `🥑 Fat ${formatGram(daily.consumedFatG)}g/tối thiểu ${formatGram(daily.targetFatG)}g`,
+      `🍚 Carb ${formatGram(daily.consumedCarbsG)}g`,
       `🎯 Mục tiêu hiện tại: ${formatGoalLabel(profile.primaryGoal || "maintain")}`,
       items.length ? "" : null,
       items.length ? "🍽️ Món đã ghi hôm nay:" : null,
@@ -1185,6 +1315,7 @@ function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyR
 
   const requested = summary.requestedPeriod || {};
   const goalLabel = summary.profile?.goalLabel || formatGoalLabel(summary.profile?.primaryGoal || "maintain");
+  const remainingKcal = toNumber(requested.targetKcal, 0) - toNumber(requested.consumedKcal, 0);
   const header =
     period === "month"
       ? `📆 Tháng này của bạn (${requested.startDate || "?"} - ${requested.endDate || "?"})`
@@ -1194,7 +1325,7 @@ function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyR
     "━━━━━━━━━━━━━━━━━━━━━━",
     `🎯 Mục tiêu kỳ này: ${formatKcal(requested.targetKcal)} kcal`,
     `🔥 Đã nạp: ${formatKcal(requested.consumedKcal)} kcal`,
-    `📉 Còn lại: ${formatKcal(requested.remainingKcal)} kcal`,
+    `📉 Còn lại: ${formatKcal(remainingKcal)} kcal`,
     `💪 Protein: ${formatGram(requested.consumedProteinG)}g / ${formatGram(requested.targetProteinG)}g`,
     `🍚 Carb: ${formatGram(requested.consumedCarbsG)}g / ${formatGram(requested.targetCarbsG)}g`,
     `🥑 Fat: ${formatGram(requested.consumedFatG)}g / ${formatGram(requested.targetFatG)}g`,

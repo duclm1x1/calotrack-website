@@ -314,24 +314,28 @@ function getStartOfSaigonDay(date = new Date()) {
   return new Date(`${key}T00:00:00+07:00`);
 }
 
+function getSaigonNoon(date = new Date()) {
+  const key = getSaigonDateKey(date);
+  return new Date(`${key}T12:00:00+07:00`);
+}
+
 function getCurrentWeekStart(date = new Date()) {
-  const start = getStartOfSaigonDay(date);
-  const day = start.getUTCDay();
+  const noon = getSaigonNoon(date);
+  const day = noon.getUTCDay();
   const distance = day === 0 ? 6 : day - 1;
-  start.setUTCDate(start.getUTCDate() - distance);
-  return start;
+  noon.setUTCDate(noon.getUTCDate() - distance);
+  return getStartOfSaigonDay(noon);
 }
 
 function getCurrentMonthStart(date = new Date()) {
-  const start = getStartOfSaigonDay(date);
-  start.setUTCDate(1);
-  return start;
+  const [year, month] = getSaigonDateKey(date).split("-");
+  return new Date(`${year}-${month}-01T00:00:00+07:00`);
 }
 
 function addDays(date: Date, days: number) {
-  const next = new Date(date);
+  const next = getSaigonNoon(date);
   next.setUTCDate(next.getUTCDate() + days);
-  return next;
+  return getStartOfSaigonDay(next);
 }
 
 function toIsoDate(date: Date) {
@@ -346,7 +350,14 @@ function getPeriodRange(period: DashboardPeriod, now = new Date()) {
 
   if (period === "month") {
     const start = getCurrentMonthStart(now);
-    const end = addDays(new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0, 0, 0, 0)), 0);
+    const [yearText, monthText] = getSaigonDateKey(start).split("-");
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const nextMonthStart =
+      month === 12
+        ? new Date(`${year + 1}-01-01T00:00:00+07:00`)
+        : new Date(`${yearText}-${String(month + 1).padStart(2, "0")}-01T00:00:00+07:00`);
+    const end = addDays(nextMonthStart, -1);
     const dayCount = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
     return { start, end, dayCount };
   }
