@@ -1,34 +1,16 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/gateway"
+    }
+  ],
   "routes": [
-    {
-      "src": "/api/zalo-oa-health",
-      "dest": "/api/zalo-oa-control?mode=health"
-    },
-    {
-      "src": "/api/zalo-oa-browserbase-state",
-      "dest": "/api/zalo-oa-control?mode=browserbase-state"
-    },
-    {
-      "src": "/api/zalo-oa-bootstrap",
-      "dest": "/api/zalo-oa-control?mode=bootstrap"
-    },
-    {
-      "src": "/api/zalo-oa-force-refresh",
-      "dest": "/api/zalo-oa-control?mode=force-refresh"
-    },
-    {
-      "src": "/api/zalo-oa-oauth/start",
-      "dest": "/api/zalo-oa-oauth-start"
-    },
-    {
-      "src": "/api/zalo-oa-oauth/callback",
-      "dest": "/api/zalo-oa-oauth-callback"
-    },
     {
       "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
+      "src": "/((?!api/).*)",
       "dest": "/index.html"
     }
   ]
