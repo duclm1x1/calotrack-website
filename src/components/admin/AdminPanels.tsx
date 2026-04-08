@@ -17,6 +17,7 @@ import {
   type AdminAccessState,
   type AdminAuditLogRow,
   type AdminMember,
+  type AdminPortalSiteSettings,
   type AdminRole,
   type AdminSystemHealth,
   type AdminUser,
@@ -216,21 +217,21 @@ export function UsersPanel({
           <Input className="pl-9" placeholder="Tìm theo tên, email, chat_id, platform_id..." value={search} onChange={(event) => onSearchChange(event.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
-          <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value as "all" | AdminUser["plan"])} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi plan</option><option value="free">Free</option><option value="pro">Pro</option><option value="lifetime">Lifetime</option></select>
-          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value as "all" | "telegram" | "zalo" | "web")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi kênh</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
-          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value as "all" | "active" | "banned")} className="rounded-full border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi trạng thái</option><option value="active">Đang active</option><option value="banned">Đang ban</option></select>
+          <select value={planFilter} onChange={(event) => onPlanFilterChange(event.target.value as "all" | AdminUser["plan"])} className="rounded-full border border-primary/15 bg-white/60 backdrop-blur px-3 py-2 text-sm focus:border-primary/30 focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all"><option value="all">Mọi plan</option><option value="free">Free</option><option value="pro">Pro</option><option value="lifetime">Lifetime</option></select>
+          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value as "all" | "telegram" | "zalo" | "web")} className="rounded-full border border-primary/15 bg-white/60 backdrop-blur px-3 py-2 text-sm focus:border-primary/30 focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all"><option value="all">Mọi kênh</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
+          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value as "all" | "active" | "banned")} className="rounded-full border border-primary/15 bg-white/60 backdrop-blur px-3 py-2 text-sm focus:border-primary/30 focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all"><option value="all">Mọi trạng thái</option><option value="active">Đang active</option><option value="banned">Đang ban</option></select>
           <Button variant="outline" onClick={onExport}>CSV</Button>
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-[24px] border border-primary/10">
         <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-primary/5 text-xs uppercase tracking-[0.18em] text-zinc-500">
+          <thead className="bg-primary/5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary border-b border-primary/10 backdrop-blur-sm">
             <tr>{["User", "Channel", "Plan", "Premium until", "AI usage", "Linked auth", "Last active", "Actions"].map((header) => <th key={header} className="whitespace-nowrap p-3">{header}</th>)}</tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="border-t border-primary/8 align-top hover:bg-primary/5">
+              <tr key={user.id} className="border-t border-primary/10 align-top transition-colors hover:bg-primary/10">
                 <td className="p-3"><div className="font-semibold">{user.first_name || user.username || `User ${user.id}`}</div><div className="mt-1 text-xs text-zinc-500">{user.email || user.platform_id || `ID ${user.id}`}</div></td>
                 <td className="p-3"><MiniBadge tone={user.platform === "zalo" ? "accent" : user.platform === "web" ? "neutral" : "primary"}>{user.platform || "telegram"}</MiniBadge></td>
                 <td className="p-3"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${planTone(user.plan)}`}>{user.plan}</span></td>
@@ -310,11 +311,11 @@ export function PaymentsPanel(props: {
         {!canFinance ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Role hiện tại không có quyền ghi money ledger.</div> : null}
         <Input placeholder="User ID" value={payForm.userId} onChange={(event) => onPayFormChange({ userId: event.target.value })} />
         <Input placeholder="Số tiền (VNĐ)" type="number" value={payForm.amount} onChange={(event) => onPayFormChange({ amount: event.target.value })} />
-        <select value={payForm.billingSku} onChange={(event) => onPayFormChange({ billingSku: event.target.value as BillingSku, amount: String(skuOptions.find((option) => option.value === event.target.value)?.priceVnd ?? payForm.amount) })} className="w-full rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm">
+        <select value={payForm.billingSku} onChange={(event) => onPayFormChange({ billingSku: event.target.value as BillingSku, amount: String(skuOptions.find((option) => option.value === event.target.value)?.priceVnd ?? payForm.amount) })} className="h-11 w-full rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10">
           {skuOptions.map((option) => <option key={option.value} value={option.value}>{option.label} · {option.priceLabel} · {option.helper}</option>)}
         </select>
         <Input placeholder="Mã giao dịch" value={payForm.txCode} onChange={(event) => onPayFormChange({ txCode: event.target.value })} />
-        <textarea value={payForm.note} onChange={(event) => onPayFormChange({ note: event.target.value })} placeholder="Ghi chú finance / entitlement..." className="min-h-24 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" />
+        <textarea value={payForm.note} onChange={(event) => onPayFormChange({ note: event.target.value })} placeholder="Ghi chú finance / entitlement..." className="min-h-28 w-full rounded-3xl border border-primary/15 bg-white/60 p-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10" />
         <Button className="w-full" onClick={onSubmitManualPayment} disabled={!canFinance || loading}><CreditCard className="mr-2 h-4 w-4" />Ghi giao dịch & cấp gói</Button>
         <div className="h-px bg-primary/10" />
         <div>
@@ -325,26 +326,26 @@ export function PaymentsPanel(props: {
         <Input placeholder="Order code (VD: CT260327...)" value={orderReviewForm.orderCode} onChange={(event) => onOrderReviewFormChange({ orderCode: event.target.value })} />
         <Input placeholder="Số tiền nhận (tuỳ chọn)" type="number" value={orderReviewForm.amount} onChange={(event) => onOrderReviewFormChange({ amount: event.target.value })} />
         <Input placeholder="Mã giao dịch ngân hàng / reference" value={orderReviewForm.txCode} onChange={(event) => onOrderReviewFormChange({ txCode: event.target.value })} />
-        <textarea value={orderReviewForm.note} onChange={(event) => onOrderReviewFormChange({ note: event.target.value })} placeholder="Ghi chú review / mismatch / support..." className="min-h-24 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" />
+        <textarea value={orderReviewForm.note} onChange={(event) => onOrderReviewFormChange({ note: event.target.value })} placeholder="Ghi chú review / mismatch / support..." className="min-h-28 w-full rounded-3xl border border-primary/15 bg-white/60 p-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10" />
         <Button variant="outline" className="w-full" onClick={onMarkOrderPaid} disabled={!canFinance || loading}><Wallet className="mr-2 h-4 w-4" />Xác nhận order & grant entitlement</Button>
       </div>
 
       <div className={`${SURFACE} space-y-4`}>
         <div className="grid gap-2 xl:grid-cols-5">
           <Input placeholder="Tìm user / mã giao dịch..." value={query} onChange={(event) => onQueryChange(event.target.value)} />
-          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi trạng thái</option><option value="completed">Hoàn thành</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="pending_confirmation">Pending confirm</option><option value="needs_review">Needs review</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select>
-          <select value={providerFilter} onChange={(event) => onProviderFilterChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi provider</option><option value="payos">PayOS</option><option value="stripe">Stripe</option><option value="bank_transfer">Chuyển khoản</option><option value="manual_admin">Admin thủ công</option></select>
-          <select value={skuFilter} onChange={(event) => onSkuFilterChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi SKU</option>{skuOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
-          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="all">Mọi channel</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
+          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)} className="h-11 rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="all">Mọi trạng thái</option><option value="completed">Hoàn thành</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="pending_confirmation">Pending confirm</option><option value="needs_review">Needs review</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select>
+          <select value={providerFilter} onChange={(event) => onProviderFilterChange(event.target.value)} className="h-11 rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="all">Mọi provider</option><option value="payos">PayOS</option><option value="stripe">Stripe</option><option value="bank_transfer">Chuyển khoản</option><option value="manual_admin">Admin thủ công</option></select>
+          <select value={skuFilter} onChange={(event) => onSkuFilterChange(event.target.value)} className="h-11 rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="all">Mọi SKU</option>{skuOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+          <select value={channelFilter} onChange={(event) => onChannelFilterChange(event.target.value)} className="h-11 rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="all">Mọi channel</option><option value="telegram">Telegram</option><option value="zalo">Zalo</option><option value="web">Web</option></select>
         </div>
         <div className="overflow-x-auto rounded-[24px] border border-primary/10">
           <table className="w-full min-w-[1100px] text-left text-sm">
-            <thead className="bg-primary/5 text-xs uppercase tracking-[0.18em] text-zinc-500">
+            <thead className="bg-primary/5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary border-b border-primary/10 backdrop-blur-sm">
               <tr>{["User", "Channel", "SKU", "Method", "Amount", "Status", "Tx code", "Provider event", "Entitlement", "Time"].map((header) => <th key={header} className="whitespace-nowrap p-3">{header}</th>)}</tr>
             </thead>
             <tbody>
               {filteredPayments.map((payment) => (
-                <tr key={payment.id} className="border-t border-primary/8 align-top hover:bg-primary/5">
+                <tr key={payment.id} className="border-t border-primary/10 align-top transition-colors hover:bg-primary/10">
                   <td className="p-3"><div className="font-semibold">{payment.user_name || `User ${payment.user_id}`}</div><div className="text-xs text-zinc-500">#{payment.user_id}</div></td>
                   <td className="p-3"><MiniBadge tone={payment.channel === "zalo" ? "accent" : payment.channel === "web" ? "neutral" : "primary"}>{payment.channel || "telegram"}</MiniBadge></td>
                   <td className="p-3"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${planTone(payment.billing_sku || payment.plan_granted)}`}>{formatAdminSkuLabel(payment.billing_sku || payment.plan_granted)}</span></td>
@@ -421,15 +422,15 @@ export function CatalogPanel({
         <div className={`${SURFACE} space-y-4`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Catalog ops</div><h3 className="mt-2 text-xl font-semibold">Foods, aliases, nutrition, portions</h3></div>
-            <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onRefresh}><RefreshCcw className="mr-2 h-4 w-4" />Refresh</Button><Button variant="outline" onClick={onResetFoodForms}>Food má»›i</Button></div>
+              <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onRefresh}><RefreshCcw className="mr-2 h-4 w-4" />Refresh</Button><Button variant="outline" onClick={onResetFoodForms}>Food mới</Button></div>
           </div>
           <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_220px]">
             <Input placeholder="Tìm food theo tên, brand, alias..." value={catalogSearch} onChange={(event) => onCatalogSearchChange(event.target.value)} />
-            <select value={candidateStatus} onChange={(event) => onCandidateStatusChange(event.target.value)} className="rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="pending">Pending candidates</option><option value="promoted">Promoted</option><option value="all">Tất cả trạng thái</option></select>
+            <select value={candidateStatus} onChange={(event) => onCandidateStatusChange(event.target.value)} className="h-11 rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="pending">Pending candidates</option><option value="promoted">Promoted</option><option value="all">Tất cả trạng thái</option></select>
           </div>
           <div className="overflow-x-auto rounded-[24px] border border-primary/10">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-primary/5 text-xs uppercase tracking-[0.18em] text-zinc-500"><tr>{["Food", "Type", "Serving", "Macros", "Source", "Aliases"].map((header) => <th key={header} className="whitespace-nowrap p-3">{header}</th>)}</tr></thead>
+              <thead className="bg-primary/5 text-[11px] font-bold uppercase tracking-[0.18em] text-primary border-b border-primary/10 backdrop-blur-sm"><tr>{["Food", "Type", "Serving", "Macros", "Source", "Aliases"].map((header) => <th key={header} className="whitespace-nowrap p-3">{header}</th>)}</tr></thead>
               <tbody>
                 {foods.map((food) => <tr key={food.id} className={`cursor-pointer border-t border-primary/8 hover:bg-primary/5 ${selectedFoodId === food.id ? "bg-primary/8" : ""}`} onClick={() => onSelectFood(food)}><td className="p-3"><div className="font-semibold">{food.name}</div><div className="text-xs text-zinc-500">{food.brand_name || food.category || "—"}</div></td><td className="p-3 text-sm text-zinc-600">{food.food_type || "generic"}</td><td className="p-3 text-sm text-zinc-600">{food.default_serving_grams ?? "—"}g · {food.default_portion_label || "—"}</td><td className="p-3 text-sm text-zinc-600">{food.calories ?? 0} kcal · P {food.protein ?? 0} · C {food.carbs ?? 0} · F {food.fat ?? 0}</td><td className="p-3 text-sm text-zinc-600">{food.primary_source_type || "—"}</td><td className="p-3 text-sm text-zinc-600">{food.alias_count}</td></tr>)}
                 {foods.length === 0 ? <tr><td colSpan={6} className="p-8 text-center text-zinc-500">Chưa có food nào hoặc migration catalog chưa apply.</td></tr> : null}
@@ -454,7 +455,7 @@ export function CatalogPanel({
           <div className="grid gap-3 md:grid-cols-2"><Input placeholder="Category" value={foodForm.category} onChange={(event) => setFoodForm({ ...foodForm, category: event.target.value })} /><Input placeholder="Food type" value={foodForm.foodType} onChange={(event) => setFoodForm({ ...foodForm, foodType: event.target.value })} /></div>
           <div className="grid gap-3 md:grid-cols-2"><Input placeholder="Brand name" value={foodForm.brandName} onChange={(event) => setFoodForm({ ...foodForm, brandName: event.target.value })} /><Input placeholder="Default portion label" value={foodForm.defaultPortionLabel} onChange={(event) => setFoodForm({ ...foodForm, defaultPortionLabel: event.target.value })} /></div>
           <div className="grid gap-3 md:grid-cols-3"><Input placeholder="Serving grams" value={foodForm.defaultServingGrams} onChange={(event) => setFoodForm({ ...foodForm, defaultServingGrams: event.target.value })} /><Input placeholder="Source type" value={foodForm.primarySourceType} onChange={(event) => setFoodForm({ ...foodForm, primarySourceType: event.target.value })} /><Input placeholder="Confidence" value={foodForm.primarySourceConfidence} onChange={(event) => setFoodForm({ ...foodForm, primarySourceConfidence: event.target.value })} /></div>
-          <textarea value={foodForm.editorNotes} onChange={(event) => setFoodForm({ ...foodForm, editorNotes: event.target.value })} placeholder="Editor notes..." className="min-h-24 w-full rounded-2xl border border-primary/15 bg-white px-3 py-3 text-sm" />
+          <textarea value={foodForm.editorNotes} onChange={(event) => setFoodForm({ ...foodForm, editorNotes: event.target.value })} placeholder="Editor notes..." className="min-h-28 w-full rounded-3xl border border-primary/15 bg-white/60 p-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10" />
           <label className="flex items-center gap-2 text-sm text-zinc-600"><input type="checkbox" checked={foodForm.isActive} onChange={(event) => setFoodForm({ ...foodForm, isActive: event.target.checked })} />Food đang active</label>
           <Button className="w-full" onClick={onSaveFood} disabled={!canCatalogWrite || loading || !schemaReady}>Lưu food</Button>
           <div className={SUBSURFACE}><div className="mb-3 text-sm font-semibold">Alias</div><div className="flex gap-2"><Input placeholder="Alias mới..." value={aliasInput} onChange={(event) => onAliasInputChange(event.target.value)} /><Button variant="outline" onClick={onAddAlias} disabled={!canCatalogWrite || loading || !schemaReady}>Thêm</Button></div></div>
@@ -506,7 +507,7 @@ export function SupportPanel({
     <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
       <div className={`${SURFACE} space-y-4`}>
         <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Support console</div><h3 className="mt-2 text-xl font-semibold">User 360, notes và repair</h3></div>
-        <select value={selectedUserId ?? ""} onChange={(event) => onSelectUser(Number(event.target.value))} className="w-full rounded-2xl border border-primary/15 bg-white px-3 py-2 text-sm"><option value="">Chọn user để xem</option>{users.map((user) => <option key={user.id} value={user.id}>{user.first_name || user.username || `User ${user.id}`} · {user.platform || "telegram"}</option>)}</select>
+        <select value={selectedUserId ?? ""} onChange={(event) => onSelectUser(Number(event.target.value))} className="h-11 w-full rounded-2xl border border-primary/15 bg-white/60 px-4 text-sm backdrop-blur transition-all focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"><option value="">Chọn user để xem</option>{users.map((user) => <option key={user.id} value={user.id}>{user.first_name || user.username || `User ${user.id}`} · {user.platform || "telegram"}</option>)}</select>
         <Button variant="outline" onClick={onRefresh} disabled={!selectedUserId || loading}><RefreshCcw className="mr-2 h-4 w-4" />Refresh user 360</Button>
         {!canSupport ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Role hiện tại chỉ xem được, không thực hiện support actions.</div> : null}
         {selectedUser ? <div className={SUBSURFACE}><div className="font-semibold">{selectedUser.first_name || selectedUser.username || `User ${selectedUser.id}`}</div><div className="text-sm text-zinc-500">{selectedUser.email || selectedUser.platform_id || `#${selectedUser.id}`}</div><div className="mt-3 flex flex-wrap gap-2"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${planTone(selectedUser.plan)}`}>{selectedUser.plan}</span><MiniBadge tone={selectedUser.platform === "zalo" ? "accent" : selectedUser.platform === "web" ? "neutral" : "primary"}>{selectedUser.platform || "telegram"}</MiniBadge></div></div> : null}
@@ -584,6 +585,10 @@ export function SettingsPanel({
   onSaveMember,
   onToggleMemberActive,
   onSetRole,
+  portalSiteSettings,
+  onPortalSiteSettingsChange,
+  onSavePortalSiteSettings,
+  canManagePortalSettings,
   canManageMembers,
   skuOptions,
 }: {
@@ -594,26 +599,115 @@ export function SettingsPanel({
   onSaveMember: () => void;
   onToggleMemberActive: (member: AdminMember) => void;
   onSetRole: (member: AdminMember, role: AdminRole) => void;
+  portalSiteSettings: AdminPortalSiteSettings;
+  onPortalSiteSettingsChange: (patch: Partial<Omit<AdminPortalSiteSettings, "updatedAt">>) => void;
+  onSavePortalSiteSettings: () => void;
+  canManagePortalSettings: boolean;
   canManageMembers: boolean;
   skuOptions: { value: string; label: string; priceLabel: string; helper: string; tier: string }[];
 }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div className={`${SURFACE} space-y-4`}>
-        <div><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Settings</div><h3 className="mt-2 text-xl font-semibold">Admin members và quyền hạn</h3></div>
-        {!canManageMembers ? <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">Chỉ Owner mới được quản lý role và trạng thái admin member.</div> : null}
-        <Input placeholder="Linked user ID" value={memberForm.linkedUserId} onChange={(event) => onMemberFormChange({ linkedUserId: event.target.value })} />
-        <Input placeholder="Auth user id (optional)" value={memberForm.authUserId} onChange={(event) => onMemberFormChange({ authUserId: event.target.value })} />
-        <Input placeholder="Display name" value={memberForm.displayName} onChange={(event) => onMemberFormChange({ displayName: event.target.value })} />
-        <div className="flex flex-wrap gap-2">
-          {(["owner", "admin", "user"] as AdminRole[]).map((role) => {
-            const active = memberForm.role === role;
-            const label = role === "owner" ? "Owner" : role === "admin" ? "Admin" : "User";
-            return <button key={role} type="button" onClick={() => onMemberFormChange({ role })} className={`rounded-full border px-3 py-2 text-sm ${active ? "border-primary bg-primary text-primary-foreground" : "border-primary/15 bg-white text-zinc-600"}`}>{label}</button>;
-          })}
+      <div className="space-y-6">
+        <div className={`${SURFACE} space-y-4`}>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Portal runtime settings</div>
+            <h3 className="mt-2 text-xl font-semibold">Đổi website, channel link và bank info ngay trong admin</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-600">
+              Phần này chỉ đổi các surface public như landing, login, checkout, activate và dashboard sau khi refresh.
+              Không đụng vào OAuth callback, n8n broker hay env server-level.
+            </p>
+          </div>
+          {!canManagePortalSettings ? (
+            <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">
+              Tài khoản hiện tại chỉ có quyền xem. Chỉ admin hoặc owner mới được lưu portal runtime settings.
+            </div>
+          ) : null}
+          <Input
+            placeholder="Website URL"
+            value={portalSiteSettings.siteUrl}
+            onChange={(event) => onPortalSiteSettingsChange({ siteUrl: event.target.value })}
+          />
+          <Input
+            placeholder="Telegram bot URL"
+            value={portalSiteSettings.telegramBotUrl}
+            onChange={(event) => onPortalSiteSettingsChange({ telegramBotUrl: event.target.value })}
+          />
+          <Input
+            placeholder="Zalo OA URL"
+            value={portalSiteSettings.zaloOaUrl}
+            onChange={(event) => onPortalSiteSettingsChange({ zaloOaUrl: event.target.value })}
+          />
+          <Input
+            placeholder="Support email"
+            value={portalSiteSettings.supportEmail}
+            onChange={(event) => onPortalSiteSettingsChange({ supportEmail: event.target.value })}
+          />
+          <Input
+            placeholder="Portal stage label"
+            value={portalSiteSettings.productStageLabel}
+            onChange={(event) => onPortalSiteSettingsChange({ productStageLabel: event.target.value })}
+          />
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              placeholder="Bank name"
+              value={portalSiteSettings.bankName}
+              onChange={(event) => onPortalSiteSettingsChange({ bankName: event.target.value })}
+            />
+            <Input
+              placeholder="Bank code"
+              value={portalSiteSettings.bankCode}
+              onChange={(event) => onPortalSiteSettingsChange({ bankCode: event.target.value })}
+            />
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              placeholder="Bank account number"
+              value={portalSiteSettings.bankAccountNumber}
+              onChange={(event) => onPortalSiteSettingsChange({ bankAccountNumber: event.target.value })}
+            />
+            <Input
+              placeholder="Bank account name"
+              value={portalSiteSettings.bankAccountName}
+              onChange={(event) => onPortalSiteSettingsChange({ bankAccountName: event.target.value })}
+            />
+          </div>
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">
+            {portalSiteSettings.updatedAt ? (
+              <>Bản runtime config gần nhất được lưu lúc <strong>{formatDate(portalSiteSettings.updatedAt)}</strong>.</>
+            ) : (
+              <>Chưa có override nào được lưu. Portal đang dùng cấu hình mặc định từ env production.</>
+            )}
+          </div>
+          <Button onClick={onSavePortalSiteSettings} disabled={!canManagePortalSettings}>Lưu portal settings</Button>
         </div>
-        <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Owner có toàn quyền, gồm đổi role và vào khu Security. Admin vận hành đầy đủ nhưng không được đổi role hoặc sửa cấu hình bảo mật hệ thống.</div>
-        <Button onClick={onSaveMember} disabled={!canManageMembers}>Lưu admin member</Button>
+
+        <div className={`${SURFACE} space-y-4`}>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Security ops</div>
+            <h3 className="mt-2 text-xl font-semibold">Admin members và role management</h3>
+          </div>
+          {!canManageMembers ? (
+            <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">
+              Tài khoản hiện tại chỉ có quyền xem. Chỉ admin hoặc owner mới được thay đổi role và trạng thái thành viên.
+            </div>
+          ) : null}
+          <Input placeholder="Linked user ID" value={memberForm.linkedUserId} onChange={(event) => onMemberFormChange({ linkedUserId: event.target.value })} />
+          <Input placeholder="Auth user id (optional)" value={memberForm.authUserId} onChange={(event) => onMemberFormChange({ authUserId: event.target.value })} />
+          <Input placeholder="Display name" value={memberForm.displayName} onChange={(event) => onMemberFormChange({ displayName: event.target.value })} />
+          <div className="flex flex-wrap gap-2">
+            {(["owner", "admin", "user"] as AdminRole[]).map((role) => {
+              const active = memberForm.role === role;
+              const label = role === "owner" ? "Owner" : role === "admin" ? "Admin" : "User";
+              return <button key={role} type="button" onClick={() => onMemberFormChange({ role })} className={`rounded-full border px-3 py-2 text-sm ${active ? "border-primary bg-primary text-primary-foreground" : "border-primary/15 bg-white text-zinc-600"}`}>{label}</button>;
+            })}
+          </div>
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">
+            Phase hiện tại cho phép cả <strong>admin</strong> và <strong>owner</strong> đổi role trong backoffice.
+            Backend vẫn giữ guard không được bỏ owner cuối cùng và mọi thay đổi đều đi qua audit log.
+          </div>
+          <Button onClick={onSaveMember} disabled={!canManageMembers}>Lưu admin member</Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -651,14 +745,17 @@ export function SettingsPanel({
                 </div>
               </div>
             ))}
-            {members.length === 0 ? <div className="text-sm text-zinc-500">Chưa có admin member nào ngoài Owner bootstrap.</div> : null}
+            {members.length === 0 ? <div className="text-sm text-zinc-500">Chưa có admin member nào ngoài bootstrap owner.</div> : null}
           </div>
         </div>
 
         <div className={`${SURFACE} space-y-4`}>
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Readonly billing config</div>
           <div className="grid gap-3 md:grid-cols-2">{skuOptions.map((option) => <div key={option.value} className={SUBSURFACE}><div className="font-semibold">{option.label}</div><div className="mt-1 text-sm text-zinc-500">{option.priceLabel} · {option.helper}</div><div className="mt-3 text-xs uppercase tracking-[0.18em] text-primary">{option.tier}</div></div>)}</div>
-          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">Logged in as <strong>{access?.email || "unknown"}</strong>. Role model hiện tại chỉ còn <strong>Owner / Admin / User</strong>. Trường <strong>users.is_admin</strong> được giữ như bootstrap gate cho Owner đầu tiên.</div>
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-600">
+            Logged in as <strong>{access?.email || "unknown"}</strong>. Role model hiện tại chỉ còn <strong>Owner / Admin / User</strong>.
+            Trường <strong>users.is_admin</strong> chỉ còn vai trò bootstrap gate cho owner đầu tiên.
+          </div>
         </div>
       </div>
     </div>

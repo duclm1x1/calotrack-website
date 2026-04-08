@@ -1,13 +1,11 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminSectionHeader } from "@/components/admin/AdminSectionHeader";
-import {
-  ChannelsPanel,
-  CustomerSupportPanel,
-  CustomersPanel,
-} from "@/components/admin/AdminCustomerPanels";
+import { AdminCustomerAccessPanel } from "@/components/admin/AdminCustomerAccessPanel";
+import { CustomerSupportPanel } from "@/components/admin/AdminCustomerPanels";
 import {
   CatalogPanel,
   OverviewPanel,
@@ -24,26 +22,29 @@ import {
 } from "@/components/admin/AdminSaasPanels";
 import { AdminSidebar, getAdminNavItems } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   addCustomerSupportNote,
   commitFoodCsvImport,
   dryRunFoodCsvImport,
   fetchAdminAuditLog,
+  fetchAdminAuthIdentities,
   fetchAdminChannelAccounts,
   fetchAdminCustomer360,
   fetchAdminCustomers,
-  fetchAdminLinkReviews,
+  fetchAdminIdentityInbox,
   fetchAdminMembers,
+  fetchAdminPortalSiteSettings,
   fetchAdminSystemHealth,
   fetchAdminUsers,
   fetchFoodCandidates,
   fetchFoodCatalog,
   fetchPayments,
   getAdminAccessState,
+  getAdminCustomerAccessTarget,
   getAdminSkuOptions,
   getSaasSchemaReadiness,
   getSystemStats,
-  linkChannelAccount,
   linkPortalAuth,
   logPayment,
   markOrderPaid,
@@ -51,22 +52,26 @@ import {
   promoteFoodCandidate,
   resetCustomerQuota,
   setAdminMemberAccess,
-  setCustomerEntitlement,
+  setCustomerAccessState,
   setCustomerPhone,
+  saveAdminPortalSiteSettings,
+  softDeleteCustomer,
   toggleAdminMemberActive,
-  unlinkChannelAccount,
   upsertAdminMember,
   upsertFood,
   upsertFoodAlias,
   upsertFoodNutrition,
   upsertFoodPortion,
   type AdminAccessState,
+  type AdminAuthIdentity,
   type AdminAuditLogRow,
   type AdminChannelAccount,
   type AdminCustomer,
   type AdminCustomer360,
-  type AdminLinkReview,
+  type AdminCustomerAccessTarget,
+  type AdminIdentityInboxRow,
   type AdminMember,
+  type AdminPortalSiteSettings,
   type AdminRole,
   type AdminSection,
   type AdminSystemHealth,
@@ -80,8 +85,6 @@ import {
   type SystemStats,
 } from "@/lib/adminApi";
 import {
-  LIFETIME_SENTINEL_ISO,
-  computePremiumUntil,
   getFreeDailyLimit,
   type BillingSku,
 } from "@/lib/billing";
@@ -308,20 +311,30 @@ export default function Admin() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
   const [channels, setChannels] = useState<AdminChannelAccount[]>([]);
-  const [linkReviews, setLinkReviews] = useState<AdminLinkReview[]>([]);
+  const [authIdentities, setAuthIdentities] = useState<AdminAuthIdentity[]>([]);
+  const [identityInbox, setIdentityInbox] = useState<AdminIdentityInboxRow[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [schema, setSchema] = useState<SchemaReadiness | null>(null);
   const [health, setHealth] = useState<AdminSystemHealth | null>(null);
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogRow[]>([]);
   const [members, setMembers] = useState<AdminMember[]>([]);
+  const [portalSiteSettings, setPortalSiteSettings] = useState<AdminPortalSiteSettings>({
+    siteUrl: "",
+    telegramBotUrl: "",
+    zaloOaUrl: "",
+    supportEmail: "",
+    productStageLabel: "",
+    bankName: "",
+    bankCode: "",
+    bankAccountNumber: "",
+    bankAccountName: "",
+    updatedAt: null,
+  });
   const [loading, setLoading] = useState(false);
 
   const [customerSearch, setCustomerSearch] = useState("");
-  const [planFilter, setPlanFilter] = useState<"all" | AdminCustomer["plan"]>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "merged" | "blocked">("all");
-  const [channelFilter, setChannelFilter] = useState<"all" | "telegram" | "zalo" | "web">("all");
-  const [channelLinkTarget, setChannelLinkTarget] = useState("");
+  const [accessFilter, setAccessFilter] = useState<"all" | AdminCustomerAccessTarget>("all");
 
   const [payFilters, setPayFilters] = useState({
     query: "",
@@ -416,38 +429,46 @@ export default function Admin() {
       nextUsers,
       nextCustomers,
       nextChannels,
-      nextLinkReviews,
+      nextAuthIdentities,
+      nextIdentityInbox,
       nextPayments,
       nextStats,
       nextSchema,
       nextHealth,
       nextAudit,
       nextMembers,
+      nextPortalSiteSettings,
     ] = await Promise.all([
       getAdminAccessState(),
       fetchAdminUsers().catch(() => []),
       fetchAdminCustomers().catch(() => []),
       fetchAdminChannelAccounts().catch(() => []),
-      fetchAdminLinkReviews().catch(() => []),
+      fetchAdminAuthIdentities().catch(() => []),
+      fetchAdminIdentityInbox().catch(() => []),
       fetchPayments().catch(() => []),
       getSystemStats().catch(() => null),
       getSaasSchemaReadiness().catch(() => null),
       fetchAdminSystemHealth().catch(() => null),
       fetchAdminAuditLog(25).catch(() => []),
       fetchAdminMembers().catch(() => []),
+      fetchAdminPortalSiteSettings().catch(() => null),
     ]);
 
     setAccess(nextAccess);
     setUsers(nextUsers);
     setCustomers(nextCustomers);
     setChannels(nextChannels);
-    setLinkReviews(nextLinkReviews);
+    setAuthIdentities(nextAuthIdentities);
+    setIdentityInbox(nextIdentityInbox);
     setPayments(nextPayments);
     setStats(nextStats);
     setSchema(nextSchema);
     setHealth(nextHealth);
     setAuditLogs(nextAudit);
     setMembers(nextMembers);
+    if (nextPortalSiteSettings) {
+      setPortalSiteSettings(nextPortalSiteSettings);
+    }
   }, []);
 
   const fetchCatalogData = useCallback(async () => {
@@ -491,7 +512,7 @@ export default function Admin() {
   const navItems = useMemo(
     () =>
       getAdminNavItems(access, {
-        users: customers.length,
+        users: identityInbox.length ? `${customers.length}/${identityInbox.length}` : customers.length,
         subscriptions: payments.filter((payment) => payment.status === "pending").length,
         entitlements: customers.filter((customer) => customer.plan === "lifetime").length,
         usage: customers.filter((customer) => customer.quota_used_today >= FREE_DAILY_LIMIT).length,
@@ -501,7 +522,17 @@ export default function Admin() {
         system: health?.schemaReady ? null : "check",
         security: members.length,
       }),
-    [access, customers, payments, candidates.length, selectedCustomerId, health?.schemaReady, members.length, canAnalytics],
+    [
+      access,
+      customers,
+      identityInbox.length,
+      payments,
+      candidates.length,
+      selectedCustomerId,
+      health?.schemaReady,
+      members.length,
+      canAnalytics,
+    ],
   );
 
   useEffect(() => {
@@ -513,29 +544,42 @@ export default function Admin() {
     }
   }, [access, navItems, section, setSection]);
 
+  const manageableCustomers = useMemo(
+    () => customers.filter((customer) => customer.entitlement_source !== "soft_deleted" && !customer.deleted_at),
+    [customers],
+  );
+
   const filteredCustomers = useMemo(() => {
     const query = customerSearch.trim().toLowerCase();
-    return customers.filter((customer) => {
+    return manageableCustomers.filter((customer) => {
+      const linkedEmails = authIdentities
+        .filter((identity) => identity.customer_id === customer.id)
+        .map((identity) => String(identity.email ?? "").toLowerCase());
+      const accessTarget = getAdminCustomerAccessTarget(customer);
       const matchesQuery =
         !query ||
         String(customer.id).includes(query) ||
         String(customer.phone_display ?? "").toLowerCase().includes(query) ||
         String(customer.phone_e164 ?? "").toLowerCase().includes(query) ||
-        String(customer.full_name ?? "").toLowerCase().includes(query);
-      const matchesPlan = planFilter === "all" || customer.plan === planFilter;
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && customer.status === "active") ||
-        (statusFilter === "merged" && customer.status === "merged") ||
-        (statusFilter === "blocked" && customer.status === "blocked");
-      return matchesQuery && matchesPlan && matchesStatus;
+        String(customer.full_name ?? "").toLowerCase().includes(query) ||
+        linkedEmails.some((email) => email.includes(query));
+      const matchesAccess = accessFilter === "all" || accessTarget === accessFilter;
+      return matchesQuery && matchesAccess;
     });
-  }, [customers, customerSearch, planFilter, statusFilter]);
+  }, [accessFilter, authIdentities, customerSearch, manageableCustomers]);
 
-  const filteredChannels = useMemo(
-    () => channels.filter((channel) => channelFilter === "all" || channel.channel === channelFilter),
-    [channels, channelFilter],
-  );
+  const customerEmailsById = useMemo(() => {
+    return authIdentities.reduce<Record<number, string[]>>((acc, identity) => {
+      if (!identity.customer_id || !identity.email) return acc;
+      if (!acc[identity.customer_id]) {
+        acc[identity.customer_id] = [];
+      }
+      if (!acc[identity.customer_id].includes(identity.email)) {
+        acc[identity.customer_id].push(identity.email);
+      }
+      return acc;
+    }, {});
+  }, [authIdentities]);
 
   const filteredPayments = useMemo(() => {
     const query = payFilters.query.trim().toLowerCase();
@@ -595,6 +639,8 @@ export default function Admin() {
     setAliasInput("");
   };
 
+  const navigate = useNavigate();
+
   const handleLogPayment = async () => {
     if (!payForm.userId || !payForm.amount) {
       toast.error("User ID và số tiền là bắt buộc");
@@ -602,7 +648,7 @@ export default function Admin() {
     }
     await withRefresh(
       () => logPayment(Number(payForm.userId), Number(payForm.amount), payForm.billingSku, payForm.txCode, payForm.note),
-      "Đã ghi giao dịch và cấp gói thành công",
+      "Đã ghi nhận giao dịch và kích hoạt gói thành công",
       { refreshSupport: selectedCustomerId === Number(payForm.userId) },
     );
     setPayForm({ userId: "", amount: "", billingSku: "monthly", txCode: "", note: "" });
@@ -610,18 +656,22 @@ export default function Admin() {
 
   const handleMarkOrderPaid = async () => {
     if (!orderReviewForm.orderCode.trim()) {
-      toast.error("Order code là bắt buộc");
+      toast.error("Mã đơn hàng là bắt buộc");
+      return;
+    }
+    const orderCode = orderReviewForm.orderCode.trim().toUpperCase();
+    if (!window.confirm(`Xác nhận đã nhận tiền cho đơn hàng ${orderCode}? Thao tác này sẽ cấp gói ngay lập tức.`)) {
       return;
     }
     await withRefresh(
       () =>
         markOrderPaid(
-          orderReviewForm.orderCode.trim().toUpperCase(),
+          orderCode,
           asNumberOrNull(orderReviewForm.amount),
           orderReviewForm.txCode,
           orderReviewForm.note,
         ),
-      "Đã xác nhận order và grant entitlement",
+      "Đã xác nhận thanh toán và kích hoạt gói thành công",
     );
     setOrderReviewForm({ orderCode: "", amount: "", txCode: "", note: "" });
   };
@@ -646,12 +696,12 @@ export default function Admin() {
         isActive: foodForm.isActive,
       });
       setSelectedFoodId(foodId);
-    }, "Đã lưu food catalog", { refreshCatalog: true });
+    }, "Đã lưu cơ sở dữ liệu dinh dưỡng", { refreshCatalog: true });
   };
 
   const handleAddAlias = async () => {
     if (!selectedFoodId || !aliasInput.trim()) {
-      toast.error("Cần chọn food và nhập alias");
+      toast.error("Cần chọn món và nhập tên gọi khác");
       return;
     }
     await withRefresh(
@@ -664,7 +714,7 @@ export default function Admin() {
           sourceType: "manual",
           confidence: 1,
         }).then(() => undefined),
-      "Đã thêm alias",
+      "Đã thêm tên gọi bổ sung",
       { refreshCatalog: true },
     );
     setAliasInput("");
@@ -687,7 +737,7 @@ export default function Admin() {
           confidence: asNumberOrNull(nutritionForm.confidence) ?? 1,
           isPrimary: true,
         }),
-      "Đã lưu nutrition",
+      "Đã lưu thông tin dinh dưỡng",
       { refreshCatalog: true },
     );
 
@@ -705,7 +755,7 @@ export default function Admin() {
           confidence: asNumberOrNull(portionForm.confidence) ?? 1,
           isDefault: portionForm.isDefault,
         }).then(() => undefined),
-      "Đã lưu portion",
+      "Đã lưu định lượng món ăn",
       { refreshCatalog: true },
     );
 
@@ -731,7 +781,7 @@ export default function Admin() {
           fat: asNumberOrNull(promoteForm.fat) ?? 0,
           aliases: promoteForm.aliases.split(",").map((alias) => alias.trim()).filter(Boolean),
         }).then(() => undefined),
-      "Đã promote candidate thành food",
+      "Đã phê duyệt món ăn vào hệ thống",
       { refreshCatalog: true },
     );
 
@@ -749,7 +799,7 @@ export default function Admin() {
           fat: 0,
           aliases: [candidate.raw_name],
         }).then(() => undefined),
-      "Đã promote candidate nhanh",
+      "Đã phê duyệt món ăn nhanh",
       { refreshCatalog: true },
     );
 
@@ -769,7 +819,7 @@ export default function Admin() {
     try {
       setLoading(true);
       setCsvDryRun(await dryRunFoodCsvImport(rows));
-      toast.success("Dry-run CSV thành công");
+      toast.success("Kiểm tra CSV hoàn tất");
     } catch (error) {
       toast.error(String((error as Error)?.message || error));
     } finally {
@@ -786,77 +836,50 @@ export default function Admin() {
         }
         await commitFoodCsvImport(rows);
       },
-      "CSV import đã được commit",
+      "Dữ liệu CSV đã được nạp vào hệ thống",
       { refreshCatalog: true },
     );
 
-  const handleOpenCustomerSupport = (customer: AdminCustomer) => {
-    setSelectedCustomerId(customer.id);
-    setCustomerPhoneDraft(customer.phone_display || customer.phone_e164 || "");
-    setSection("support");
-  };
-
-  const handleSetCustomerFree = async (customerId: number) =>
-    withRefresh(
-      () => setCustomerEntitlement(customerId, "free", null, "admin", "Set customer to Free"),
-      "Đã chuyển customer về Free",
-      { refreshSupport: selectedCustomerId === customerId },
-    );
-
-  const handleGrantCustomerPro = async (customerId: number) =>
+  const handleSaveCustomerAccessState = async (
+    customerId: number,
+    targetState: AdminCustomerAccessTarget,
+    billingSku: "monthly" | "semiannual" | "yearly" | null,
+  ) =>
     withRefresh(
       () =>
-        setCustomerEntitlement(
+        setCustomerAccessState(
           customerId,
-          "pro",
-          computePremiumUntil("monthly"),
-          "manual_grant",
-          "Grant Pro từ backoffice",
+          targetState,
+          targetState === "pro" ? billingSku : null,
+          `Admin set customer access state to ${targetState}`,
         ),
-      "Đã grant Pro cho customer",
+      targetState === "banned"
+        ? "Đã chặn quyền truy cập khách hàng"
+        : targetState === "pro"
+          ? "Đã nâng cấp khách hàng lên Pro"
+          : "Đã chuyển khách hàng về gói Free",
       { refreshSupport: selectedCustomerId === customerId },
     );
 
-  const handleGrantCustomerLifetime = async (customerId: number) =>
+  const handleSoftDeleteCustomer = async (customerId: number) =>
     withRefresh(
-      () =>
-        setCustomerEntitlement(
-          customerId,
-          "lifetime",
-          LIFETIME_SENTINEL_ISO,
-          "manual_grant",
-          "Grant Lifetime từ backoffice",
-        ),
-      "Đã grant Lifetime cho customer",
+      () => softDeleteCustomer(customerId, "Soft deleted from customer access control"),
+      "Đã ẩn khách hàng khỏi danh sách vận hành",
       { refreshSupport: selectedCustomerId === customerId },
-    );
-
-  const handleLinkChannel = async (channelAccountId: number, customerId: number) =>
-    withRefresh(
-      () => linkChannelAccount(channelAccountId, customerId, "Linked from admin channels section"),
-      "Đã link channel vào customer",
-      { refreshSupport: selectedCustomerId === customerId },
-    );
-
-  const handleUnlinkChannel = async (channelAccountId: number) =>
-    withRefresh(
-      () => unlinkChannelAccount(channelAccountId, "Unlinked from admin channels section"),
-      "Đã unlink channel account",
-      { refreshSupport: true },
     );
 
   const handleSetCustomerPhone = async () => {
     if (!selectedCustomerId || !customerPhoneDraft.trim()) return;
     await withRefresh(
       () => setCustomerPhone(selectedCustomerId, customerPhoneDraft.trim(), customer360?.customer?.full_name || undefined),
-      "Đã cập nhật số điện thoại canonical",
+      "Đã cập nhật số điện thoại hệ thống",
       { refreshSupport: true },
     );
   };
 
   const handleResetQuota = async () => {
     if (!selectedCustomerId) return;
-    await withRefresh(() => resetCustomerQuota(selectedCustomerId), "Đã reset quota dùng chung", {
+    await withRefresh(() => resetCustomerQuota(selectedCustomerId), "Đã reset hạn mức sử dụng AI", {
       refreshSupport: true,
     });
   };
@@ -865,7 +888,7 @@ export default function Admin() {
     if (!selectedCustomerId || !portalAuthValue.trim()) return;
     await withRefresh(
       () => linkPortalAuth(selectedCustomerId, portalAuthValue.trim(), customer360?.linkedAuths[0]?.email || ""),
-      "Đã link portal auth",
+      "Đã liên kết tài khoản định danh",
       { refreshSupport: true },
     );
     setPortalAuthValue("");
@@ -873,7 +896,7 @@ export default function Admin() {
 
   const handleAddSupportNote = async () => {
     if (!selectedCustomerId || !supportNoteDraft.trim()) return;
-    await withRefresh(() => addCustomerSupportNote(selectedCustomerId, supportNoteDraft.trim()), "Đã lưu support note", {
+    await withRefresh(() => addCustomerSupportNote(selectedCustomerId, supportNoteDraft.trim()), "Đã lưu ghi chú hỗ trợ", {
       refreshSupport: true,
     });
     setSupportNoteDraft("");
@@ -883,7 +906,7 @@ export default function Admin() {
     if (!selectedCustomerId || !mergeSourceCustomerId.trim()) return;
     await withRefresh(
       () => mergeCustomers(Number(mergeSourceCustomerId), selectedCustomerId, "Merged từ support console"),
-      "Đã merge customer",
+      "Đã hợp nhất hồ sơ khách hàng",
       { refreshSupport: true },
     );
     setMergeSourceCustomerId("");
@@ -902,27 +925,51 @@ export default function Admin() {
         isOwner: memberForm.role === "owner",
       });
       await setAdminMemberAccess(memberId, memberForm.role, true);
-    }, "Đã lưu admin member");
+    }, "Đã lưu thông tin quản trị viên");
     setMemberForm(defaultMemberForm());
   };
 
   const handleSetRole = async (member: AdminMember, role: AdminRole) =>
-    withRefresh(() => setAdminMemberAccess(member.id, role, member.is_active), "Đã cập nhật role");
+    withRefresh(() => setAdminMemberAccess(member.id, role, member.is_active), "Đã cập nhật phân quyền quản trị");
 
   const handleToggleMemberActive = async (member: AdminMember) =>
     withRefresh(
       () => toggleAdminMemberActive(member.id, !member.is_active),
-      member.is_active ? "Đã deactivate member" : "Đã activate member",
+      member.is_active ? "Đã vô hiệu hóa quản trị viên" : "Đã kích hoạt quản trị viên",
     );
+
+  const handleSavePortalSiteSettings = async () => {
+    try {
+      const next = await saveAdminPortalSiteSettings({
+        siteUrl: portalSiteSettings.siteUrl,
+        telegramBotUrl: portalSiteSettings.telegramBotUrl,
+        zaloOaUrl: portalSiteSettings.zaloOaUrl,
+        supportEmail: portalSiteSettings.supportEmail,
+        productStageLabel: portalSiteSettings.productStageLabel,
+        bankName: portalSiteSettings.bankName,
+        bankCode: portalSiteSettings.bankCode,
+        bankAccountNumber: portalSiteSettings.bankAccountNumber,
+        bankAccountName: portalSiteSettings.bankAccountName,
+      });
+      setPortalSiteSettings(next);
+      toast.success("Đã ghi nhận cấu hình hệ thống.");
+    } catch (error) {
+      toast.error(
+        String(
+          (error as Error)?.message || error || "Không thể lưu cấu hình hệ thống.",
+        ),
+      );
+    }
+  };
 
   const sectionMeta = useMemo(() => {
     switch (section) {
       case "users":
         return {
-          eyebrow: "User management",
-          title: "Customer canonical, channel identities và account health",
+          eyebrow: "Customer Access Control",
+          title: "Quản lý truy cập khách hàng",
           description:
-            "Phone number là tài khoản chính. Màn này gom customer canonical, Telegram/Zalo/web-linked identities và các thao tác support hoặc entitlement ở mức user lifecycle.",
+            "Tập trung vào customer đã xác thực số điện thoại, đổi trạng thái Free, Pro hoặc Banned, soft delete customer khi cần và theo dõi trạng thái đa kênh trên cùng một nguồn sự thật.",
         };
       case "subscriptions":
         return {
@@ -978,20 +1025,46 @@ export default function Admin() {
           eyebrow: "Security & permissions",
           title: "Admin roles, audit trail và break-glass owner",
           description:
-            "Tất cả quyền nhạy cảm phải đi qua RPC và audit log. Màn này là nơi nhìn thấy member roles, owner state và các thay đổi cần kiểm toán.",
+            "Cả admin và owner đều có thể quản lý role trong phase này, nhưng backend vẫn giữ guard last-owner và audit log cho mọi thay đổi nhạy cảm.",
         };
       default:
         return {
           eyebrow: "Dashboard tổng quan",
           title: "CaloTrack Admin Area",
           description:
-            "Một màn admin duy nhất cho customer canonical theo số điện thoại, channel identities, payments, catalog foods, support operations và system health. Giao diện này bám cùng visual language với main page: teal là primary, flame là accent.",
+            "Một màn admin duy nhất cho customer truth, linked channels, payments, nutrition catalog, support operations và system health. Public flow bám theo phone-first onboarding và entitlement dùng chung đa kênh.",
         };
     }
   }, [section]);
 
-  const headerSummary = useMemo(
-    () => [
+  const headerSummary = useMemo(() => {
+    if (section === "users") {
+      const proCount = manageableCustomers.filter((customer) => getAdminCustomerAccessTarget(customer) === "pro").length;
+      const bannedCount = manageableCustomers.filter((customer) => getAdminCustomerAccessTarget(customer) === "banned").length;
+      const pendingVerificationCount = manageableCustomers.filter(
+        (customer) => customer.access_state === "pending_verification",
+      ).length;
+      return [
+        { label: "khách hàng", value: String(manageableCustomers.length), tone: "primary" as const },
+        {
+          label: "pro",
+          value: String(proCount),
+          tone: proCount ? ("accent" as const) : ("neutral" as const),
+        },
+        {
+          label: "banned",
+          value: String(bannedCount),
+          tone: bannedCount ? ("accent" as const) : ("neutral" as const),
+        },
+        {
+          label: "chờ xác thực",
+          value: String(pendingVerificationCount),
+          tone: pendingVerificationCount ? ("accent" as const) : ("neutral" as const),
+        },
+      ];
+    }
+
+    return [
       { label: "free tier", value: `${FREE_DAILY_LIMIT}/ngày`, tone: "neutral" as const },
       { label: "customers", value: String(customers.length), tone: "primary" as const },
       {
@@ -999,18 +1072,65 @@ export default function Admin() {
         value: `${channels.filter((channel) => channel.link_status === "linked").length} linked`,
         tone: "accent" as const,
       },
-      { label: "roles", value: access?.roles?.length ? access.roles.join(" · ") : "bootstrap", tone: "neutral" as const },
-    ],
-    [access, channels, customers.length],
-  );
+      {
+        label: "roles",
+        value: access?.roles?.length ? access.roles.join(" · ") : "bootstrap",
+        tone: "neutral" as const,
+      },
+    ];
+  }, [access, channels, customers.length, manageableCustomers, section]);
+
+  if (!access) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50/50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
+          <p className="text-sm font-medium text-zinc-500 animate-pulse">
+            Đang tải dữ liệu hồ sơ quản trị...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-4">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+            <svg
+              className="h-8 w-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-zinc-900">Quyền truy cập bị từ chối</h1>
+          <p className="text-zinc-600">
+            Bạn không có đủ quyền hạn để truy cập vào khu vực quản trị này. Vui lòng liên hệ Admin trưởng nếu bạn cho rằng đây là một sự nhầm lẫn.
+          </p>
+          <Button onClick={() => navigate("/")} variant="outline" className="mt-4">
+            Quay lại Trang chủ
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_24%),linear-gradient(180deg,#f7fbfa_0%,#ffffff_46%,#f8fafc_100%)]">
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_24%),linear-gradient(180deg,#f7fbfa_0%,#ffffff_46%,#f8fafc_100%)]">
       <div className="mx-auto max-w-[1600px] px-4 py-6 lg:px-6 xl:px-8">
         <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
           <AdminSidebar items={navItems} section={section} onSelect={setSection} access={access} />
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <AdminSectionHeader
               eyebrow={sectionMeta.eyebrow}
               title={sectionMeta.title}
@@ -1038,31 +1158,81 @@ export default function Admin() {
             ) : null}
 
             {section === "users" ? (
-              <div className="space-y-6">
-                <CustomersPanel
+              <div className="min-w-0 max-w-full space-y-6">
+                <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-md backdrop-blur">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+                          Customer Access Overview
+                        </div>
+                        <h3 className="mt-2 text-xl font-semibold">
+                          Một bề mặt gọn để quản lý Free, Pro, Banned và soft delete
+                        </h3>
+                        <p className="mt-2 text-sm leading-6 text-zinc-600">
+                          Bảng này ưu tiên thao tác vận hành nhanh trên customer truth. Các flow repair sâu như relink,
+                          merge, notes và quota reset vẫn nằm riêng ở section Support để tránh làm bảng users bị rối.
+                        </p>
+                      </div>
+                      <Input
+                        placeholder="Ví dụ: 0342529111, customer 19, minhduc@gmail.com..."
+                        value={customerSearch}
+                        onChange={(event) => setCustomerSearch(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-3xl border border-primary/10 bg-primary/5 p-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          Khách hàng
+                        </div>
+                        <div className="mt-3 text-3xl font-semibold text-primary">{manageableCustomers.length}</div>
+                        <div className="mt-2 text-sm text-zinc-500">Số customer truth đang hoạt động trong hệ thống.</div>
+                      </div>
+                      <div className="rounded-3xl border border-primary/10 bg-white p-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          Pro đang hoạt động
+                        </div>
+                        <div className="mt-3 text-3xl font-semibold text-primary">
+                          {manageableCustomers.filter((customer) => getAdminCustomerAccessTarget(customer) === "pro").length}
+                        </div>
+                        <div className="mt-2 text-sm text-zinc-500">Bao gồm cả Pro thủ công và lifetime legacy chưa được chuyển đổi.</div>
+                      </div>
+                      <div className="rounded-3xl border border-accent/20 bg-accent/10 p-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          Chờ xác thực
+                        </div>
+                        <div className="mt-3 text-3xl font-semibold text-accent">
+                          {manageableCustomers.filter((customer) => customer.access_state === "pending_verification").length}
+                        </div>
+                        <div className="mt-2 text-sm text-zinc-500">
+                          Các customer đã tạo nhưng chưa hoàn tất phone verification hoặc chưa có linked state đầy đủ.
+                        </div>
+                      </div>
+                      <div className="rounded-3xl border border-accent/20 bg-white p-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                          Bị chặn
+                        </div>
+                        <div className="mt-3 text-3xl font-semibold text-accent">
+                          {manageableCustomers.filter((customer) => getAdminCustomerAccessTarget(customer) === "banned").length}
+                        </div>
+                        <div className="mt-2 text-sm text-zinc-500">
+                          Những customer đang ở trạng thái blocked và sẽ không truy cập được portal hoặc chat.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <AdminCustomerAccessPanel
                   customers={filteredCustomers}
                   search={customerSearch}
                   onSearchChange={setCustomerSearch}
-                  planFilter={planFilter}
-                  onPlanFilterChange={setPlanFilter}
-                  statusFilter={statusFilter}
-                  onStatusFilterChange={setStatusFilter}
-                  onOpenSupport={handleOpenCustomerSupport}
-                  onSetFree={handleSetCustomerFree}
-                  onGrantPro={handleGrantCustomerPro}
-                  onGrantLifetime={handleGrantCustomerLifetime}
-                  canFinance={canFinance}
-                />
-                <ChannelsPanel
-                  channels={filteredChannels}
-                  linkReviews={linkReviews}
-                  filter={channelFilter}
-                  onFilterChange={setChannelFilter}
-                  targetCustomerId={channelLinkTarget}
-                  onTargetCustomerIdChange={setChannelLinkTarget}
-                  onLink={handleLinkChannel}
-                  onUnlink={handleUnlinkChannel}
-                  canSupport={canSupport}
+                  accessFilter={accessFilter}
+                  onAccessFilterChange={setAccessFilter}
+                  customerEmailsById={customerEmailsById}
+                  onSaveAccessState={handleSaveCustomerAccessState}
+                  onRemoveUser={handleSoftDeleteCustomer}
+                  canManageAccess={canFinance}
                 />
               </div>
             ) : null}
@@ -1191,7 +1361,13 @@ export default function Admin() {
                   onSaveMember={handleSaveMember}
                   onToggleMemberActive={handleToggleMemberActive}
                   onSetRole={handleSetRole}
-                  canManageMembers={isOwner}
+                  portalSiteSettings={portalSiteSettings}
+                  onPortalSiteSettingsChange={(patch) =>
+                    setPortalSiteSettings((prev) => ({ ...prev, ...patch }))
+                  }
+                  onSavePortalSiteSettings={handleSavePortalSiteSettings}
+                  canManagePortalSettings={isAdmin}
+                  canManageMembers={isAdmin}
                   skuOptions={SKU_OPTIONS}
                 />
               </div>
