@@ -5,7 +5,7 @@ import { CreditCard, MessagesSquare } from "lucide-react";
 
 export const TrustStrip = () => {
   return (
-    <section className="relative z-10 -mt-8 pb-4">
+    <section className="relative z-10 mt-12 lg:mt-24 pb-4">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid gap-3 md:grid-cols-2">
 

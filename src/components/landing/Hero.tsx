@@ -187,13 +187,21 @@ export const Hero = () => {
                 style={{ filter: "drop-shadow(0 0 30px hsl(var(--primary) / 0.35))" }}
               />
 
-              <div className="absolute -left-8 top-6 min-w-[178px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 mt-8">
+              <motion.div 
+                className="absolute -left-8 top-6 min-w-[178px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80 mt-8"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Nutrition hôm nay</p>
                 <p className="mt-1 text-xl font-bold leading-tight text-foreground">1.420 / 2.471 kcal</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">Protein 96g • Carb 130g • Fat 42g</p>
-              </div>
+              </motion.div>
 
-              <div className="absolute -right-8 -bottom-4 min-w-[196px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+              <motion.div 
+                className="absolute -right-8 -bottom-4 min-w-[196px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-500">Tiến độ</p>
                 <p className="mt-1 text-xs font-medium text-foreground">
                   TDEE 2471 • Đã nạp <span className="font-bold text-primary">1.730</span>
@@ -201,15 +209,19 @@ export const Hero = () => {
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   🏃 Chạy bộ: <span className="font-semibold text-foreground">352 kcal</span>
                 </p>
-              </div>
+              </motion.div>
 
-              <div className="absolute -right-8 md:-right-16 lg:-right-24 top-1/2 -translate-y-1/2 min-w-[168px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
+              <motion.div 
+                className="absolute -right-8 md:-right-16 lg:-right-24 top-[32%] min-w-[168px] rounded-2xl border border-white/40 bg-white/90 px-4 py-3 shadow-lg backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80"
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 5.0, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600">Gym Mode</p>
                 <p className="mt-1 text-sm font-bold text-foreground">
                   <span className="text-emerald-500">●</span> ON
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">Coach chuyên sâu cho buổi tập hôm nay</p>
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
