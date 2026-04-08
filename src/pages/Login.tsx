@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, Smartphone, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2, MessageCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,26 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/contexts/AuthContext";
 import { portalStartPhoneAuth, portalVerifyPhoneOtp } from "@/lib/portalApi";
-import { SITE_CONFIG, getPrimaryChannelHref } from "@/lib/siteConfig";
+import { SITE_CONFIG } from "@/lib/siteConfig";
+
+function normalizeNextPath(value: string | null): string {
+  const next = String(value || "").trim();
+  if (!next.startsWith("/")) {
+    return SITE_CONFIG.dashboardPath;
+  }
+  if (next.startsWith("//") || next.startsWith("/api/")) {
+    return SITE_CONFIG.dashboardPath;
+  }
+  return next;
+}
 
 function describeAuthIssue(error: unknown): string | null {
   const message = String((error as Error)?.message || error || "").toLowerCase();
-  if (message.includes("unsupported phone provider")) {
-    return "Hệ thống gửi mã xác nhận đang bảo trì. Bạn có thể thử lại sau hoặc liên hệ hỗ trợ để được xử lý thủ công.";
+  if (message.includes("otp_cooldown_active")) {
+    return "Bạn vừa yêu cầu mã quá nhanh. Hãy chờ một chút rồi thử lại.";
+  }
+  if (message.includes("zalo_otp_send_failed") || message.includes("otp_delivery_failed")) {
+    return "Không thể gửi mã qua Zalo lúc này. Hãy thử lại sau ít phút hoặc liên hệ hỗ trợ.";
   }
   return null;
 }
@@ -21,33 +35,52 @@ function describeAuthIssue(error: unknown): string | null {
 export default function Login() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [phoneInput, setPhoneInput] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpValue, setOtpValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [authIssue, setAuthIssue] = useState<string | null>(null);
+  const [phoneHelper, setPhoneHelper] = useState(
+    "Nhập số điện thoại đã dùng Zalo để nhận OTP, xác thực account và mở trial 7 ngày.",
+  );
+
+  const nextPath = useMemo(
+    () => normalizeNextPath(searchParams.get("next")),
+    [searchParams],
+  );
 
   useEffect(() => {
     if (user) {
-      navigate(SITE_CONFIG.dashboardPath, { replace: true });
+      navigate(nextPath, { replace: true });
     }
-  }, [navigate, user]);
+  }, [navigate, nextPath, user]);
 
   async function handleSendOtp(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
     setAuthIssue(null);
+
     try {
       const result = await portalStartPhoneAuth(phoneInput);
       setPhoneInput(result.phoneE164);
+      setPhoneHelper(result.helperText);
+
+      if (result.status === "fallback_required") {
+        setOtpSent(false);
+        setAuthIssue(result.helperText);
+        toast.error(result.helperText);
+        return;
+      }
+
       setOtpSent(true);
-      toast.success("Mã OTP đã được gửi tới số điện thoại của bạn.");
+      toast.success("Mã xác thực đã được gửi qua Zalo tới số điện thoại của bạn.");
     } catch (error) {
       const nextIssue = describeAuthIssue(error);
       if (nextIssue) {
         setAuthIssue(nextIssue);
       }
-      toast.error(String((error as Error)?.message || "Không thể gửi OTP lúc này."));
+      toast.error(String((error as Error)?.message || "Không thể gửi mã xác thực lúc này."));
     } finally {
       setLoading(false);
     }
@@ -56,14 +89,15 @@ export default function Login() {
   async function handleVerifyOtp(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
+
     try {
       const result = await portalVerifyPhoneOtp(phoneInput, otpValue);
       if (result.accessState === "trialing") {
-        toast.success("Xác thực thành công. Dùng thử 7 ngày đã bắt đầu cho tài khoản của bạn.");
+        toast.success("Xác thực thành công. Trial 7 ngày đã được kích hoạt cho tài khoản của bạn.");
       } else {
         toast.success("Xác thực số điện thoại thành công.");
       }
-      navigate(SITE_CONFIG.dashboardPath, { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (error) {
       toast.error(String((error as Error)?.message || "OTP chưa đúng hoặc đã hết hạn."));
     } finally {
@@ -76,41 +110,54 @@ export default function Login() {
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_420px]">
         <div className="rounded-[32px] border border-primary/10 bg-white/82 p-8 shadow-md backdrop-blur">
           <div className="mb-4 inline-flex items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-            Đăng nhập tài khoản
+            Xác thực tài khoản
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-foreground">
-            Xác thực số điện thoại để mở trial và dùng CaloTrack trên mọi kênh.
+            Xác thực số điện thoại qua Zalo để mở trial và dùng chung trên portal, Zalo, Telegram.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Số điện thoại đã verify là định danh duy nhất của tài khoản. Sau bước này, hệ thống sẽ tạo hoặc liên kết customer truth, bật dùng thử 7 ngày và đồng bộ quyền dùng trên Zalo, Telegram và portal.
+            Public onboarding của CaloTrack là phone-first. Sau khi OTP thành công, hệ thống sẽ tạo hoặc
+            nối customer truth, mở trial 7 ngày và giữ entitlement đồng bộ giữa portal, Zalo, Telegram.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Miễn phí 7 ngày — không cần thẻ</span>
-            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Kích hoạt ngay sau OTP</span>
-            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">✓ Dùng chung Zalo, Telegram &amp; Portal</span>
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+              OTP gửi qua Zalo
+            </span>
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+              Trial 7 ngày chỉ mở sau khi verify
+            </span>
+            <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary">
+              Một customer truth dùng chung cho web và chat
+            </span>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-primary/10 bg-primary/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Không cần app</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">Chat là xong</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Bước 1
+              </div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Nhập số điện thoại</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Dùng Zalo hoặc Telegram bạn đã có sẵn — không cần tải thêm app nào.
+                Dùng đúng số điện thoại đã nhận tin từ OA CaloTrack trên Zalo.
               </p>
             </div>
             <div className="rounded-3xl border border-primary/10 bg-white p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Dùng thử ngay</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">7 ngày Free sau OTP</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Bước 2
+              </div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Nhận OTP trên Zalo</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Verify xong là trial bắt đầu ngay. Không cần thẻ, không cần thanh toán trước.
+                Hệ thống gửi mã xác thực tới đúng OA để giảm lệch entitlement giữa các kênh.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/15 bg-accent/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Đồng bộ đa kênh</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">1 SĐT — Dùng mọi nơi</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                Bước 3
+              </div>
+              <div className="mt-2 text-lg font-semibold text-foreground">Mở trial và tiếp tục</div>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Số điện thoại là định danh duy nhất. Quyền lợi đồng bộ chung cho Zalo, Telegram và portal.
+                Verify xong là có thể quay lại checkout, vào dashboard hoặc mở chat ngay.
               </p>
             </div>
           </div>
@@ -118,9 +165,10 @@ export default function Login() {
 
         <div className="rounded-[32px] border border-primary/10 bg-white/90 p-8 shadow-md backdrop-blur">
           <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng OTP</h2>
+            <h2 className="text-2xl font-semibold text-foreground">Đăng nhập bằng số điện thoại</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Nhập số điện thoại của bạn, nhận mã OTP qua SMS và xác thực để mở portal cũng như quyền dùng bot.
+              Nhập số điện thoại để nhận OTP qua Zalo. Sau khi verify, hệ thống sẽ tự mở trial 7 ngày
+              và đưa bạn về đúng bước đang làm.
             </p>
           </div>
 
@@ -136,19 +184,25 @@ export default function Login() {
                   onChange={(event) => setPhoneInput(event.target.value)}
                   required
                 />
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Nếu bạn đang đi từ checkout, gói đã chọn sẽ được giữ lại sau khi OTP thành công.
+                </p>
               </div>
+
               <Button type="submit" className="w-full" disabled={loading || !phoneInput.trim()}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Smartphone className="mr-2 h-4 w-4" />}
-                Gửi mã OTP
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Smartphone className="mr-2 h-4 w-4" />
+                )}
+                Gửi mã qua Zalo
               </Button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm text-muted-foreground">
-                OTP đã được gửi tới <span className="font-semibold text-foreground">{phoneInput}</span>.
-                <div className="mt-1 text-xs text-muted-foreground/90">
-                  Mã có hiệu lực trong 3 phút. Nếu chưa nhận được SMS, hãy chờ một chút rồi gửi lại.
-                </div>
+                Mã xác thực đã được gửi qua Zalo tới{" "}
+                <span className="font-semibold text-foreground">{phoneInput}</span>.
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Nhập mã xác thực</label>
@@ -170,45 +224,49 @@ export default function Login() {
               </div>
               <div className="flex gap-3">
                 <Button type="submit" className="flex-1" disabled={loading || otpValue.length < 6}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Xác thực và vào portal
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Smartphone className="mr-2 h-4 w-4" />
+                  )}
+                  Xác thực và tiếp tục
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setOtpSent(false)} disabled={loading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpValue("");
+                  }}
+                >
                   Đổi số
+                </Button>
+              </div>
+              
+              <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-primary/10 bg-white p-4 text-center">
+                <p className="text-sm font-medium text-foreground">Bạn chưa nhận được mã?</p>
+                <p className="text-xs text-muted-foreground">
+                  Mở ứng dụng Zalo của bạn và kiểm tra tin nhắn từ OA CaloTrack để lấy mã OTP nhé.
+                </p>
+                <Button variant="secondary" asChild className="mt-2 w-full gap-2">
+                  <a href={SITE_CONFIG.zaloOaUrl} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="h-4 w-4 text-[#0068FF]" />
+                    Truy cập Zalo
+                  </a>
                 </Button>
               </div>
             </form>
           )}
 
-          {authIssue ? (
-            <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 p-4 text-sm leading-6 text-muted-foreground">
-              {authIssue}
+          <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
+            {authIssue || phoneHelper}
+          </div>
+
+          {SITE_CONFIG.publicEmailDevPortalEnabled ? (
+            <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
+              Internal-only fallback đang bật. Public flow vẫn phải đi qua số điện thoại và OTP trên Zalo.
             </div>
           ) : null}
-
-          <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground">
-            Trước khi dùng CaloTrack trên Zalo hoặc Telegram, bạn bắt buộc phải xác thực số điện thoại. Khi OTP đúng, hệ thống sẽ tạo customer truth và mở trial 7 ngày.
-          </div>
-
-          <div className="mt-6 grid gap-3">
-            <Button variant="outline" onClick={() => navigate(`${SITE_CONFIG.checkoutPath}?plan=pro`)}>
-              Mua gói và sang activation ngay
-            </Button>
-            <a
-              href={getPrimaryChannelHref()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-center text-sm font-medium text-primary hover:underline"
-            >
-              Mở CaloTrack trên Zalo
-            </a>
-            <a
-              href={SITE_CONFIG.adminLoginPath}
-              className="text-center text-sm font-medium text-zinc-600 hover:text-foreground"
-            >
-              Admin login
-            </a>
-          </div>
         </div>
       </div>
     </div>
