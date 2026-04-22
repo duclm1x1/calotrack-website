@@ -12,7 +12,7 @@ export const PLANS = {
     features: [
       `${getFreeImageDailyLimit()} lượt ảnh mỗi ngày`,
       `${getFreeDailyLimit()} lượt tin nhắn mỗi ngày`,
-      "Phù hợp để thử flow chat trước khi nâng cấp",
+      "Giữ mở log món, dashboard, water, weight và chat cơ bản",
     ],
     badge: "Dùng thử",
     highlighted: false,

@@ -47,7 +47,7 @@ const commandGroups = [
     color: "from-slate-700 to-slate-900",
     commands: [
       { cmd: "/gym", desc: "xem trạng thái gym mode" },
-      { cmd: "/gym on", desc: "bật specialist mode 3 giờ" },
+      { cmd: "/gym on", desc: "bật Gym Coach 3 giờ" },
       { cmd: "/gym status", desc: "xem thời gian còn lại" },
       { cmd: "/gym plan 45", desc: "nhận buổi tập gợi ý" },
       { cmd: "/gym finish | /gym off", desc: "tắt mode ngay" },

@@ -28,7 +28,7 @@ const gymFeatures = [
 ];
 
 const gymCommands = [
-  { cmd: "/gym on", desc: "Bật specialist mode 3 giờ" },
+  { cmd: "/gym on", desc: "Bật Gym Coach 3 giờ" },
   { cmd: "/gym plan 45", desc: "Nhận buổi tập gợi ý 45 phút" },
   { cmd: "/gym status", desc: "Xem thời gian còn lại" },
   { cmd: "/gym off", desc: "Tắt mode ngay khi xong" },
