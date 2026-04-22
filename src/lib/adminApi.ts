@@ -19,6 +19,8 @@ type MaybeError =
   | undefined;
 
 export type AdminRole = "owner" | "admin" | "user";
+export type AdminCustomerAccessTarget = "free" | "pro" | "banned";
+export type AdminProBillingSku = Extract<BillingSku, "monthly" | "quarterly_promo" | "four_months" | "yearly">;
 export type AdminSection =
   | "overview"
   | "users"
@@ -110,6 +112,19 @@ export type AdminAccessState = {
   reason: string | null;
 };
 
+export type AdminPortalSiteSettings = {
+  siteUrl: string;
+  telegramBotUrl: string;
+  zaloOaUrl: string;
+  supportEmail: string;
+  productStageLabel: string;
+  bankName: string;
+  bankCode: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  updatedAt: string | null;
+};
+
 export type AdminCustomer = {
   id: number;
   phone_e164: string | null;
@@ -119,6 +134,10 @@ export type AdminCustomer = {
   premium_until: string | null;
   entitlement_source: string | null;
   status: string;
+  access_state: string | null;
+  is_banned: boolean;
+  deleted_at: string | null;
+  legacy_lifetime: boolean;
   quota_used_today: number;
   channel_count: number;
   linked_portal_count: number;
@@ -140,6 +159,37 @@ export type AdminChannelAccount = {
   customer_plan: string | null;
   auth_email: string | null;
   last_activity: string | null;
+};
+
+export type AdminAuthIdentity = {
+  auth_user_id: string;
+  email: string | null;
+  email_confirmed_at: string | null;
+  created_at: string | null;
+  last_sign_in_at: string | null;
+  pending_phone_e164: string | null;
+  customer_id: number | null;
+  link_status: string | null;
+  web_channel_id: number | null;
+  access_state: string | null;
+  trial_ends_at: string | null;
+};
+
+export type AdminIdentityInboxRow = {
+  source_type: string;
+  auth_user_id: string | null;
+  email: string | null;
+  compat_user_id: number | null;
+  channel_account_id: number | null;
+  customer_id: number | null;
+  channel: string | null;
+  platform_user_id: string | null;
+  platform_chat_id: string | null;
+  display_name: string | null;
+  phone_claimed: string | null;
+  link_status: string | null;
+  detail: string | null;
+  created_at: string | null;
 };
 
 export type AdminLinkReview = {
@@ -407,6 +457,87 @@ async function callRpcWithFallback<T>(
   }
 }
 
+async function getSessionAccessToken(): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const accessToken = session?.access_token;
+  if (!accessToken) {
+    throw new Error("auth_required");
+  }
+
+  return accessToken;
+}
+
+async function callAdminRoute<T>(
+  path: string,
+  init?: {
+    method?: "GET" | "POST";
+    body?: Record<string, unknown>;
+  },
+): Promise<T> {
+  const accessToken = await getSessionAccessToken();
+  const response = await fetch(path, {
+    method: init?.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | { ok?: boolean; error?: string; message?: string; data?: T }
+    | null;
+
+  if (!response.ok || payload?.ok === false) {
+    const rawMessage = String(payload?.message || payload?.error || "").trim();
+    if (rawMessage) {
+      throw new Error(rawMessage);
+    }
+    if (response.status === 404) {
+      if (path === "/api/admin-customers") {
+        throw new Error("Admin customer action route chưa sẵn sàng.");
+      }
+      throw new Error("Admin route chưa sẵn sàng trên production.");
+    }
+    throw new Error(`admin_route_failed_${response.status}`);
+  }
+
+  return (payload?.data as T) ?? (payload as T);
+}
+
+async function fetchAdminMembersBundle(): Promise<{
+  members: Record<string, unknown>[];
+  audit_logs: Record<string, unknown>[];
+}> {
+  return callAdminRoute<{
+    members: Record<string, unknown>[];
+    audit_logs: Record<string, unknown>[];
+  }>("/api/admin-members");
+}
+
+async function fetchAdminIdentitiesBundle(): Promise<{
+  auth_identities: Record<string, unknown>[];
+  identity_inbox: Record<string, unknown>[];
+}> {
+  return callAdminRoute<{
+    auth_identities: Record<string, unknown>[];
+    identity_inbox: Record<string, unknown>[];
+  }>("/api/admin-identities");
+}
+
+async function fetchAdminPortalSettingsBundle(): Promise<{
+  settings: Record<string, unknown>;
+  updatedAt: string | null;
+}> {
+  return callAdminRoute<{
+    settings: Record<string, unknown>;
+    updatedAt: string | null;
+  }>("/api/admin-portal-settings");
+}
+
 function normalizeAdminRole(value: unknown): AdminRole | null {
   if (value === "owner" || value === "admin" || value === "user") {
     return value;
@@ -511,15 +642,25 @@ function toSystemStats(row: Record<string, unknown>): SystemStats {
 }
 
 function toAdminCustomer(row: Record<string, unknown>): AdminCustomer {
+  const status = String(row.status ?? "active");
+  const isBanned =
+    row.is_banned === true ||
+    status === "blocked" ||
+    String(row.access_state ?? "").toLowerCase() === "blocked";
+  const plan = ((row.plan as string | null) ?? "free") as AdminCustomer["plan"];
   return {
     id: Number(row.id),
     phone_e164: (row.phone_e164 as string | null) ?? null,
     phone_display: (row.phone_display as string | null) ?? null,
     full_name: (row.full_name as string | null) ?? null,
-    plan: ((row.plan as string | null) ?? "free") as AdminCustomer["plan"],
+    plan,
     premium_until: (row.premium_until as string | null) ?? null,
     entitlement_source: (row.entitlement_source as string | null) ?? null,
-    status: String(row.status ?? "active"),
+    status,
+    access_state: (row.access_state as string | null) ?? null,
+    is_banned: isBanned,
+    deleted_at: (row.deleted_at as string | null) ?? null,
+    legacy_lifetime: row.legacy_lifetime === true || plan === "lifetime",
     quota_used_today: Number(row.quota_used_today ?? 0),
     channel_count: Number(row.channel_count ?? 0),
     linked_portal_count: Number(row.linked_portal_count ?? 0),
@@ -543,6 +684,41 @@ function toAdminChannelAccount(row: Record<string, unknown>): AdminChannelAccoun
     customer_plan: (row.customer_plan as string | null) ?? null,
     auth_email: (row.auth_email as string | null) ?? null,
     last_activity: (row.last_activity as string | null) ?? null,
+  };
+}
+
+function toAdminAuthIdentity(row: Record<string, unknown>): AdminAuthIdentity {
+  return {
+    auth_user_id: String(row.auth_user_id ?? ""),
+    email: (row.email as string | null) ?? null,
+    email_confirmed_at: (row.email_confirmed_at as string | null) ?? null,
+    created_at: (row.created_at as string | null) ?? null,
+    last_sign_in_at: (row.last_sign_in_at as string | null) ?? null,
+    pending_phone_e164: (row.pending_phone_e164 as string | null) ?? null,
+    customer_id: row.customer_id == null ? null : Number(row.customer_id),
+    link_status: (row.link_status as string | null) ?? null,
+    web_channel_id: row.web_channel_id == null ? null : Number(row.web_channel_id),
+    access_state: (row.access_state as string | null) ?? null,
+    trial_ends_at: (row.trial_ends_at as string | null) ?? null,
+  };
+}
+
+function toAdminIdentityInboxRow(row: Record<string, unknown>): AdminIdentityInboxRow {
+  return {
+    source_type: String(row.source_type ?? "unknown"),
+    auth_user_id: (row.auth_user_id as string | null) ?? null,
+    email: (row.email as string | null) ?? null,
+    compat_user_id: row.compat_user_id == null ? null : Number(row.compat_user_id),
+    channel_account_id: row.channel_account_id == null ? null : Number(row.channel_account_id),
+    customer_id: row.customer_id == null ? null : Number(row.customer_id),
+    channel: (row.channel as string | null) ?? null,
+    platform_user_id: (row.platform_user_id as string | null) ?? null,
+    platform_chat_id: (row.platform_chat_id as string | null) ?? null,
+    display_name: (row.display_name as string | null) ?? null,
+    phone_claimed: (row.phone_claimed as string | null) ?? null,
+    link_status: (row.link_status as string | null) ?? null,
+    detail: (row.detail as string | null) ?? null,
+    created_at: (row.created_at as string | null) ?? null,
   };
 }
 
@@ -654,6 +830,24 @@ function toSupportNote(row: Record<string, unknown>): SupportNote {
   };
 }
 
+function toAdminPortalSiteSettings(
+  row: Record<string, unknown>,
+  updatedAt?: string | null,
+): AdminPortalSiteSettings {
+  return {
+    siteUrl: String(row.siteUrl ?? ""),
+    telegramBotUrl: String(row.telegramBotUrl ?? ""),
+    zaloOaUrl: String(row.zaloOaUrl ?? ""),
+    supportEmail: String(row.supportEmail ?? ""),
+    productStageLabel: String(row.productStageLabel ?? ""),
+    bankName: String(row.bankName ?? ""),
+    bankCode: String(row.bankCode ?? ""),
+    bankAccountNumber: String(row.bankAccountNumber ?? ""),
+    bankAccountName: String(row.bankAccountName ?? ""),
+    updatedAt: updatedAt ?? null,
+  };
+}
+
 function emptyAccessState(reason: string | null): AdminAccessState {
   return {
     isAuthenticated: false,
@@ -667,7 +861,65 @@ function emptyAccessState(reason: string | null): AdminAccessState {
   };
 }
 
+async function deriveAdminAccessStateFromRoute(): Promise<AdminAccessState> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return emptyAccessState("auth_required");
+  }
+
+  const bundle = await fetchAdminMembersBundle();
+  const matchedMember = (bundle.members ?? []).find((row) => {
+    const authUserId = String((row as Record<string, unknown>).auth_user_id ?? "");
+    const email = String((row as Record<string, unknown>).email ?? "").toLowerCase();
+    return authUserId === user.id || (user.email ? email === user.email.toLowerCase() : false);
+  });
+
+  if (!matchedMember) {
+    return {
+      isAuthenticated: true,
+      linkedUserId: null,
+      isAdmin: false,
+      isOwner: false,
+      roles: [],
+      email: user.email ?? null,
+      checkedAt: new Date().toISOString(),
+      reason: "admin_member_missing",
+    };
+  }
+
+  const member = toAdminMember(matchedMember as Record<string, unknown>);
+  const roles = member.roles.length
+    ? member.roles
+    : member.is_owner
+      ? ["owner"]
+      : member.is_active
+        ? ["admin"]
+        : [];
+  const isOwner = member.is_owner === true || roles.includes("owner");
+  const isAdmin = member.is_active && (isOwner || roles.includes("admin"));
+
+  return {
+    isAuthenticated: true,
+    linkedUserId: member.linked_user_id,
+    isAdmin,
+    isOwner,
+    roles,
+    email: member.email ?? user.email ?? null,
+    checkedAt: new Date().toISOString(),
+    reason: isAdmin ? null : "admin_inactive",
+  };
+}
+
 export async function getAdminAccessState(): Promise<AdminAccessState> {
+  try {
+    return await deriveAdminAccessStateFromRoute();
+  } catch {
+    // Fall back to legacy RPCs while the new routes are still rolling out.
+  }
+
   try {
     const data = await callRpc<Record<string, unknown>>("admin_get_access_state");
     const isOwner = data.is_owner === true;
@@ -739,6 +991,10 @@ export async function fetchAdminCustomers(): Promise<AdminCustomer[]> {
         premium_until: user.premium_until,
         entitlement_source: user.plan === "free" ? "compat_free" : "compat_user",
         status: user.is_banned ? "blocked" : "active",
+        access_state: user.is_banned ? "blocked" : user.plan === "free" ? "free_limited" : "active_paid",
+        is_banned: user.is_banned,
+        deleted_at: null,
+        legacy_lifetime: user.plan === "lifetime",
         quota_used_today: user.daily_ai_usage_count,
         channel_count: 1,
         linked_portal_count: user.auth_user_id ? 1 : 0,
@@ -773,6 +1029,32 @@ export async function fetchAdminChannelAccounts(): Promise<AdminChannelAccount[]
     },
   );
   return (data ?? []).map(toAdminChannelAccount);
+}
+
+export async function fetchAdminAuthIdentities(): Promise<AdminAuthIdentity[]> {
+  try {
+    const bundle = await fetchAdminIdentitiesBundle();
+    return (bundle.auth_identities ?? []).map(toAdminAuthIdentity);
+  } catch {
+    const data = await callRpcWithFallback<Record<string, unknown>[]>(
+      "admin_list_auth_identities",
+      () => [],
+    );
+    return (data ?? []).map(toAdminAuthIdentity);
+  }
+}
+
+export async function fetchAdminIdentityInbox(): Promise<AdminIdentityInboxRow[]> {
+  try {
+    const bundle = await fetchAdminIdentitiesBundle();
+    return (bundle.identity_inbox ?? []).map(toAdminIdentityInboxRow);
+  } catch {
+    const data = await callRpcWithFallback<Record<string, unknown>[]>(
+      "admin_list_identity_inbox",
+      () => [],
+    );
+    return (data ?? []).map(toAdminIdentityInboxRow);
+  }
 }
 
 export async function fetchAdminLinkReviews(): Promise<AdminLinkReview[]> {
@@ -1017,7 +1299,9 @@ export async function fetchAdminSystemHealth(): Promise<AdminSystemHealth> {
         schemaMissing: schema.missing,
         pendingPayments: payments.filter((payment) => payment.status === "pending").length,
         duplicateLikePayments: payments.filter(
-          (payment) => payment.transaction_code && (transactionCodeCounts.get(payment.transaction_code) ?? 0) > 1,
+          (payment) =>
+            payment.transaction_code &&
+            (transactionCodeCounts.get(payment.transaction_code) ?? 0) > 1,
         ).length,
         failedPaymentEvents: payments.filter((payment) => payment.status === "failed").length,
         catalogCandidatesPending: candidates.length,
@@ -1053,36 +1337,68 @@ export async function fetchAdminSystemHealth(): Promise<AdminSystemHealth> {
 }
 
 export async function fetchAdminAuditLog(limit = 100): Promise<AdminAuditLogRow[]> {
-  const data = await callRpcWithFallback<Record<string, unknown>[]>("admin_list_audit_log", () => [], {
-    p_limit: limit,
-  });
-  return (data ?? []).map(toAdminAuditLog);
+  try {
+    const bundle = await fetchAdminMembersBundle();
+    return (bundle.audit_logs ?? []).slice(0, limit).map(toAdminAuditLog);
+  } catch {
+    const data = await callRpcWithFallback<Record<string, unknown>[]>("admin_list_audit_log", () => [], {
+      p_limit: limit,
+    });
+    return (data ?? []).map(toAdminAuditLog);
+  }
 }
 
 export async function fetchAdminMembers(): Promise<AdminMember[]> {
-  const access = await getAdminAccessState();
-  const data = await callRpcWithFallback<Record<string, unknown>[]>(
-    "admin_list_members",
-    () =>
-      access.isAdmin
-        ? [
-            {
-              id: 0,
-              auth_user_id: null,
-              linked_user_id: access.linkedUserId,
-              display_name: access.email ?? "Bootstrap owner",
-              email: access.email,
-              username: null,
-              is_owner: access.isOwner,
-              is_active: true,
-              roles: access.roles.length ? access.roles : [access.isOwner ? "owner" : "admin"],
-              created_at: access.checkedAt,
-              updated_at: access.checkedAt,
-            },
-          ]
-        : [],
-  );
-  return (data ?? []).map(toAdminMember);
+  try {
+    const bundle = await fetchAdminMembersBundle();
+    return (bundle.members ?? []).map(toAdminMember);
+  } catch {
+    const access = await getAdminAccessState();
+    const data = await callRpcWithFallback<Record<string, unknown>[]>(
+      "admin_list_members",
+      () =>
+        access.isAdmin
+          ? [
+              {
+                id: 0,
+                auth_user_id: null,
+                linked_user_id: access.linkedUserId,
+                display_name: access.email ?? "Bootstrap owner",
+                email: access.email,
+                username: null,
+                is_owner: access.isOwner,
+                is_active: true,
+                roles: access.roles.length ? access.roles : [access.isOwner ? "owner" : "admin"],
+                created_at: access.checkedAt,
+                updated_at: access.checkedAt,
+              },
+            ]
+          : [],
+    );
+    return (data ?? []).map(toAdminMember);
+  }
+}
+
+export async function fetchAdminPortalSiteSettings(): Promise<AdminPortalSiteSettings> {
+  const bundle = await fetchAdminPortalSettingsBundle();
+  return toAdminPortalSiteSettings(bundle.settings ?? {}, bundle.updatedAt ?? null);
+}
+
+export async function saveAdminPortalSiteSettings(
+  settings: Omit<AdminPortalSiteSettings, "updatedAt">,
+): Promise<AdminPortalSiteSettings> {
+  const data = await callAdminRoute<{
+    settings: Record<string, unknown>;
+    updatedAt: string | null;
+  }>("/api/admin-portal-settings", {
+    method: "POST",
+    body: {
+      action: "save_public_portal_settings",
+      settings,
+    },
+  });
+
+  return toAdminPortalSiteSettings(data.settings ?? {}, data.updatedAt ?? null);
 }
 
 export async function fetchAdminCustomer360(customerId: number): Promise<AdminCustomer360> {
@@ -1154,13 +1470,17 @@ export async function upsertAdminMember(input: {
   displayName?: string | null;
   isOwner?: boolean;
 }): Promise<number> {
-  const id = await callRpc<number>("admin_upsert_member", {
-    p_linked_user_id: input.linkedUserId,
-    p_auth_user_id: input.authUserId ?? null,
-    p_display_name: input.displayName ?? null,
-    p_is_owner: input.isOwner ?? false,
+  const data = await callAdminRoute<{ id: number }>("/api/admin-members", {
+    method: "POST",
+    body: {
+      action: "upsert_member",
+      linked_user_id: input.linkedUserId,
+      auth_user_id: input.authUserId ?? null,
+      display_name: input.displayName ?? null,
+      is_owner: input.isOwner ?? false,
+    },
   });
-  return Number(id);
+  return Number(data.id);
 }
 
 export async function setAdminMemberRoles(memberId: number, roles: AdminRole[]): Promise<void> {
@@ -1177,17 +1497,25 @@ export async function setAdminMemberAccess(
   role: AdminRole,
   isActive?: boolean,
 ): Promise<void> {
-  await callRpc("admin_set_member_access", {
-    p_member_id: memberId,
-    p_role: role,
-    p_is_active: isActive ?? null,
+  await callAdminRoute("/api/admin-members", {
+    method: "POST",
+    body: {
+      action: "set_member_access",
+      member_id: memberId,
+      role,
+      is_active: isActive ?? null,
+    },
   });
 }
 
 export async function toggleAdminMemberActive(memberId: number, isActive: boolean): Promise<void> {
-  await callRpc("admin_toggle_member_active", {
-    p_member_id: memberId,
-    p_is_active: isActive,
+  await callAdminRoute("/api/admin-members", {
+    method: "POST",
+    body: {
+      action: "toggle_member_active",
+      member_id: memberId,
+      is_active: isActive,
+    },
   });
 }
 
@@ -1326,6 +1654,45 @@ export async function setCustomerEntitlement(
   });
 }
 
+export function getAdminCustomerAccessTarget(customer: AdminCustomer): AdminCustomerAccessTarget {
+  if (customer.is_banned || customer.status === "blocked" || customer.access_state === "blocked") {
+    return "banned";
+  }
+  if (customer.plan === "pro" || customer.plan === "lifetime") {
+    return "pro";
+  }
+  return "free";
+}
+
+export async function setCustomerAccessState(
+  customerId: number,
+  targetState: AdminCustomerAccessTarget,
+  billingSku: AdminProBillingSku | null,
+  note = "",
+): Promise<void> {
+  await callAdminRoute("/api/admin-customers", {
+    method: "POST",
+    body: {
+      action: "set_customer_access_state",
+      customer_id: customerId,
+      target_state: targetState,
+      billing_sku: billingSku,
+      note: note || null,
+    },
+  });
+}
+
+export async function softDeleteCustomer(customerId: number, note = ""): Promise<void> {
+  await callAdminRoute("/api/admin-customers", {
+    method: "POST",
+    body: {
+      action: "soft_delete_customer",
+      customer_id: customerId,
+      note: note || null,
+    },
+  });
+}
+
 export async function resetCustomerQuota(customerId: number): Promise<void> {
   await assertSaasSchemaReady();
   await callRpc("admin_reset_customer_quota", {
@@ -1347,6 +1714,38 @@ export async function linkPortalAuth(customerId: number, authUserId: string, ema
     p_customer_id: customerId,
     p_auth_user_id: authUserId,
     p_email: email || null,
+  });
+}
+
+export async function provisionCustomerFromAuthUser(authUserId: string): Promise<number> {
+  const data = await callAdminRoute<Record<string, unknown>>("/api/admin-identities", {
+    method: "POST",
+    body: {
+      action: "provision_customer_from_auth_user",
+      auth_user_id: authUserId,
+    },
+  });
+  return Number(data.customer_id ?? 0);
+}
+
+export async function syncCompatUserToCustomer(linkedUserId: number, customerId: number): Promise<void> {
+  await callAdminRoute("/api/admin-identities", {
+    method: "POST",
+    body: {
+      action: "sync_compat_user_to_customer",
+      linked_user_id: linkedUserId,
+      customer_id: customerId,
+    },
+  });
+}
+
+export async function resetPhoneOnboardingFixture(phoneInput: string): Promise<void> {
+  await callAdminRoute("/api/admin-identities", {
+    method: "POST",
+    body: {
+      action: "reset_phone_onboarding_fixture",
+      phone_input: phoneInput,
+    },
   });
 }
 
