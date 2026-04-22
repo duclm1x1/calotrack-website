@@ -1,10 +1,10 @@
-import { sendJson } from "../src/lib/server/adminServer.js";
+import { sendJson } from "../adminServer.js";
 import {
   readJsonBody,
   resolveDashboardAccess,
   saveBodyCompositionLog,
   type BodyCompositionInput,
-} from "../src/lib/server/dashboardSummaryServer.js";
+} from "../dashboardSummaryServer.js";
 
 function mapInput(body: Record<string, unknown>): BodyCompositionInput {
   const measurement =

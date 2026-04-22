@@ -1,14 +1,14 @@
 import {
   readBody,
   sendJson,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 import {
   bootstrapZaloOaToken,
   getZaloOaHealth,
   refreshZaloOaToken,
   requireZaloBrokerAccess,
   updateZaloOaBrowserbaseState,
-} from "../src/lib/server/zaloOaServer.js";
+} from "../zaloOaServer.js";
 
 function getMode(req: any) {
   const url = new URL(req.url || "/", "https://calotrack.local");

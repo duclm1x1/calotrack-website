@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { createServiceRoleClient, readBody, sendJson } from "../src/lib/server/adminServer.js";
+import { createServiceRoleClient, readBody, sendJson } from "../adminServer.js";
 import {
   buildAsciiOtpMessage,
   getOtpMaxAttempts,
@@ -10,8 +10,8 @@ import {
   maskOtpMessage,
   normalizeVietnamPhoneInput,
   randomOtp,
-} from "../src/lib/server/portalPhoneAuthServer.js";
-import { sendZaloTemplateMessage } from "../src/lib/server/zaloOaServer.js";
+} from "../portalPhoneAuthServer.js";
+import { sendZaloTemplateMessage } from "../zaloOaServer.js";
 
 type AnyRecord = Record<string, unknown>;
 

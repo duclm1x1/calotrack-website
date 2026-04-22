@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "../src/lib/server/adminServer.js";
+import { createServiceRoleClient } from "../adminServer.js";
 import {
   bootstrapZaloOaToken,
   consumeZaloOaOAuthSession,
@@ -6,7 +6,7 @@ import {
   getSiteBaseUrl,
   getZaloOaOAuthSession,
   updateZaloOaBrowserbaseState,
-} from "../src/lib/server/zaloOaServer.js";
+} from "../zaloOaServer.js";
 
 function escapeHtml(value: string) {
   return value

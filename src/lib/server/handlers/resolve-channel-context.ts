@@ -2,11 +2,18 @@ import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_SUPABASE_URL = process.env.VITE_SUPABASE_URL || "";
 const INTERNAL_KEY_HEADER = "x-calotrack-internal-key";
-const INTERNAL_KEY =
-  process.env.CHANNEL_CONTEXT_INTERNAL_KEY ||
-  "ctctx_b5d53fa9965845bc9f279d405715b454";
+
+function cleanEnv(value: unknown): string {
+  return String(value || "")
+    .replace(/\\r\\n/g, "")
+    .replace(/\\n/g, "")
+    .replace(/\r?\n/g, "")
+    .trim();
+}
+
+const INTERNAL_KEY = cleanEnv(process.env.CHANNEL_CONTEXT_INTERNAL_KEY) || "ctctx_b5d53fa9965845bc9f279d405715b454";
 const PORTAL_EMAIL_DEV_BYPASS =
-  String(process.env.PORTAL_EMAIL_DEV_BYPASS || "true").toLowerCase() !== "false";
+  String(process.env.PORTAL_EMAIL_DEV_BYPASS || "false").toLowerCase() === "true";
 
 type AnyRecord = Record<string, any>;
 
@@ -54,7 +61,7 @@ async function readBody(req: any): Promise<AnyRecord> {
 
 function safeString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  const text = String(value).trim();
+  const text = cleanEnv(value);
   return text ? text : null;
 }
 
@@ -149,13 +156,6 @@ function canUseChatFeatures(accessState: string, isPremium: boolean): boolean {
   return accessState === "trialing" || accessState === "free_limited" || accessState === "active_paid";
 }
 
-function hasActiveTrialWindow(value: unknown): boolean {
-  const iso = safeString(value);
-  if (!iso) return false;
-  const timestamp = Date.parse(iso);
-  return Number.isFinite(timestamp) ? timestamp > Date.now() : false;
-}
-
 function deriveEffectiveAccessState(params: {
   accessState: string;
   entitlementSource: string | null;
@@ -163,19 +163,15 @@ function deriveEffectiveAccessState(params: {
   isPremium: boolean;
   emailDevBypassEligible: boolean;
 }) {
-  if (params.isPremium || params.accessState === "active_paid" || params.accessState === "blocked") {
+  if (params.accessState === "blocked") {
+    return "blocked";
+  }
+
+  if (params.isPremium || params.accessState === "active_paid") {
     return params.isPremium && params.accessState === "pending_verification" ? "active_paid" : params.accessState;
   }
 
-  if (!params.emailDevBypassEligible) {
-    return params.accessState;
-  }
-
-  if (safeString(params.entitlementSource)?.toLowerCase() !== "email_dev_trial") {
-    return params.accessState;
-  }
-
-  return hasActiveTrialWindow(params.trialEndsAt) ? "trialing" : "free_limited";
+  return params.accessState;
 }
 
 function preferString(...values: unknown[]): string | null {
@@ -184,6 +180,19 @@ function preferString(...values: unknown[]): string | null {
     if (value) return value;
   }
   return null;
+}
+
+function normalizeLegacyChatId(value: unknown) {
+  const raw = safeString(value);
+  if (!raw || !/^-?\d+$/.test(raw)) return null;
+  try {
+    const numeric = BigInt(raw);
+    const min = -9223372036854775808n;
+    const max = 9223372036854775807n;
+    return numeric >= min && numeric <= max ? raw : null;
+  } catch {
+    return null;
+  }
 }
 
 async function maybeSingle<T>(
@@ -490,6 +499,7 @@ export default async function handler(req: any, res: any) {
     const channel = normalizeChannel(body.channel);
     const platformUserId = safeString(body.platform_user_id || body.platformUserId || body.user_id);
     const platformChatId = preferString(body.platform_chat_id, body.platformChatId, body.chat_id);
+    const legacyChatId = normalizeLegacyChatId(platformChatId);
     const username = safeString(body.username);
     const firstName = safeString(body.first_name || body.firstName);
     const lastName = safeString(body.last_name || body.lastName);
@@ -520,7 +530,7 @@ export default async function handler(req: any, res: any) {
       const { data, error } = await supabase.rpc("consume_telegram_link_token", {
           p_link_token: telegramLinkToken,
           p_platform_user_id: platformUserId,
-          p_chat_id: platformChatId,
+          p_chat_id: legacyChatId,
           p_username: username,
           p_first_name: firstName,
           p_last_name: lastName,
@@ -539,13 +549,13 @@ export default async function handler(req: any, res: any) {
         .limit(1),
     );
 
-    if (!user && platformChatId) {
+    if (!user && legacyChatId) {
       user = await maybeSingle<AnyRecord>(
         supabase
           .from("users")
           .select("*")
           .eq("platform", channel)
-          .eq("chat_id", platformChatId)
+          .eq("chat_id", legacyChatId)
           .limit(1),
       );
     }
@@ -583,7 +593,7 @@ export default async function handler(req: any, res: any) {
         .insert(buildCompatUserPayload({
           channel,
           platformUserId,
-          platformChatId,
+          platformChatId: legacyChatId,
           username,
           firstName,
           lastName,
@@ -791,7 +801,12 @@ export default async function handler(req: any, res: any) {
       hasWebAuthLink = (count ?? 0) > 0;
     }
 
-    const emailDevBypassEligible = Boolean(customerId && hasWebAuthLink && PORTAL_EMAIL_DEV_BYPASS);
+    const emailDevBypassEligible = Boolean(
+      customerId &&
+        hasWebAuthLink &&
+        PORTAL_EMAIL_DEV_BYPASS &&
+        safeString(customer?.entitlement_source ?? user.entitlement_source)?.toLowerCase() === "email_dev_trial",
+    );
     const rawAccessState = normalizeAccessState(customer?.access_state ?? user.access_state);
     const phoneVerified = Boolean(safeString(customer?.phone_verified_at));
     const canonicalPlan = customer?.plan || user.plan || "free";
@@ -804,7 +819,7 @@ export default async function handler(req: any, res: any) {
       isPremium: runtimeIsPremium,
       emailDevBypassEligible,
     });
-    const phoneVerifiedEffective = phoneVerified || emailDevBypassEligible;
+    const phoneVerifiedEffective = phoneVerified;
     const allowFeatureAccess = Boolean(
       customerId &&
         phoneVerifiedEffective &&

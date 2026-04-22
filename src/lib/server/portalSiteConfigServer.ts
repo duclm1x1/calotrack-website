@@ -66,6 +66,19 @@ export function normalizePortalSiteSettings(raw: Record<string, unknown> | null 
   return normalized;
 }
 
+export function normalizePublicPortalSiteUrl(value: string | null | undefined) {
+  const fallback = getPortalSiteConfigDefaults().siteUrl;
+  const raw = safeString(value) || fallback;
+  try {
+    const url = new URL(raw);
+    url.hash = "";
+    url.search = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return fallback.replace(/\/$/, "");
+  }
+}
+
 export async function readLatestPortalSiteSettings(admin: any) {
   const latest =
     (await maybeSingle<Record<string, unknown>>(

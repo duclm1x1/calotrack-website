@@ -5,7 +5,7 @@ type AnyRecord = Record<string, any>;
 const DEFAULT_SUPABASE_URL = process.env.VITE_SUPABASE_URL || "";
 const DEV_TRIAL_DAYS = 7;
 
-function cleanEnv(value: string | undefined) {
+export function cleanEnv(value: string | undefined) {
   return String(value || "")
     .replace(/\\r\\n/g, "")
     .replace(/\\n/g, "")

@@ -1,11 +1,11 @@
 import {
   readBody,
   sendJson,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 import {
   requireZaloBrokerAccess,
   sendZaloTemplateMessage,
-} from "../src/lib/server/zaloOaServer.js";
+} from "../zaloOaServer.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

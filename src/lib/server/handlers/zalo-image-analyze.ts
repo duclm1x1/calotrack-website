@@ -1,8 +1,8 @@
-import { sendJson } from "../src/lib/server/adminServer.js";
+import { sendJson } from "../adminServer.js";
 import {
   analyzeZaloImage,
   requireInternalZaloRequest,
-} from "../src/lib/server/zaloRecoveryServer.js";
+} from "../zaloRecoveryServer.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

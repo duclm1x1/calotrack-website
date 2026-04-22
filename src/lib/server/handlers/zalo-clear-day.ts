@@ -1,5 +1,5 @@
-import { createServiceRoleClient, sendJson, safeString } from "../src/lib/server/adminServer.js";
-import { requireInternalZaloRequest } from "../src/lib/server/zaloRecoveryServer.js";
+import { createServiceRoleClient, sendJson, safeString } from "../adminServer.js";
+import { requireInternalZaloRequest } from "../zaloRecoveryServer.js";
 
 type AnyRecord = Record<string, any>;
 

@@ -1,10 +1,10 @@
-import { createServiceRoleClient, readBody, sendJson } from "../src/lib/server/adminServer.js";
+import { createServiceRoleClient, readBody, sendJson } from "../adminServer.js";
 import {
   getOtpMaxAttempts,
   hashOtp,
   issueSessionForPhone,
   normalizeVietnamPhoneInput,
-} from "../src/lib/server/portalPhoneAuthServer.js";
+} from "../portalPhoneAuthServer.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

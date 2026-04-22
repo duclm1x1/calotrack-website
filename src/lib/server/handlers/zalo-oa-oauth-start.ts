@@ -1,8 +1,8 @@
-import { createServiceRoleClient } from "../src/lib/server/adminServer.js";
+import { createServiceRoleClient } from "../adminServer.js";
 import {
   createZaloOaOAuthSession,
   createZaloOaOauthStartPayload,
-} from "../src/lib/server/zaloOaServer.js";
+} from "../zaloOaServer.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

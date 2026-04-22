@@ -1,9 +1,9 @@
-import { sendJson } from "../src/lib/server/adminServer.js";
+import { sendJson } from "../adminServer.js";
 import {
   getGoalPreview,
   readJsonBody,
   resolveDashboardAccess,
-} from "../src/lib/server/dashboardSummaryServer.js";
+} from "../dashboardSummaryServer.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method === "OPTIONS") {

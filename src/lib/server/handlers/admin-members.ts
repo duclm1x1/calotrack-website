@@ -5,7 +5,7 @@ import {
   safeString,
   sendJson,
   writeAdminAuditLog,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 import {
   PORTAL_SITE_CONFIG_AUDIT_ACTION,
   PORTAL_SITE_CONFIG_TARGET_ID,
@@ -13,7 +13,7 @@ import {
   PUBLIC_PORTAL_SITE_SETTING_KEYS,
   normalizePortalSiteSettings,
   readLatestPortalSiteSettings,
-} from "../src/lib/server/portalSiteConfigServer.js";
+} from "../portalSiteConfigServer.js";
 
 function roleToPersistence(role: string) {
   if (role === "owner") {

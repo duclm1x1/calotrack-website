@@ -11,6 +11,7 @@ import {
   resolveDashboardAccess,
   type DashboardPeriod,
 } from "./dashboardSummaryServer.js";
+import { normalizePendingIntentState } from "./zaloGatewayChatServer.js";
 import { getZaloOaInternalKey } from "./zaloOaServer.js";
 
 type AnyRecord = Record<string, any>;
@@ -31,6 +32,7 @@ type NutritionFood = {
 export type NutritionResult = {
   ok: true;
   status:
+    | "search_ready"
     | "food_logged"
     | "nutrition_fallback_estimated"
     | "nutrition_busy"
@@ -107,13 +109,20 @@ type SummaryResult = {
 };
 
 const AI_ENDPOINT_DEFAULT = "https://v98store.com/v1/chat/completions";
+const OPENAI_CHAT_COMPLETIONS_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 const INTERNAL_KEY_HEADER = "x-calotrack-internal-key";
-const AI_AUTH_HEADER = "x-calotrack-ai-authorization";
-const AI_ENDPOINT_HEADER = "x-calotrack-ai-endpoint";
 const IMAGE_FOLLOWUP_TTL_MS = 10 * 60 * 1000;
 const INBODY_CAPTURE_TTL_MS = 15 * 60 * 1000;
-const PENDING_INTENT_SCHEMA_VERSION = 1;
+const DEFAULT_AI_TIMEOUT_MS = 45_000;
+const DEFAULT_IMAGE_AI_TIMEOUT_MS = 60_000;
 const RETRYABLE_AI_STATUS_CODES = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+
+type MacroTotals = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
 
 const DETERMINISTIC_CATALOG: Array<{
   key: string;
@@ -152,6 +161,15 @@ const DETERMINISTIC_CATALOG: Array<{
     per100: { calories: 209, protein: 26, carbs: 0, fat: 10.9 },
   },
   {
+    key: "chicken_breast",
+    label: "ức gà",
+    aliases: ["uc ga", "lang uc ga", "thit uc ga"],
+    defaultGrams: 100,
+    defaultUnit: "phần",
+    defaultPortionText: "100g ức gà",
+    per100: { calories: 165, protein: 31, carbs: 0, fat: 3.6 },
+  },
+  {
     key: "beef",
     label: "thịt bò",
     aliases: ["thit bo", "bo nuong", "bo ap chao", "steak bo"],
@@ -178,10 +196,51 @@ const DETERMINISTIC_CATALOG: Array<{
     defaultPortionText: "1 ly whey",
     per100: { calories: 400, protein: 80, carbs: 8, fat: 6 },
   },
+  {
+    key: "fried_egg",
+    label: "trứng chiên",
+    aliases: ["trung chien", "op la", "trung ran"],
+    defaultGrams: 50,
+    defaultUnit: "quả",
+    defaultPortionText: "1 quả trứng chiên",
+    per100: { calories: 196, protein: 13.6, carbs: 1.2, fat: 15 },
+  },
+  {
+    key: "pho_bo",
+    label: "phở bò",
+    aliases: ["pho bo"],
+    defaultGrams: 450,
+    defaultUnit: "tô",
+    defaultPortionText: "1 tô phở bò",
+    per100: { calories: 120, protein: 7.5, carbs: 14, fat: 3.5 },
+  },
+  {
+    key: "fried_rice_beef_pickles",
+    label: "cơm rang dưa bò",
+    aliases: ["com rang dua bo"],
+    defaultGrams: 320,
+    defaultUnit: "phần",
+    defaultPortionText: "1 phần cơm rang dưa bò",
+    per100: { calories: 190, protein: 8.8, carbs: 21, fat: 7.5 },
+  },
+  {
+    key: "fried_rice_beef_mustard",
+    label: "cơm rang cải bò",
+    aliases: ["com rang cai bo"],
+    defaultGrams: 320,
+    defaultUnit: "phần",
+    defaultPortionText: "1 phần cơm rang cải bò",
+    per100: { calories: 188, protein: 8.5, carbs: 21, fat: 7.2 },
+  },
 ];
 
 function cleanEnv(value: string | undefined) {
   return String(value || "").replace(/\r?\n/g, "").trim();
+}
+
+function looksLikeOpenAiBearer(value: string | undefined) {
+  const candidate = cleanEnv(value);
+  return /^sk-[a-z0-9]/i.test(candidate) || /^Bearer\s+sk-[a-z0-9]/i.test(candidate);
 }
 
 function timingSafeEquals(left: string, right: string) {
@@ -225,6 +284,24 @@ function normalizeLooseText(value: unknown) {
     .replace(/[^a-z0-9%.,:/\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function looksLikeInbodyText(value: unknown) {
+  const normalized = normalizeLooseText(value);
+  return /\b(inbody|body composition|smm|pbf|bmr|body fat|skeletal muscle|visceral fat)\b/.test(
+    normalized,
+  );
+}
+
+function looksLikeFoodText(value: unknown) {
+  const normalized = normalizeLooseText(value);
+  if (!normalized) return false;
+  return (
+    /\b\d+(?:[.,]\d+)?\s*(g|gr|gram|kg|ml|lon|qua|mieng|phan|to|dia|ly)\b/.test(normalized) ||
+    /\b(uc ga|ga|bo|heo|ca hoi|ca ngu|ca|trung|com|pho|bun|mi|my|salad|steak|suon|thit|banh|pasta|pizza|xuc xich|bia|ca phe|coffee|sua chua|yaourt|khoai tay chien|fries)\b/.test(
+      normalized,
+    )
+  );
 }
 
 function toNumber(value: unknown, fallback = Number.NaN) {
@@ -271,6 +348,12 @@ function cloneRecord<T>(value: T): T {
   return JSON.parse(JSON.stringify(value ?? null));
 }
 
+function resolveTimeoutMs(value: unknown, fallbackMs: number) {
+  const numeric = Math.round(toNumber(value, Number.NaN));
+  if (!Number.isFinite(numeric) || numeric < 5_000) return fallbackMs;
+  return numeric;
+}
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -297,12 +380,7 @@ function nextToken(prefix: string) {
 }
 
 function basePendingIntent(candidate: unknown) {
-  const pending = parsePendingIntent(candidate);
-  const next = cloneRecord(pending);
-  next.schema_version = PENDING_INTENT_SCHEMA_VERSION;
-  next.active_surface = safeString(next.active_surface) || null;
-  delete next.gateway_inbody_capture;
-  return next;
+  return normalizePendingIntentState(candidate);
 }
 
 function findDeterministicEntry(normalizedMessage: string) {
@@ -359,8 +437,43 @@ function buildFoodFromCatalog(
   };
 }
 
-function sumFoods(foods: Array<{ calories: unknown; protein: unknown; carbs: unknown; fat: unknown }>) {
-  return foods.reduce(
+function buildFoodFromCatalogGrams(
+  entry: (typeof DETERMINISTIC_CATALOG)[number],
+  grams: number,
+  options?: {
+    quantity?: number;
+    unit?: string;
+    portionText?: string;
+    label?: string;
+  },
+): NutritionFood {
+  const safeGrams = Math.max(1, Math.round(grams));
+  const factor = safeGrams / 100;
+  return {
+    name: options?.label || entry.label,
+    quantity: roundNumber(options?.quantity ?? 1, 2),
+    unit: String(options?.unit || "phần").trim() || "phần",
+    portion_text: String(options?.portionText || `${safeGrams}g`).trim() || `${safeGrams}g`,
+    estimated_weight_g: safeGrams,
+    calories: Math.max(0, Math.round(entry.per100.calories * factor)),
+    protein: roundNumber(entry.per100.protein * factor, 1),
+    carbs: roundNumber(entry.per100.carbs * factor, 1),
+    fat: roundNumber(entry.per100.fat * factor, 1),
+    source: "deterministic",
+  };
+}
+
+function normalizeMacroTotals(value: AnyRecord | null | undefined): MacroTotals {
+  return {
+    calories: Math.max(0, Math.round(toNumber(value?.calories, 0))),
+    protein: roundNumber(toNumber(value?.protein, 0), 1),
+    carbs: roundNumber(toNumber(value?.carbs, 0), 1),
+    fat: roundNumber(toNumber(value?.fat, 0), 1),
+  };
+}
+
+function sumFoods(foods: Array<{ calories: unknown; protein: unknown; carbs: unknown; fat: unknown }>): MacroTotals {
+  return foods.reduce<MacroTotals>(
     (totals, item) => {
       totals.calories += Math.max(0, Math.round(toNumber(item.calories, 0)));
       totals.protein += roundNumber(toNumber(item.protein, 0), 1);
@@ -372,9 +485,102 @@ function sumFoods(foods: Array<{ calories: unknown; protein: unknown; carbs: unk
   );
 }
 
+function normalizeFoodLookupText(value: unknown) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u0111\u0110]/g, (char) => (char === "\u0111" ? "d" : "D"))
+    .toLowerCase()
+    .replace(/[^a-z0-9%.,:/\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function deterministicNutrition(messageText: string): NutritionResult | null {
-  const normalized = normalizeLooseText(messageText);
+  const normalized = normalizeFoodLookupText(messageText);
   if (!normalized) return null;
+
+  if (normalized.includes("com nieu bo ga")) {
+    const riceEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "white_rice");
+    const beefEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "beef");
+    const chickenEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "chicken_thigh");
+    if (riceEntry && beefEntry && chickenEntry) {
+      const foods = [
+        buildFoodFromCatalogGrams(riceEntry, 180, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "1 phần cơm",
+          label: "cơm trắng",
+        }),
+        buildFoodFromCatalogGrams(beefEntry, 90, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "bò ~90g",
+          label: "thịt bò",
+        }),
+        buildFoodFromCatalogGrams(chickenEntry, 90, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "gà ~90g",
+          label: "đùi gà",
+        }),
+      ];
+      return {
+        ok: true,
+        status: "nutrition_fallback_estimated",
+        error_code: null,
+        insert_allowed: true,
+        fallback_source: "deterministic",
+        food_name_display: "cơm niêu bò gà",
+        foods,
+        totals: sumFoods(foods),
+        reply_text: null,
+      };
+    }
+  }
+
+  if (
+    /\bcom\b/.test(normalized) &&
+    /\bbo\b/.test(normalized) &&
+    /\bga\b/.test(normalized)
+  ) {
+    const riceEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "white_rice");
+    const beefEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "beef");
+    const chickenEntry = DETERMINISTIC_CATALOG.find((item) => item.key === "chicken_thigh");
+    if (riceEntry && beefEntry && chickenEntry) {
+      const foods = [
+        buildFoodFromCatalogGrams(riceEntry, 180, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "1 phần cơm",
+          label: "cơm trắng",
+        }),
+        buildFoodFromCatalogGrams(beefEntry, 90, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "bò ~90g",
+          label: "thịt bò",
+        }),
+        buildFoodFromCatalogGrams(chickenEntry, 90, {
+          quantity: 1,
+          unit: "phần",
+          portionText: "gà ~90g",
+          label: "đùi gà",
+        }),
+      ];
+      return {
+        ok: true,
+        status: "nutrition_fallback_estimated",
+        error_code: null,
+        insert_allowed: true,
+        fallback_source: "deterministic",
+        food_name_display: "cơm niêu bò gà",
+        foods,
+        totals: sumFoods(foods),
+        reply_text: null,
+      };
+    }
+  }
 
   if (normalized.includes("com dui ga") || normalized.includes("com ga")) {
     const rice = buildFoodFromCatalog(
@@ -415,18 +621,35 @@ function deterministicNutrition(messageText: string): NutritionResult | null {
   };
 }
 
-function getAiEndpoint(req: any) {
-  return (
-    cleanEnv(process.env.CALOTRACK_AI_ENDPOINT) ||
-    safeString(req.headers?.[AI_ENDPOINT_HEADER]) ||
-    AI_ENDPOINT_DEFAULT
-  );
+function getAiEndpoint(_req: any) {
+  const explicitEndpoint = cleanEnv(process.env.CALOTRACK_AI_ENDPOINT);
+  const authCandidate =
+    cleanEnv(process.env.CALOTRACK_AI_AUTHORIZATION) ||
+    cleanEnv(process.env.OPENAI_API_KEY);
+
+  if (!explicitEndpoint) {
+    if (looksLikeOpenAiBearer(process.env.OPENAI_API_KEY) || looksLikeOpenAiBearer(authCandidate)) {
+      return OPENAI_CHAT_COMPLETIONS_ENDPOINT;
+    }
+    return AI_ENDPOINT_DEFAULT;
+  }
+
+  const candidate = explicitEndpoint;
+
+  if (/calotrack-website(?:-[^.]+)?\.vercel\.app\/api\/zalo-(nutrition-estimate|image-analyze|summary)/i.test(candidate)) {
+    return AI_ENDPOINT_DEFAULT;
+  }
+
+  if (/\/api\/zalo-(nutrition-estimate|image-analyze|summary)\b/i.test(candidate)) {
+    return AI_ENDPOINT_DEFAULT;
+  }
+
+  return candidate;
 }
 
-function getAiAuthorization(req: any) {
+function getAiAuthorization(_req: any) {
   const candidate =
     cleanEnv(process.env.CALOTRACK_AI_AUTHORIZATION) ||
-    safeString(req.headers?.[AI_AUTH_HEADER]) ||
     cleanEnv(process.env.OPENAI_API_KEY);
 
   if (!candidate) return null;
@@ -441,6 +664,7 @@ async function callAiJson(
   options?: {
     maxAttempts?: number;
     retryModels?: string[];
+    timeoutMs?: number;
   },
 ) {
   const endpoint = getAiEndpoint(req);
@@ -457,11 +681,17 @@ async function callAiJson(
     1,
     Number.isFinite(options?.maxAttempts) ? Number(options?.maxAttempts) : attemptModels.length,
   );
+  const timeoutMs = resolveTimeoutMs(
+    options?.timeoutMs ?? process.env.CALOTRACK_AI_TIMEOUT_MS,
+    DEFAULT_AI_TIMEOUT_MS,
+  );
 
   let lastError: any = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const attemptModel = attemptModels[Math.min(attempt, attemptModels.length - 1)] || model;
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(endpoint, {
@@ -470,6 +700,7 @@ async function callAiJson(
           Authorization: authorization,
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: attemptModel,
           temperature,
@@ -477,6 +708,7 @@ async function callAiJson(
           messages,
         }),
       });
+      clearTimeout(timeoutHandle);
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -526,7 +758,13 @@ async function callAiJson(
         payload,
       };
     } catch (error: any) {
+      clearTimeout(timeoutHandle);
       lastError = error;
+      if (error?.name === "AbortError") {
+        lastError = Object.assign(new Error("ai_request_timed_out"), {
+          statusCode: 408,
+        });
+      }
       const statusCode = Number(error?.statusCode || 0);
       const shouldRetry =
         RETRYABLE_AI_STATUS_CODES.has(statusCode) && attempt < maxAttempts - 1;
@@ -535,11 +773,30 @@ async function callAiJson(
         throw error;
       }
 
-      await delay(Math.min(4000, 500 * 2 ** attempt));
+      await delay(Math.min(8000, 1500 * 2 ** attempt));
     }
   }
 
   throw lastError || Object.assign(new Error("ai_provider_unavailable"), { statusCode: 503 });
+}
+
+function dedupeModels(values: Array<string | null | undefined>) {
+  const unique: string[] = [];
+  for (const value of values) {
+    const candidate = safeString(value);
+    if (!candidate || unique.includes(candidate)) continue;
+    unique.push(candidate);
+  }
+  return unique;
+}
+
+function normalizePreferredImageModel(value: unknown) {
+  const raw = safeString(value);
+  const normalized = raw.toLowerCase();
+  if (!normalized) return "gpt-4.1-mini";
+  if (normalized === "gpt-4.1") return "gpt-4.1-mini";
+  if (normalized === "gpt-4o") return "gpt-4o-mini";
+  return raw;
 }
 
 async function callAiImageJson(
@@ -548,6 +805,11 @@ async function callAiImageJson(
   imageUrl: string,
   model = "gpt-4.1-mini",
 ) {
+  const primaryModel = normalizePreferredImageModel(model);
+  const retryModels = dedupeModels([
+    primaryModel === "gpt-4.1-mini" ? "gpt-4o-mini" : "gpt-4.1-mini",
+    primaryModel === "gpt-4o-mini" ? "gpt-4.1-mini" : "gpt-4o-mini",
+  ]).filter((candidate) => candidate !== primaryModel);
   return callAiJson(
     req,
     [
@@ -569,11 +831,15 @@ async function callAiImageJson(
         ],
       },
     ],
-    model,
+    primaryModel,
     0.1,
     {
-      maxAttempts: 3,
-      retryModels: ["gpt-4o-mini"],
+      maxAttempts: 1 + retryModels.length,
+      retryModels,
+      timeoutMs: resolveTimeoutMs(
+        process.env.CALOTRACK_IMAGE_AI_TIMEOUT_MS,
+        DEFAULT_IMAGE_AI_TIMEOUT_MS,
+      ),
     },
   );
 }
@@ -636,8 +902,104 @@ function normalizeNutritionFoods(parsed: AnyRecord, messageText: string): Nutrit
 function buildUnknownFoodReply(messageText: string) {
   const display = safeString(messageText) || "món này";
   return [
-    `Mình chưa chốt đủ chắc tay để log ${display}.`,
+    `Mình chưa chốt đủ chắc tay để log ${display}, nên chưa lưu vào nhật ký.`,
     "Bạn mô tả rõ hơn khẩu phần, gram hoặc thành phần chính giúp mình nhé. Ví dụ: `1 phần cơm niêu bò gà, cơm 180g, bò 120g, gà 80g`.",
+  ].join("\n");
+}
+
+function buildSearchUnknownFoodReply(messageText: string) {
+  const display = safeString(messageText) || "món này";
+  return [
+    `Mình chưa ước tính đủ chắc tay cho ${display}, nên chưa chốt calories và macros lúc này.`,
+    "Bạn thử ghi rõ hơn khẩu phần hoặc thành phần chính, ví dụ: `ức gà 150g`, `cơm rang dưa bò 1 phần`.",
+  ].join("\n");
+}
+
+function buildNutritionBusyReply(_messageText: string, purpose: "log" | "search") {
+  if (purpose === "search") {
+    return [
+      "Mình đang nghẽn lane ước tính món này nên chưa tra ra ngay được.",
+      "Bạn thử lại sau 10-20 giây, hoặc nhắn rõ hơn khẩu phần như `ức gà 150g` giúp mình nhé.",
+    ].join("\n");
+  }
+
+  return [
+    "Mình đang nghẽn lane ước tính món này nên chưa log chắc tay được.",
+    "Bạn thử lại sau 10-20 giây, hoặc ghi rõ hơn khẩu phần và thành phần chính giúp mình nhé.",
+  ].join("\n");
+}
+
+function stripFoodSearchPrompt(rawText: string) {
+  let next = String(rawText || "").trim();
+  next = next.replace(/^\/?(?:tìm|tim|kiếm|kiem|search|tra cứu|tra cuu)(?:\s+(?:tôi|toi))?(?:\s+(?:món|mon))?\s*/i, "");
+  next = next.replace(/\b(?:bao nhiêu|bao nhieu)\s*(?:calo|kcal|protein|carb|carbs|fat)\b/gi, "");
+  next = next.replace(/\b(?:calo|kcal|protein|carb|carbs|fat)\s*(?:bao nhiêu|bao nhieu)\b/gi, "");
+  next = next.replace(/\b(?:là|la)\s*bao nhiêu\b/gi, "");
+  next = next.replace(/\s+/g, " ").replace(/^[,.:;\-]+|[,.:;\-]+$/g, "").trim();
+  return next.trim();
+}
+
+function buildNutritionMessageCandidates(body: AnyRecord, purpose: "log" | "search") {
+  const rawCandidates = [
+    safeString(body.message_text),
+    safeString(body.food_name),
+    safeString(body.context?.message_text),
+    safeString(body.context?.query),
+    safeString(body.context?.search_term),
+    safeString(body.context?.source_message_text),
+    safeString(body.context?.normalized_query),
+    safeString(body.context?.normalized_text),
+  ].filter(Boolean) as string[];
+
+  const sanitizer = purpose === "search" ? stripFoodSearchPrompt : stripFoodLogPrefix;
+  const deduped = new Set<string>();
+  const candidates: string[] = [];
+
+  for (const rawCandidate of rawCandidates) {
+    const sanitized = sanitizer(rawCandidate) || rawCandidate;
+    const normalizedKey = normalizeFoodLookupText(sanitized);
+    if (!normalizedKey || deduped.has(normalizedKey)) continue;
+    deduped.add(normalizedKey);
+    candidates.push(sanitized);
+  }
+
+  return candidates;
+}
+
+function normalizeNutritionPurpose(body: AnyRecord): "log" | "search" {
+  const purpose = safeString(body?.purpose || body?.context?.purpose);
+  return purpose?.toLowerCase() === "search"
+    ? "search"
+    : "log";
+}
+
+function stripFoodLogPrefix(rawText: string) {
+  let next = String(rawText || "").trim();
+  next = next.replace(/^\/(?:log|ghi)\b/i, "").trim();
+  next = next.replace(/^(?:bua|bữa)\s+(?:sang|sáng|trua|trưa|toi|tối|phu|phụ)\s*:\s*/i, "");
+  return next.trim();
+}
+
+function buildSearchNutritionReplyV2(
+  queryText: string,
+  foods: NutritionFood[],
+  totals: NutritionResult["totals"],
+  fallbackSource: NutritionResult["fallback_source"],
+) {
+  const display = safeString(queryText) || foods[0]?.name || "món này";
+  const sourceLine =
+    fallbackSource === "deterministic"
+      ? "📚 Mình đang ước tính nhanh theo dữ liệu nội bộ của CaloTrack."
+      : "🤖 Mình đang ước tính nhanh theo AI cho món này.";
+
+  return [
+    sourceLine,
+    `🍽️ ${display}`,
+    `- Calories: ${Math.round(toNumber(totals.calories, 0))} kcal`,
+    `- Protein: ${formatGram(toNumber(totals.protein, 0))}g | Carbs: ${formatGram(toNumber(totals.carbs, 0))}g | Fat: ${formatGram(toNumber(totals.fat, 0))}g`,
+    "",
+    "Mình mới tra cứu/ước tính thôi, chưa lưu vào nhật ký.",
+    "Nếu muốn mình so sánh thêm theo mục tiêu hiện tại thì nhắn tiếp tên món hoặc gram cụ thể.",
   ].join("\n");
 }
 
@@ -645,14 +1007,40 @@ export async function estimateZaloNutrition(
   req: any,
   body: AnyRecord,
 ): Promise<NutritionResult> {
-  const messageText =
+  const purpose = normalizeNutritionPurpose(body);
+  const candidateTexts = buildNutritionMessageCandidates(body, purpose);
+  const rawMessageText =
+    candidateTexts[0] ||
     safeString(body.message_text) ||
     safeString(body.food_name) ||
     safeString(body.context?.message_text) ||
     "";
+  const messageText = candidateTexts[0] || rawMessageText;
 
-  const deterministic = deterministicNutrition(messageText);
+  let matchedCandidate = messageText;
+  let deterministic: NutritionResult | null = null;
+  for (const candidate of candidateTexts) {
+    deterministic = deterministicNutrition(candidate);
+    if (deterministic) {
+      matchedCandidate = candidate;
+      break;
+    }
+  }
+
   if (deterministic) {
+    if (purpose === "search") {
+      return {
+        ...deterministic,
+        status: "search_ready",
+        insert_allowed: false,
+        reply_text: buildSearchNutritionReplyV2(
+          deterministic.food_name_display || matchedCandidate,
+          deterministic.foods,
+          deterministic.totals,
+          deterministic.fallback_source,
+        ),
+      };
+    }
     return deterministic;
   }
 
@@ -685,12 +1073,7 @@ export async function estimateZaloNutrition(
 
     const foods = normalizeNutritionFoods(parsed, messageText);
     const totals = parsed?.totals && typeof parsed.totals === "object"
-      ? {
-          calories: Math.max(0, Math.round(toNumber(parsed.totals.calories, 0))),
-          protein: roundNumber(toNumber(parsed.totals.protein, 0), 1),
-          carbs: roundNumber(toNumber(parsed.totals.carbs, 0), 1),
-          fat: roundNumber(toNumber(parsed.totals.fat, 0), 1),
-        }
+      ? normalizeMacroTotals(parsed.totals as AnyRecord)
       : sumFoods(foods);
 
     const hasPositiveTotal =
@@ -709,7 +1092,28 @@ export async function estimateZaloNutrition(
         food_name_display: safeString(messageText) || "món này",
         foods: [],
         totals,
-        reply_text: buildUnknownFoodReply(messageText),
+        reply_text:
+          purpose === "search"
+            ? buildSearchUnknownFoodReply(messageText)
+            : buildUnknownFoodReply(messageText),
+        provider_status: statusCode,
+      };
+    }
+
+    const foodNameDisplay =
+      foods.length === 1 ? foods[0].name : (safeString(messageText) || foods[0].name);
+
+    if (purpose === "search") {
+      return {
+        ok: true,
+        status: "search_ready",
+        error_code: null,
+        insert_allowed: false,
+        fallback_source: "provider",
+        food_name_display: foodNameDisplay,
+        foods,
+        totals,
+        reply_text: buildSearchNutritionReplyV2(foodNameDisplay, foods, totals, "provider"),
         provider_status: statusCode,
       };
     }
@@ -720,7 +1124,7 @@ export async function estimateZaloNutrition(
       error_code: null,
       insert_allowed: true,
       fallback_source: "provider",
-      food_name_display: foods.length === 1 ? foods[0].name : (safeString(messageText) || foods[0].name),
+      food_name_display: foodNameDisplay,
       foods,
       totals,
       reply_text: null,
@@ -739,11 +1143,10 @@ export async function estimateZaloNutrition(
       foods: [],
       totals: { calories: 0, protein: 0, carbs: 0, fat: 0 },
       reply_text: retryable
-        ? [
-            "Mình đang nghẽn lane ước tính món này nên chưa log chắc tay được.",
-            "Bạn thử lại sau 10-20 giây, hoặc ghi rõ hơn khẩu phần và thành phần chính giúp mình nhé.",
-          ].join("\n")
-        : buildUnknownFoodReply(messageText),
+        ? buildNutritionBusyReply(messageText, purpose)
+        : purpose === "search"
+          ? buildSearchUnknownFoodReply(messageText)
+          : buildUnknownFoodReply(messageText),
       provider_status: statusCode,
     };
   }
@@ -823,6 +1226,31 @@ function buildImageReviewText(bundle: ImageReviewBundle, approximateNotice = fal
   }
   lines.push("", 'Ghi lại? "có" / "không lưu"');
   return lines.join("\n");
+}
+
+function shouldRetainImageClarification(parsed: AnyRecord, bundle: ImageReviewBundle) {
+  if (String(parsed?.status || "") !== "needs_clarification") return false;
+  if (!bundle.foods.length || bundle.total_calories <= 0) return true;
+
+  const confidence = roundNumber(toNumber(parsed?.confidence, 0.6), 2);
+  const mealScope = safeString(parsed?.meal_scope) || "unknown";
+  const primaryPlateOnly = parsed?.primary_plate_only !== false;
+
+  if (mealScope === "single_plate" && confidence >= 0.35) {
+    return false;
+  }
+
+  if (primaryPlateOnly && mealScope !== "whole_table" && confidence >= 0.45) {
+    return false;
+  }
+
+  return true;
+}
+
+function resolveImageClarificationQuestion(parsed: AnyRecord, bundle: ImageReviewBundle) {
+  if (!shouldRetainImageClarification(parsed, bundle)) return null;
+  const question = safeString(parsed?.clarification_question);
+  return question || null;
 }
 
 function buildImagePendingState(
@@ -916,22 +1344,97 @@ function buildBusyImageReply(modeHint: string) {
   return modeHint === "inbody"
     ? [
         "Mình đang bị nghẽn lane đọc ảnh nên chưa kịp phân tích phiếu InBody này.",
-        "Bạn giữ nguyên ảnh và gửi lại sau khoảng 10-20 giây giúp mình nhé.",
+        "Mình chưa lưu số đo ở lượt này. Bạn giữ nguyên ảnh và gửi lại sau khoảng 10-20 giây giúp mình nhé.",
       ].join("\n")
     : [
-        "Mình đang bị nghẽn lane phân tích ảnh nên chưa kịp tính món này.",
-        "Bạn gửi lại ảnh sau khoảng 10-20 giây, hoặc nhắn thêm mô tả ngắn để mình xử lý tiếp.",
+        "Mình đang bị nghẽn lane phân tích ảnh nên chưa kịp đọc trực tiếp ảnh này.",
+        "Mình chưa lưu gì cho lượt này. Bạn giữ nguyên ảnh và gửi lại sau khoảng 10-20 giây giúp mình nhé.",
       ].join("\n");
 }
 
-function extractImageSource(body: AnyRecord) {
-  return (
-    safeString(body.image_data_url) ||
-    safeString(body.image_url) ||
-    safeString(body.context?.image_data_url) ||
-    safeString(body.context?.image_url) ||
-    null
-  );
+function buildProviderFailureReply(modeHint: string, providerStatus: number | null) {
+  const normalizedStatus = Number.isFinite(providerStatus) ? Number(providerStatus) : 0;
+
+  if (normalizedStatus === 401 || normalizedStatus === 403) {
+    return modeHint === "inbody"
+      ? {
+          status: "inbody_missing" as const,
+          error_code: "inbody_provider_auth_failed",
+          reply_text: [
+            "Lane đọc phiếu InBody đang lỗi xác thực nên mình chưa phân tích được ảnh này.",
+            "Mình chưa lưu số đo ở lượt này. Bạn giữ nguyên ảnh và gửi lại sau một lát giúp mình nhé.",
+          ].join("\n"),
+        }
+      : {
+          status: "busy" as const,
+          error_code: "image_provider_auth_failed",
+          reply_text: [
+            "Lane phân tích ảnh đang lỗi xác thực nên mình chưa đọc được ảnh này.",
+            "Bạn không cần thêm caption. Mình sẽ đọc lại trực tiếp từ ảnh khi lane ổn hơn; bạn giữ nguyên ảnh và gửi lại sau một lát giúp mình nhé.",
+          ].join("\n"),
+        };
+  }
+
+  if (normalizedStatus === 429) {
+    return modeHint === "inbody"
+      ? {
+          status: "inbody_missing" as const,
+          error_code: "inbody_provider_rate_limited",
+          reply_text: [
+            "Lane đọc phiếu InBody đang quá tải nên mình chưa kịp phân tích ảnh này.",
+            "Mình chưa lưu số đo ở lượt này. Bạn giữ nguyên ảnh và gửi lại sau khoảng 10-20 giây giúp mình nhé.",
+          ].join("\n"),
+        }
+      : {
+          status: "busy" as const,
+          error_code: "image_provider_rate_limited",
+          reply_text: [
+            "Lane phân tích ảnh đang quá tải nên mình chưa kịp đọc ảnh này.",
+            "Bạn không cần thêm caption. Mình sẽ đọc trực tiếp từ ảnh khi lane ổn hơn; bạn giữ nguyên ảnh và gửi lại sau khoảng 10-20 giây giúp mình nhé.",
+          ].join("\n"),
+        };
+  }
+
+  if (normalizedStatus >= 500 || normalizedStatus === 408) {
+    return modeHint === "inbody"
+      ? {
+          status: "inbody_missing" as const,
+          error_code: "inbody_provider_unavailable",
+          reply_text: [
+            "Dịch vụ đọc phiếu InBody đang tạm lỗi nên mình chưa phân tích được ảnh này.",
+            "Mình chưa lưu số đo ở lượt này. Bạn giữ nguyên ảnh và gửi lại sau ít phút giúp mình nhé.",
+          ].join("\n"),
+        }
+      : {
+          status: "busy" as const,
+          error_code: "image_provider_unavailable",
+          reply_text: [
+            "Dịch vụ phân tích ảnh đang tạm lỗi nên mình chưa đọc được ảnh này.",
+            "Bạn không cần thêm caption. Mình sẽ đọc trực tiếp từ ảnh khi lane ổn hơn; bạn giữ nguyên ảnh và gửi lại sau ít phút giúp mình nhé.",
+          ].join("\n"),
+        };
+  }
+
+  return {
+    status: modeHint === "inbody" ? ("inbody_missing" as const) : ("busy" as const),
+    error_code: modeHint === "inbody" ? "inbody_analysis_busy" : "image_analysis_busy",
+    reply_text: buildBusyImageReply(modeHint),
+  };
+}
+
+function extractImageSources(body: AnyRecord) {
+  const ordered = [
+    safeString(body.image_data_url),
+    safeString(body.context?.image_data_url),
+    safeString(body.image_url),
+    safeString(body.context?.image_url),
+  ];
+  const unique: string[] = [];
+  for (const candidate of ordered) {
+    if (!candidate || unique.includes(candidate)) continue;
+    unique.push(candidate);
+  }
+  return unique;
 }
 
 function extractImageCaptionText(body: AnyRecord) {
@@ -951,9 +1454,6 @@ function resolveImageModeHint(body: AnyRecord) {
   const explicit = normalizeLooseText(body.mode_hint);
   if (explicit === "meal" || explicit === "inbody") return explicit;
 
-  const pending = parsePendingIntent(body.pending_intent ?? body.user_record?.pending_intent);
-  if (pending?.inbody_capture?.owner === "inbody_review") return "inbody";
-
   const text = normalizeLooseText(
     [
       body.caption,
@@ -965,7 +1465,13 @@ function resolveImageModeHint(body: AnyRecord) {
       .filter(Boolean)
       .join(" "),
   );
-  if (/\b(inbody|body composition|smm|pbf|bmr)\b/.test(text)) return "inbody";
+
+  if (looksLikeInbodyText(text)) return "inbody";
+  if (looksLikeFoodText(text)) return "meal";
+
+  const pending = parsePendingIntent(body.pending_intent ?? body.user_record?.pending_intent);
+  if (pending?.inbody_capture?.owner === "inbody_review") return "inbody";
+
   return "meal";
 }
 
@@ -1039,6 +1545,44 @@ function buildInbodyPendingState(body: AnyRecord, measurement: AnyRecord) {
   return pending;
 }
 
+function buildInbodyRetryPendingState(body: AnyRecord) {
+  const pending = basePendingIntent(
+    body.pending_intent ?? body.updated_pending_intent ?? body.user_record?.pending_intent,
+  );
+  const existingCapture =
+    pending.inbody_capture && typeof pending.inbody_capture === "object"
+      ? pending.inbody_capture
+      : {};
+  const requestedAt = new Date().toISOString();
+  const token = safeString(existingCapture.token || existingCapture.clarification_token) || nextToken("inbody");
+
+  delete pending.image_followup;
+  pending.active_surface = "inbody_capture";
+  pending.inbody_capture = {
+    owner: "inbody_review",
+    source_message_id: safeString(body.source_message_id),
+    token,
+    clarification_token: token,
+    armed_at: safeString(existingCapture.armed_at) || requestedAt,
+    requested_at: requestedAt,
+    expires_at: buildExpiry(INBODY_CAPTURE_TTL_MS),
+    clarification_count: Number(existingCapture.clarification_count || 0),
+    context_payload:
+      existingCapture.context_payload && typeof existingCapture.context_payload === "object"
+        ? existingCapture.context_payload
+        : {},
+  };
+  pending.interaction_context = {
+    ...(pending.interaction_context && typeof pending.interaction_context === "object"
+      ? pending.interaction_context
+      : {}),
+    last_surface: "inbody_capture",
+    last_action: "inbody_retry_pending",
+    last_non_error_reply_at: requestedAt,
+  };
+  return pending;
+}
+
 function buildInbodyReviewText(measurement: AnyRecord) {
   const lines = [
     "Mình nhận ra đây là phiếu InBody.",
@@ -1064,9 +1608,10 @@ export async function analyzeZaloImage(
   req: any,
   body: AnyRecord,
 ): Promise<ImageResult> {
-  const imageSource = extractImageSource(body);
+  const imageSources = extractImageSources(body);
   const modeHint = resolveImageModeHint(body);
-  if (!imageSource) {
+  const requestedModel = normalizePreferredImageModel(body.model || process.env.CALOTRACK_IMAGE_MODEL);
+  if (!imageSources.length) {
     return {
       ok: true,
       status: modeHint === "inbody" ? "inbody_missing" : "invalid",
@@ -1095,6 +1640,7 @@ export async function analyzeZaloImage(
           ].join("\n")
         : [
             "Phân tích ảnh bữa ăn này và trả về JSON duy nhất.",
+            "Ưu tiên đọc trực tiếp từ hình ảnh. Caption chỉ là ngữ cảnh bổ sung, không phải điều kiện bắt buộc.",
             "Schema:",
             "{",
             '  "status": "review_ready|needs_clarification|invalid",',
@@ -1106,12 +1652,32 @@ export async function analyzeZaloImage(
             '  "foods": [{"name": string, "name_en": string|null, "quantity": number, "unit": string, "estimated_weight_g": number|null, "calories": number, "protein": number, "carbs": number, "fat": number, "notes": string|null}],',
             '  "totals": {"calories": number, "protein": number, "carbs": number, "fat": number}',
             "}",
-            "Nếu chỉ thiếu đúng 1 chi tiết về khẩu phần, dùng status=needs_clarification.",
-            "Nếu có thể ước lượng hợp lý thì dùng review_ready.",
-            `Caption: ${safeString(body.caption) || safeString(body.caption_text) || safeString(body.message_text) || "Không có"}`,
+            "Nếu ảnh đủ rõ để ước lượng hợp lý thì luôn dùng review_ready.",
+            "Chỉ dùng needs_clarification khi lưu ngay có nguy cơ lệch số đáng kể.",
+            `Caption bổ sung (nếu có): ${safeString(body.caption) || safeString(body.caption_text) || safeString(body.message_text) || "Không có"}`,
           ].join("\n");
 
-    const { parsed, statusCode } = await callAiImageJson(req, prompt, imageSource);
+    let parsed: AnyRecord | null = null;
+    let statusCode: number | null = null;
+    let lastError: any = null;
+    for (const imageSource of imageSources) {
+      try {
+        const result = await callAiImageJson(req, prompt, imageSource, requestedModel);
+        parsed = result.parsed;
+        statusCode = result.statusCode;
+        lastError = null;
+        break;
+      } catch (error: any) {
+        lastError = error;
+        statusCode = Number(error?.statusCode || 0) || null;
+        if (statusCode === 401 || statusCode === 403) break;
+      }
+    }
+    if (!parsed) {
+      throw Object.assign(lastError || new Error("image_analysis_failed"), {
+        statusCode,
+      });
+    }
 
     if (modeHint === "inbody") {
       if (String(parsed?.status || "") !== "inbody_ready") {
@@ -1190,11 +1756,7 @@ export async function analyzeZaloImage(
       total_fat: roundNumber(toNumber(totals.fat, 0), 1),
     };
 
-    const clarificationQuestion =
-      String(parsed?.status || "") === "needs_clarification"
-        ? safeString(parsed?.clarification_question) ||
-          "Phần món chính trong ảnh này gần cỡ nhỏ, vừa hay lớn?"
-        : null;
+    const clarificationQuestion = resolveImageClarificationQuestion(parsed, bundle);
     const updatedPendingIntent = buildImagePendingState(
       body,
       bundle,
@@ -1219,6 +1781,7 @@ export async function analyzeZaloImage(
       provider_status: statusCode,
     };
   } catch (error: any) {
+    const providerStatus = Number(error?.statusCode || 0) || null;
     if (modeHint !== "inbody") {
       const captionText = extractImageCaptionText(body);
       if (captionText) {
@@ -1249,19 +1812,24 @@ export async function analyzeZaloImage(
             reply_text: buildImageReviewText(bundle, true),
             updated_pending_intent: updatedPendingIntent,
             review_bundle: bundle,
-            provider_status: Number(error?.statusCode || 0) || null,
+            provider_status: providerStatus,
           };
         }
       }
     }
 
+    const providerFailure = buildProviderFailureReply(modeHint, providerStatus);
+
     return {
       ok: true,
-      status: modeHint === "inbody" ? "inbody_missing" : "busy",
-      error_code: modeHint === "inbody" ? "inbody_analysis_busy" : "image_analysis_busy",
-      reply_text: buildBusyImageReply(modeHint),
-      updated_pending_intent: basePendingIntent(body.pending_intent ?? body.user_record?.pending_intent),
-      provider_status: Number(error?.statusCode || 0) || null,
+      status: providerFailure.status,
+      error_code: providerFailure.error_code,
+      reply_text: providerFailure.reply_text,
+      updated_pending_intent:
+        modeHint === "inbody"
+          ? buildInbodyRetryPendingState(body)
+          : basePendingIntent(body.pending_intent ?? body.user_record?.pending_intent),
+      provider_status: providerStatus,
     };
   }
 }
@@ -1283,7 +1851,7 @@ function mapSummaryPeriod(period: "today" | "week" | "month"): DashboardPeriod {
   return "week";
 }
 
-function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyRecord) {
+function buildSummaryReplyTextV2(period: "today" | "week" | "month", summary: AnyRecord) {
   if (period === "today") {
     const daily = summary.daily || {};
     const profile = summary.profile || {};
@@ -1293,18 +1861,22 @@ function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyR
     const intakeKcal = toNumber(daily.intakeKcal, 0);
     const exerciseKcal = toNumber(daily.exerciseKcal, 0);
     const netKcal = toNumber(daily.netKcal, 0);
+    const goalModeLabel =
+      safeString(profile.goalModeDisplayLabel) ||
+      safeString(profile.goalLabel) ||
+      formatGoalLabel(profile.primaryGoal || "maintain");
     return [
       `📊 Hôm nay của bạn (${requested.endDate || requested.startDate || "?"})`,
       "━━━━━━━━━━━━━━━━━━━━━━",
       `🔥 Đã nạp: ${formatKcal(intakeKcal)} kcal`,
-      `🏃 Calories vận động: ${formatKcal(exerciseKcal)} kcal`,
-      `📉 Net intake: ${formatKcal(netKcal)} kcal`,
-      `🧭 TDEE: ${formatKcal(profile.tdee)} kcal | Daily goal: ${formatKcal(goalKcal)} kcal`,
-      `✅ Chênh lệch so với daily goal: ${formatKcal(goalKcal - intakeKcal)} kcal`,
-      `💪 Protein ${formatGram(daily.consumedProteinG)}g/${formatGram(daily.targetProteinG)}g`,
-      `🥑 Fat ${formatGram(daily.consumedFatG)}g/tối thiểu ${formatGram(daily.targetFatG)}g`,
-      `🍚 Carb ${formatGram(daily.consumedCarbsG)}g`,
-      `🎯 Mục tiêu hiện tại: ${formatGoalLabel(profile.primaryGoal || "maintain")}`,
+      `🏃 Vận động: ${formatKcal(exerciseKcal)} kcal`,
+      `📉 Net calories: ${formatKcal(netKcal)} kcal`,
+      `🧭 TDEE: ${formatKcal(profile.tdee)} kcal`,
+      `🎯 Goal hôm nay: ${formatKcal(goalKcal)} kcal`,
+      `💪 Protein: ${formatGram(daily.consumedProteinG)}g / ${formatGram(daily.targetProteinG ?? daily.dailyProteinG)}g`,
+      `🍚 Carb: ${formatGram(daily.consumedCarbsG)}g / ${formatGram(daily.targetCarbsG ?? daily.dailyCarbsG)}g`,
+      `🥑 Fat: ${formatGram(daily.consumedFatG)}g / ${formatGram(daily.targetFatG ?? daily.dailyFatG)}g`,
+      `🎯 Goal mode: ${goalModeLabel}`,
       items.length ? "" : null,
       items.length ? "🍽️ Món đã ghi hôm nay:" : null,
       ...items.map((item: AnyRecord) => `• ${item.foodName || item.food_name || "Món ăn"}: ${formatKcal(item.calories)} kcal`),
@@ -1314,7 +1886,10 @@ function buildSummaryReplyText(period: "today" | "week" | "month", summary: AnyR
   }
 
   const requested = summary.requestedPeriod || {};
-  const goalLabel = summary.profile?.goalLabel || formatGoalLabel(summary.profile?.primaryGoal || "maintain");
+  const goalLabel =
+    safeString(summary.profile?.goalModeDisplayLabel) ||
+    safeString(summary.profile?.goalLabel) ||
+    formatGoalLabel(summary.profile?.primaryGoal || "maintain");
   const remainingKcal = toNumber(requested.targetKcal, 0) - toNumber(requested.consumedKcal, 0);
   const header =
     period === "month"
@@ -1361,7 +1936,7 @@ export async function buildZaloSummary(
       ok: true,
       status: "ok",
       error_code: null,
-      reply_text: buildSummaryReplyText(period, summary),
+      reply_text: buildSummaryReplyTextV2(period, summary),
       summary_period: period,
       metrics: summary.requestedPeriod || null,
     };

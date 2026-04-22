@@ -17,6 +17,8 @@ export type PrimaryGoal =
   | "muscle_gain"
   | "gain_weight";
 
+export type GoalModeVariant = "recomp_muscle_bias" | "recomp_fat_loss_bias" | null;
+
 export type TargetMetric = "target_weight_kg" | "target_body_fat_pct" | null;
 
 export type DashboardPeriod = "day" | "week" | "month";
@@ -99,6 +101,332 @@ function roundNumber(value: number, digits = 1) {
   return Math.round(value * factor) / factor;
 }
 
+function buildCompatWebPlatformId(email: string | null, authUserId: string) {
+  return email ? `web:${email}` : `web:${authUserId}`;
+}
+
+function hasFutureIso(value: unknown) {
+  const iso = safeString(value);
+  if (!iso) return false;
+  const timestamp = Date.parse(iso);
+  return Number.isFinite(timestamp) ? timestamp > Date.now() : false;
+}
+
+function hasPaidPlan(customer: AnyRecord | null | undefined) {
+  const plan = safeString(customer?.plan)?.toLowerCase();
+  return plan === "lifetime" || (plan === "pro" && hasFutureIso(customer?.premium_until));
+}
+
+function deriveCustomerAccessState(customer: AnyRecord | null | undefined) {
+  if (!customer) return "pending_verification";
+
+  const isBanned =
+    customer.is_banned === true ||
+    (hasFutureIso(customer.ban_until) && safeString(customer.status)?.toLowerCase() === "blocked");
+  if (isBanned || safeString(customer.status)?.toLowerCase() === "blocked") {
+    return "blocked";
+  }
+
+  if (!safeString(customer.phone_verified_at)) {
+    return "pending_verification";
+  }
+
+  if (hasPaidPlan(customer)) {
+    return "active_paid";
+  }
+
+  if (hasFutureIso(customer.trial_ends_at)) {
+    return "trialing";
+  }
+
+  return "free_limited";
+}
+
+type CanonicalPortalCustomerResolution = {
+  customerId: number | null;
+  customerRow: AnyRecord | null;
+  compatUserRow: AnyRecord | null;
+  authLinked: boolean;
+  webLinked: boolean;
+  compatLinked: boolean;
+  repaired: boolean;
+};
+
+export async function resolveCanonicalPortalCustomerForAuthUser(
+  admin: ReturnType<typeof createServiceRoleClient>,
+  authUser: AnyRecord | null | undefined,
+): Promise<CanonicalPortalCustomerResolution> {
+  const authUserId = safeString(authUser?.id);
+  const email = safeString(authUser?.email) || null;
+
+  if (!authUserId) {
+    return {
+      customerId: null,
+      customerRow: null,
+      compatUserRow: null,
+      authLinked: false,
+      webLinked: false,
+      compatLinked: false,
+      repaired: false,
+    };
+  }
+
+  let repaired = false;
+  let authLink =
+    (await maybeSingle<AnyRecord>(
+      admin
+        .from("customer_auth_links")
+        .select("*")
+        .eq("auth_user_id", authUserId)
+        .order("created_at", { ascending: false })
+        .limit(1),
+    )) || null;
+
+  let compatUser =
+    (await maybeSingle<AnyRecord>(
+      admin
+        .from("users")
+        .select("*")
+        .eq("platform", "web")
+        .eq("auth_user_id", authUserId)
+        .limit(1),
+    )) || null;
+
+  if (!compatUser && email) {
+    compatUser =
+      (await maybeSingle<AnyRecord>(
+        admin
+          .from("users")
+          .select("*")
+          .eq("platform", "web")
+          .eq("email", email)
+          .limit(1),
+      )) || null;
+  }
+
+  let webChannel =
+    (await maybeSingle<AnyRecord>(
+      admin
+        .from("customer_channel_accounts")
+        .select("*")
+        .eq("channel", "web")
+        .eq("platform_user_id", authUserId)
+        .order("updated_at", { ascending: false })
+        .limit(1),
+    )) || null;
+
+  if (!webChannel && compatUser?.id != null) {
+    webChannel =
+      (await maybeSingle<AnyRecord>(
+        admin
+          .from("customer_channel_accounts")
+          .select("*")
+          .eq("channel", "web")
+          .eq("linked_user_id", compatUser.id)
+          .order("updated_at", { ascending: false })
+          .limit(1),
+      )) || null;
+  }
+
+  const phoneIdentity =
+    (await maybeSingle<AnyRecord>(
+      admin
+        .from("auth_phone_identities")
+        .select("phone_e164")
+        .eq("auth_user_id", authUserId)
+        .limit(1),
+    )) || null;
+  const phoneE164 = safeString(phoneIdentity?.phone_e164) || null;
+
+  const customerByPhone =
+    phoneE164
+      ? ((await maybeSingle<AnyRecord>(
+          admin
+            .from("customers")
+            .select("*")
+            .eq("phone_e164", phoneE164)
+            .limit(1),
+        )) || null)
+      : null;
+
+  const resolvedCustomerId =
+    Number(authLink?.customer_id ?? 0) ||
+    Number(webChannel?.customer_id ?? 0) ||
+    Number(compatUser?.customer_id ?? 0) ||
+    Number(customerByPhone?.id ?? 0) ||
+    null;
+
+  let customer =
+    resolvedCustomerId && Number(customerByPhone?.id ?? 0) === resolvedCustomerId
+      ? customerByPhone
+      : resolvedCustomerId
+        ? ((await maybeSingle<AnyRecord>(
+            admin
+              .from("customers")
+              .select("*")
+              .eq("id", resolvedCustomerId)
+              .limit(1),
+          )) || null)
+        : null;
+
+  if (!customer?.id || !safeString(customer.phone_verified_at)) {
+    return {
+      customerId: null,
+      customerRow: customer || null,
+      compatUserRow: compatUser,
+      authLinked: false,
+      webLinked: false,
+      compatLinked: false,
+      repaired: false,
+    };
+  }
+
+  if (
+    !authLink ||
+    Number(authLink.customer_id ?? 0) !== Number(customer.id) ||
+    !["linked", "active"].includes(String(authLink.link_status || "").toLowerCase()) ||
+    safeString(authLink.email) !== email
+  ) {
+    repaired = true;
+    if (authLink?.id) {
+      const { data, error } = await admin
+        .from("customer_auth_links")
+        .update({
+          customer_id: customer.id,
+          auth_user_id: authUserId,
+          email,
+          link_status: "linked",
+        })
+        .eq("id", authLink.id)
+        .select("*")
+        .limit(1)
+        .single();
+      if (error) throw error;
+      authLink = data as AnyRecord;
+    } else {
+      const { data, error } = await admin
+        .from("customer_auth_links")
+        .insert({
+          customer_id: customer.id,
+          auth_user_id: authUserId,
+          email,
+          link_status: "linked",
+        })
+        .select("*")
+        .limit(1)
+        .single();
+      if (error) throw error;
+      authLink = data as AnyRecord;
+    }
+  }
+
+  const compatDisplayName =
+    safeString(compatUser?.first_name) ||
+    safeString(customer.full_name) ||
+    (email ? email.split("@")[0] : "") ||
+    phoneE164 ||
+    authUserId;
+  const compatPayload: AnyRecord = {
+    platform: "web",
+    platform_id: buildCompatWebPlatformId(email, authUserId),
+    email,
+    auth_user_id: authUserId,
+    username: safeString(compatUser?.username) || (email ? email.split("@")[0] : "") || authUserId,
+    first_name: compatDisplayName,
+    is_active: compatUser?.is_active !== false,
+    is_banned: false,
+    customer_id: customer.id,
+    customer_phone_e164: safeString(customer.phone_e164) || phoneE164,
+    plan: safeString(customer.plan) || "free",
+    premium_until: safeString(customer.premium_until),
+    trial_ends_at: safeString(customer.trial_ends_at),
+    access_state: deriveCustomerAccessState(customer),
+  };
+
+  if (!compatUser) {
+    repaired = true;
+    const { data, error } = await admin
+      .from("users")
+      .insert(compatPayload)
+      .select("*")
+      .limit(1)
+      .single();
+    if (error) throw error;
+    compatUser = data as AnyRecord;
+  } else if (
+    Number(compatUser.customer_id ?? 0) !== Number(customer.id) ||
+    safeString(compatUser.auth_user_id) !== authUserId ||
+    safeString(compatUser.customer_phone_e164) !== safeString(customer.phone_e164) ||
+    safeString(compatUser.access_state) !== compatPayload.access_state
+  ) {
+    repaired = true;
+    const { data, error } = await admin
+      .from("users")
+      .update(compatPayload)
+      .eq("id", compatUser.id)
+      .select("*")
+      .limit(1)
+      .single();
+    if (error) throw error;
+    compatUser = data as AnyRecord;
+  }
+
+  const webChannelPayload: AnyRecord = {
+    customer_id: customer.id,
+    channel: "web",
+    platform_user_id: authUserId,
+    platform_chat_id: null,
+    linked_user_id: compatUser?.id ?? null,
+    display_name: safeString(customer.full_name) || compatDisplayName,
+    phone_claimed: safeString(customer.phone_display) || phoneE164,
+    phone_claimed_e164: safeString(customer.phone_e164) || phoneE164,
+    link_status: "linked",
+  };
+
+  if (!webChannel) {
+    repaired = true;
+    const { data, error } = await admin
+      .from("customer_channel_accounts")
+      .insert(webChannelPayload)
+      .select("*")
+      .limit(1)
+      .single();
+    if (error) throw error;
+    webChannel = data as AnyRecord;
+  } else if (
+    Number(webChannel.customer_id ?? 0) !== Number(customer.id) ||
+    Number(webChannel.linked_user_id ?? 0) !== Number(compatUser?.id ?? 0) ||
+    !["linked", "active"].includes(String(webChannel.link_status || "").toLowerCase())
+  ) {
+    repaired = true;
+    const { data, error } = await admin
+      .from("customer_channel_accounts")
+      .update(webChannelPayload)
+      .eq("id", webChannel.id)
+      .select("*")
+      .limit(1)
+      .single();
+    if (error) throw error;
+    webChannel = data as AnyRecord;
+  }
+
+  try {
+    await admin.rpc("sync_customer_to_compat_users", { p_customer_id: customer.id });
+  } catch {
+    // Direct writes above already converged the canonical state.
+  }
+
+  return {
+    customerId: Number(customer.id),
+    customerRow: customer,
+    compatUserRow: compatUser,
+    authLinked: Boolean(authLink?.id),
+    webLinked: Boolean(webChannel?.id),
+    compatLinked: Boolean(compatUser?.id && Number(compatUser.customer_id ?? 0) === Number(customer.id)),
+    repaired,
+  };
+}
+
 function toFiniteNumber(value: unknown, fallback = 0) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : fallback;
@@ -166,6 +494,45 @@ function normalizePrimaryGoal(value: unknown): PrimaryGoal {
   if (/(tang co|lean bulk)/.test(raw)) return "muscle_gain";
   if (/(tang can|bulk)/.test(raw)) return "gain_weight";
   return "maintain";
+}
+
+export function normalizeGoalModeVariant(value: unknown): GoalModeVariant {
+  const raw = safeString(value)?.toLowerCase().trim() || "";
+  if (!raw) return null;
+  if (
+    [
+      "recomp_muscle_bias",
+      "tangcogiammo",
+      "tangco_giammo",
+      "tang co giam mo",
+      "muscle_gain_recomp",
+    ].includes(raw)
+  ) {
+    return "recomp_muscle_bias";
+  }
+  if (
+    [
+      "recomp_fat_loss_bias",
+      "giammotangco",
+      "giammo_tangco",
+      "giam mo tang co",
+      "fat_loss_recomp",
+    ].includes(raw)
+  ) {
+    return "recomp_fat_loss_bias";
+  }
+  return null;
+}
+
+function resolveStoredPrimaryGoal(primaryGoalValue: unknown, goalModeValue: unknown): PrimaryGoal {
+  const explicitPrimaryGoal = safeString(primaryGoalValue);
+  if (explicitPrimaryGoal) {
+    return normalizePrimaryGoal(explicitPrimaryGoal);
+  }
+  const variant = normalizeGoalModeVariant(goalModeValue);
+  if (variant === "recomp_muscle_bias") return "muscle_gain";
+  if (variant === "recomp_fat_loss_bias") return "fat_loss";
+  return normalizePrimaryGoal(goalModeValue);
 }
 
 function normalizeTargetMetric(value: unknown): TargetMetric {
@@ -292,6 +659,15 @@ export function formatGoalLabel(goal: PrimaryGoal) {
     default:
       return "Duy trì";
   }
+}
+
+export function formatGoalModeDisplayLabel(
+  goal: PrimaryGoal,
+  variant: GoalModeVariant = null,
+) {
+  if (variant === "recomp_muscle_bias") return "Tăng cơ giảm mỡ";
+  if (variant === "recomp_fat_loss_bias") return "Giảm mỡ tăng cơ";
+  return formatGoalLabel(goal);
 }
 
 function getSaigonFormatter(options: Intl.DateTimeFormatOptions) {
@@ -455,7 +831,7 @@ function isMissingRelationError(error: unknown, relationName: string) {
   );
 }
 
-async function refreshStats(admin: ReturnType<typeof createServiceRoleClient>, userId: number, anchorDate: string) {
+export async function refreshStats(admin: ReturnType<typeof createServiceRoleClient>, userId: number, anchorDate: string) {
   await rpc(admin, "refresh_daily_user_stats", {
     p_user_id: userId,
     p_date: anchorDate,
@@ -466,7 +842,38 @@ async function refreshStats(admin: ReturnType<typeof createServiceRoleClient>, u
   });
 }
 
-async function resolveContextByCustomerId(
+function coreProfileCompletenessScore(row: AnyRecord | null | undefined) {
+  if (!row) return -1;
+  let score = 0;
+  if (safeString(row.gender)) score += 1;
+  if (toFiniteNumber(row.age, Number.NaN) > 0) score += 1;
+  if (toFiniteNumber(row.height_cm, Number.NaN) > 0) score += 1;
+  if (toFiniteNumber(row.weight_kg, Number.NaN) > 0) score += 1;
+  if (safeString(row.activity_level) || row.activity_level === 0) score += 1;
+  if ((safeString(row.platform) || "").toLowerCase() === "web") score += 0.01;
+  return score;
+}
+
+function selectBestContextUser(userRows: AnyRecord[] | null | undefined, preferredUserId?: number | null) {
+  const rows = Array.isArray(userRows) ? userRows : [];
+  const preferred =
+    preferredUserId != null
+      ? rows.find((row) => Number(row?.id ?? 0) === Number(preferredUserId)) || null
+      : null;
+  const ranked = [...rows].sort((left, right) => {
+    const scoreDiff = coreProfileCompletenessScore(right) - coreProfileCompletenessScore(left);
+    if (scoreDiff !== 0) return scoreDiff;
+    return Date.parse(safeString(right?.updated_at) || "") - Date.parse(safeString(left?.updated_at) || "");
+  });
+  const best = ranked[0] || null;
+  if (!preferred) return best;
+  if (!best) return preferred;
+  const preferredScore = coreProfileCompletenessScore(preferred);
+  const bestScore = coreProfileCompletenessScore(best);
+  return bestScore >= preferredScore + 1 ? best : preferred;
+}
+
+export async function resolveContextByCustomerId(
   admin: ReturnType<typeof createServiceRoleClient>,
   customerId: number,
   preferredUserId?: number | null,
@@ -508,12 +915,7 @@ async function resolveContextByCustomerId(
 
   if (userError) throw userError;
 
-  const selectedUser =
-    (preferredUserId
-      ? (userRows || []).find((row: AnyRecord) => Number(row.id) === preferredUserId)
-      : null) ||
-    (userRows || [])[0] ||
-    null;
+  const selectedUser = selectBestContextUser(userRows, preferredUserId);
 
   return {
     customerId,
@@ -523,7 +925,7 @@ async function resolveContextByCustomerId(
   };
 }
 
-async function resolveContextByUserId(
+export async function resolveContextByUserId(
   admin: ReturnType<typeof createServiceRoleClient>,
   linkedUserId: number,
 ): Promise<DashboardContext> {
@@ -572,23 +974,14 @@ export async function resolveDashboardAccess(req: any, body?: AnyRecord) {
   }
 
   const authAccess = await requireAuthenticatedUser(req);
-  const authLink =
-    (await maybeSingle<AnyRecord>(
-      authAccess.admin
-        .from("customer_auth_links")
-        .select("customer_id")
-        .eq("auth_user_id", authAccess.authUser.id)
-        .in("link_status", ["linked", "active"])
-        .order("created_at", { ascending: false })
-        .limit(1),
-    )) || null;
-
-  const customerId = Number(authLink?.customer_id ?? 0) || null;
+  const canonical = await resolveCanonicalPortalCustomerForAuthUser(authAccess.admin, authAccess.authUser as AnyRecord);
+  const customerId = canonical.customerId;
   if (!customerId) {
     throw new Error("customer_not_linked");
   }
 
-  const context = await resolveContextByCustomerId(authAccess.admin, customerId, null);
+  const preferredUserId = Number(canonical.compatUserRow?.id ?? 0) || null;
+  const context = await resolveContextByCustomerId(authAccess.admin, customerId, preferredUserId);
   return {
     admin: authAccess.admin,
     accessKind: "portal" as const,
@@ -596,8 +989,15 @@ export async function resolveDashboardAccess(req: any, body?: AnyRecord) {
   };
 }
 
-export function resolveWeeklyRateKg(goal: PrimaryGoal, gender: string | null, storedRate: number) {
+export function resolveWeeklyRateKg(
+  goal: PrimaryGoal,
+  gender: string | null,
+  storedRate: number,
+  variant: GoalModeVariant = null,
+) {
   if (storedRate > 0) return storedRate;
+  if (variant === "recomp_muscle_bias") return 0.1;
+  if (variant === "recomp_fat_loss_bias") return 0.2;
   if (goal === "lose_weight") return 0.5;
   if (goal === "fat_loss") return gender === "female" ? 0.4 : 0.5;
   if (goal === "gain_weight") return 0.35;
@@ -621,17 +1021,78 @@ export function computeDailyGoalKcal(tdee: number, goal: PrimaryGoal, weeklyRate
   return roundNumber(Math.max(1200, safeTdee - delta), 0);
 }
 
+export type CoreProfileMetricsInput = {
+  gender: string | null;
+  age: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  activityLevel: number | null;
+};
+
+export function computeCoreProfileDerivedMetrics(
+  profile: CoreProfileMetricsInput,
+  existing: AnyRecord | null | undefined,
+) {
+  if (
+    !profile.gender ||
+    profile.age === null ||
+    profile.heightCm === null ||
+    profile.weightKg === null ||
+    profile.activityLevel === null
+  ) {
+    return null;
+  }
+
+  const goalModeVariant = normalizeGoalModeVariant(existing?.goal_mode_variant ?? existing?.goal_mode);
+  const primaryGoal = resolveStoredPrimaryGoal(existing?.primary_goal, existing?.goal_mode);
+  const weeklyRateKg = resolveWeeklyRateKg(
+    primaryGoal,
+    profile.gender,
+    toFiniteNumber(existing?.goal_weekly_rate_kg) || 0,
+    goalModeVariant,
+  );
+  const activityMultipliers: Record<number, number> = {
+    1: 1.2,
+    2: 1.375,
+    3: 1.55,
+    4: 1.725,
+    5: 1.9,
+  };
+  const activityMultiplier = activityMultipliers[profile.activityLevel] || 1.2;
+  const bmr = roundNumber(
+    10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age + (profile.gender === "male" ? 5 : -161),
+    0,
+  );
+  const tdee = roundNumber(bmr * activityMultiplier, 0);
+  const dailyGoalKcal = computeDailyGoalKcal(tdee, primaryGoal, weeklyRateKg);
+  return {
+    primaryGoal,
+    goalModeVariant,
+    weeklyRateKg,
+    bmr,
+    tdee,
+    dailyGoalKcal,
+  };
+}
+
 export function computeMacroTargets(
   goal: PrimaryGoal,
   gender: string | null,
   weightKg: number,
   dailyGoalKcal: number,
+  variant: GoalModeVariant = null,
 ) {
   const safeWeight = weightKg > 0 ? weightKg : 70;
   let proteinPerKg = 1.6;
   let fatPerKg = 0.8;
 
-  if (goal === "lose_weight") {
+  if (variant === "recomp_muscle_bias") {
+    proteinPerKg = 2.0;
+    fatPerKg = 0.8;
+  } else if (variant === "recomp_fat_loss_bias") {
+    proteinPerKg = 2.2;
+    fatPerKg = 0.7;
+  } else if (goal === "lose_weight") {
     proteinPerKg = 2.0;
     fatPerKg = 0.7;
   } else if (goal === "fat_loss") {
@@ -741,8 +1202,9 @@ function buildBodyCompositionConflicts(userRow: AnyRecord | null, input: BodyCom
 async function fetchChartRows(
   admin: ReturnType<typeof createServiceRoleClient>,
   userId: number,
+  now = new Date(),
 ) {
-  const today = getStartOfSaigonDay();
+  const today = getStartOfSaigonDay(now);
   const start = addDays(today, -6);
   const { data, error } = await admin
     .from("daily_user_stats")
@@ -805,18 +1267,28 @@ export async function getDashboardSummary(
   admin: ReturnType<typeof createServiceRoleClient>,
   context: DashboardContext,
   period: DashboardPeriod = "week",
+  options?: {
+    now?: Date | string | null;
+  },
 ): Promise<DashboardSummary> {
   if (!context.userRow?.id) {
     throw new Error("dashboard_user_not_found");
   }
 
   const userId = Number(context.userRow.id);
-  const todayKey = getSaigonDateKey();
+  const anchorNow =
+    options?.now instanceof Date
+      ? options.now
+      : safeString(options?.now)
+        ? new Date(String(options?.now))
+        : new Date();
+  const effectiveNow = Number.isFinite(anchorNow.getTime()) ? anchorNow : new Date();
+  const todayKey = getSaigonDateKey(effectiveNow);
   await refreshStats(admin, userId, todayKey);
 
-  const dayRange = getPeriodRange("day");
-  const weekRange = getPeriodRange("week");
-  const requestedRange = getPeriodRange(period);
+  const dayRange = getPeriodRange("day", effectiveNow);
+  const weekRange = getPeriodRange("week", effectiveNow);
+  const requestedRange = getPeriodRange(period, effectiveNow);
 
   const [dailyRow, weeklyRows, latestBodyComposition, chart7d] = await Promise.all([
     maybeSingle<AnyRecord>(
@@ -835,7 +1307,7 @@ export async function getDashboardSummary(
       .lte("date_local", toIsoDate(weekRange.end))
       .order("date_local", { ascending: true }),
     fetchLatestBodyComposition(admin, userId),
-    fetchChartRows(admin, userId),
+    fetchChartRows(admin, userId, effectiveNow),
   ]);
 
   const weeklyDailyRows = Array.isArray(weeklyRows.data) ? weeklyRows.data : [];
@@ -857,16 +1329,23 @@ export async function getDashboardSummary(
   const currentBodyFatPct = toFiniteNumber(
     latestBodyComposition?.body_fat_pct ?? context.userRow.current_body_fat_pct,
   );
-  const primaryGoal = normalizePrimaryGoal(context.userRow.primary_goal ?? context.userRow.goal_mode);
+  const goalModeVariant = normalizeGoalModeVariant(
+    context.userRow.goal_mode_variant ?? context.userRow.goal_mode,
+  );
+  const primaryGoal = resolveStoredPrimaryGoal(
+    context.userRow.primary_goal,
+    context.userRow.goal_mode,
+  );
   const targetMetric = normalizeTargetMetric(context.userRow.target_metric);
   const weeklyRateKg = resolveWeeklyRateKg(
     primaryGoal,
     gender,
     toFiniteNumber(context.userRow.goal_weekly_rate_kg),
+    goalModeVariant,
   );
   const tdee = toFiniteNumber(context.userRow.tdee);
   const dailyGoalKcal = computeDailyGoalKcal(tdee, primaryGoal, weeklyRateKg);
-  const macros = computeMacroTargets(primaryGoal, gender, currentWeightKg, dailyGoalKcal);
+  const macros = computeMacroTargets(primaryGoal, gender, currentWeightKg, dailyGoalKcal, goalModeVariant);
 
   const sumRows = (rows: AnyRecord[]) =>
     rows.reduce(
@@ -915,7 +1394,9 @@ export async function getDashboardSummary(
       linkedUserId: context.linkedUserId,
       onboardingStatus: safeString(context.customerRow?.onboarding_status) || safeString(context.userRow.onboarding_status),
       primaryGoal,
+      goalModeVariant,
       goalLabel: formatGoalLabel(primaryGoal),
+      goalModeDisplayLabel: formatGoalModeDisplayLabel(primaryGoal, goalModeVariant),
       weightKg: currentWeightKg > 0 ? roundNumber(currentWeightKg, 1) : null,
       heightCm: toFiniteNumber(latestBodyComposition?.height_cm ?? context.userRow.height_cm) || null,
       age: safeInteger(latestBodyComposition?.age ?? context.userRow.age) || null,
@@ -936,6 +1417,9 @@ export async function getDashboardSummary(
       targetProteinG: macros.proteinG,
       targetCarbsG: macros.carbsG,
       targetFatG: macros.fatG,
+      dailyProteinG: macros.proteinG,
+      dailyCarbsG: macros.carbsG,
+      dailyFatG: macros.fatG,
       mealCount: dailyConsumed.mealCount,
       date: todayKey,
     },
@@ -950,6 +1434,9 @@ export async function getDashboardSummary(
       remainingCarbsG: roundNumber(weeklyTargets.targetCarbsG - weeklyConsumed.totalCarbs, 1),
       remainingFatG: roundNumber(weeklyTargets.targetFatG - weeklyConsumed.totalFat, 1),
       daysLogged: weeklyConsumed.daysLogged,
+      weeklyProteinG: weeklyTargets.targetProteinG,
+      weeklyCarbsG: weeklyTargets.targetCarbsG,
+      weeklyFatG: weeklyTargets.targetFatG,
       startDate: toIsoDate(weekRange.start),
       endDate: toIsoDate(weekRange.end),
     },
@@ -1023,7 +1510,10 @@ export async function getGoalPreview(
   );
   const tdee = toFiniteNumber(profile.tdee ?? context.userRow?.tdee, 0);
   const explicitGoal = safeString(input.primaryGoal);
-  const fallbackGoal = normalizePrimaryGoal(explicitGoal ?? context.userRow?.primary_goal ?? context.userRow?.goal_mode);
+  const explicitVariant = normalizeGoalModeVariant(explicitGoal);
+  const fallbackGoal = explicitGoal
+    ? resolveStoredPrimaryGoal(explicitGoal, explicitGoal)
+    : resolveStoredPrimaryGoal(context.userRow?.primary_goal, context.userRow?.goal_mode);
   const explicitTargetWeightKg =
     input.targetWeightKg != null ? toFiniteNumber(input.targetWeightKg, Number.NaN) : Number.NaN;
   const explicitTargetBodyFatPct =
@@ -1051,10 +1541,12 @@ export async function getGoalPreview(
     };
   }
 
-  const primaryGoal = normalizePrimaryGoal(
-    explicitGoal ||
-      resolvePreviewPrimaryGoal(messageText, currentWeightKg, targetWeightKg, fallbackGoal),
-  );
+  const primaryGoal = explicitGoal
+    ? resolveStoredPrimaryGoal(explicitGoal, explicitGoal)
+    : normalizePrimaryGoal(resolvePreviewPrimaryGoal(messageText, currentWeightKg, targetWeightKg, fallbackGoal));
+  const goalModeVariant =
+    explicitVariant ??
+    normalizeGoalModeVariant(context.userRow?.goal_mode_variant ?? context.userRow?.goal_mode);
   const explicitWeeklyRateKg =
     input.weeklyRateKg != null
       ? toFiniteNumber(input.weeklyRateKg, Number.NaN)
@@ -1065,9 +1557,10 @@ export async function getGoalPreview(
     Number.isFinite(explicitWeeklyRateKg)
       ? explicitWeeklyRateKg
       : toFiniteNumber(context.userRow?.goal_weekly_rate_kg),
+    goalModeVariant,
   );
   const dailyGoalKcal = computeDailyGoalKcal(tdee, primaryGoal, weeklyRateKg);
-  const macros = computeMacroTargets(primaryGoal, gender, currentWeightKg, dailyGoalKcal);
+  const macros = computeMacroTargets(primaryGoal, gender, currentWeightKg, dailyGoalKcal, goalModeVariant);
   const weekly = {
     targetKcal: roundNumber(dailyGoalKcal * 7, 0),
     targetProteinG: roundNumber(macros.proteinG * 7, 1),
@@ -1089,6 +1582,7 @@ export async function getGoalPreview(
     source: "goal_preview",
     messageText,
     primaryGoal,
+    goalModeVariant,
     targetMetric,
     targetWeightKg: goalPlan.targetWeightKg,
     targetBodyFatPct: goalPlan.targetBodyFatPct,
@@ -1104,6 +1598,7 @@ export async function getGoalPreview(
   };
   const goalProfileUpdate = {
     primary_goal: primaryGoal,
+    goal_mode_variant: goalModeVariant,
     target_metric: targetMetric,
     target_weight_kg: goalPlan.targetWeightKg,
     target_body_fat_pct: goalPlan.targetBodyFatPct,
@@ -1263,6 +1758,41 @@ export async function saveBodyCompositionLog(
     if ("height_cm" in context.userRow && input.heightCm != null) userUpdate.height_cm = input.heightCm;
   }
 
+  const derivedMetrics = computeCoreProfileDerivedMetrics(
+    {
+      gender: normalizedGender || normalizeGender(context.userRow?.gender) || null,
+      age:
+        input.age != null
+          ? Number(input.age)
+          : Number.isFinite(toFiniteNumber(context.userRow?.age, Number.NaN))
+            ? toFiniteNumber(context.userRow?.age, Number.NaN)
+            : null,
+      heightCm:
+        input.heightCm != null
+          ? Number(input.heightCm)
+          : Number.isFinite(toFiniteNumber(context.userRow?.height_cm, Number.NaN))
+            ? toFiniteNumber(context.userRow?.height_cm, Number.NaN)
+            : null,
+      weightKg:
+        input.weightKg != null
+          ? Number(input.weightKg)
+          : Number.isFinite(toFiniteNumber(context.userRow?.weight_kg, Number.NaN))
+            ? toFiniteNumber(context.userRow?.weight_kg, Number.NaN)
+            : null,
+      activityLevel: Number.isFinite(toFiniteNumber(context.userRow?.activity_level, Number.NaN))
+        ? Math.round(toFiniteNumber(context.userRow?.activity_level, Number.NaN))
+        : null,
+    },
+    context.userRow,
+  );
+  if (derivedMetrics) {
+    if ("bmr" in context.userRow) userUpdate.bmr = derivedMetrics.bmr;
+    if ("tdee" in context.userRow) userUpdate.tdee = derivedMetrics.tdee;
+    if ("daily_calorie_goal" in context.userRow) {
+      userUpdate.daily_calorie_goal = derivedMetrics.dailyGoalKcal;
+    }
+  }
+
   const { error: updateError } = Object.keys(userUpdate).length
     ? await admin
         .from("users")
@@ -1271,6 +1801,14 @@ export async function saveBodyCompositionLog(
     : { error: null };
 
   if (updateError) throw updateError;
+
+  if (customerId) {
+    try {
+      await admin.rpc("sync_customer_to_compat_users", { p_customer_id: customerId });
+    } catch {
+      // Best effort only. The current user row is already updated above.
+    }
+  }
 
   await refreshStats(admin, userId, getSaigonDateKey());
   const refreshedContext = await resolveContextByUserId(admin, userId);

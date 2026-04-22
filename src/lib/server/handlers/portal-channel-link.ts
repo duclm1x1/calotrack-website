@@ -6,7 +6,7 @@ import {
   requireAuthenticatedUser,
   safeString,
   sendJson,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 
 const DEFAULT_TELEGRAM_BOT_URL = safeString(process.env.VITE_TELEGRAM_BOT_URL) || "https://t.me/CaloTrack_bot";
 const DEFAULT_ZALO_OA_URL = safeString(process.env.VITE_ZALO_OA_URL) || "https://zalo.me/4423588403113387176";

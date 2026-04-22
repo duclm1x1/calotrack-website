@@ -5,7 +5,7 @@ import {
   safeString,
   sendJson,
   writeAdminAuditLog,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 
 function normalizeAdminProBillingSku(value: unknown): "monthly" | "semiannual" | "yearly" | null {
   const normalized = safeString(value)?.toLowerCase();

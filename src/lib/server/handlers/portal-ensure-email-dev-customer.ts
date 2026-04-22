@@ -3,7 +3,7 @@ import {
   requireAuthenticatedUser,
   sendJson,
   safeString,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 
 function hasActiveTrialWindow(value: string | null): boolean {
   const iso = safeString(value);

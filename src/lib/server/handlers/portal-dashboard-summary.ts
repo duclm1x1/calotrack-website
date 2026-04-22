@@ -1,10 +1,10 @@
-import { sendJson } from "../src/lib/server/adminServer.js";
+import { sendJson } from "../adminServer.js";
 import {
   getDashboardSummary,
   readJsonBody,
   resolveDashboardAccess,
   type DashboardPeriod,
-} from "../src/lib/server/dashboardSummaryServer.js";
+} from "../dashboardSummaryServer.js";
 
 function getPeriod(req: any, body: Record<string, unknown>): DashboardPeriod {
   const fromQuery = String(req.query?.period || "").trim().toLowerCase();

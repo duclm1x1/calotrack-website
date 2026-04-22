@@ -7,7 +7,7 @@ import {
   safeString,
   sendJson,
   writeAdminAuditLog,
-} from "../src/lib/server/adminServer.js";
+} from "../adminServer.js";
 
 function buildAuthIdentityRow(params: {
   authUser: Record<string, any>;

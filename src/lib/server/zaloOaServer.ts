@@ -183,6 +183,147 @@ function parseJsonRecord(value: unknown): AnyRecord {
   return value as AnyRecord;
 }
 
+const QUESTION_MARK_MOJIBAKE_REPLACEMENTS: Array<[string, string]> = [
+  ["M?nh", "M\u00ecnh"],
+  ["m?nh", "m\u00ecnh"],
+  ["B?n", "B\u1ea1n"],
+  ["b?n", "b\u1ea1n"],
+  ["H?m nay", "H\u00f4m nay"],
+  ["h?m nay", "h\u00f4m nay"],
+  ["H? so", "H\u1ed3 s\u01a1"],
+  ["h? s?", "h\u1ed3 s\u01a1"],
+  ["m?c ti?u", "m\u1ee5c ti\u00eau"],
+  ["M?c ti?u", "M\u1ee5c ti\u00eau"],
+  ["Duy tr?", "Duy tr\u00ec"],
+  ["Gi?m m?", "Gi\u1ea3m m\u1ee1"],
+  ["Gi?m c?n", "Gi\u1ea3m c\u00e2n"],
+  ["Tang c?n", "T\u0103ng c\u00e2n"],
+  ["Tang co", "T\u0103ng c\u01a1"],
+  ["?nh", "\u1ea2nh"],
+  ["?n", "\u0103n"],
+  ["b?a", "b\u1eefa"],
+  ["B?a", "B\u1eefa"],
+  ["m?n", "m\u00f3n"],
+  ["M?n", "M\u00f3n"],
+  ["m?i", "m\u1edbi"],
+  ["M?i", "M\u1edbi"],
+  ["v?a", "v\u1eeba"],
+  ["V?a", "V\u1eeba"],
+  ["r?i", "r\u1ed3i"],
+  ["R?i", "R\u1ed3i"],
+  ["c?n n?ng", "c\u00e2n n\u1eb7ng"],
+  ["C?n n?ng", "C\u00e2n n\u1eb7ng"],
+  ["chi?u cao", "chi\u1ec1u cao"],
+  ["Chi?u cao", "Chi\u1ec1u cao"],
+  ["gi?i t?nh", "gi\u1edbi t\u00ednh"],
+  ["Gi?i t?nh", "Gi\u1edbi t\u00ednh"],
+  ["tu?i", "tu\u1ed5i"],
+  ["Tu?i", "Tu\u1ed5i"],
+  ["v?n d?ng", "v\u1eadn \u0111\u1ed9ng"],
+  ["V?n d?ng", "V\u1eadn \u0111\u1ed9ng"],
+  ["ti?n d?", "ti\u1ebfn \u0111\u1ed9"],
+  ["Ti?n d?", "Ti\u1ebfn \u0111\u1ed9"],
+  ["th?ng n?y", "th\u00e1ng n\u00e0y"],
+  ["Th?ng n?y", "Th\u00e1ng n\u00e0y"],
+  ["tu?n n?y", "tu\u1ea7n n\u00e0y"],
+  ["Tu?n n?y", "Tu\u1ea7n n\u00e0y"],
+  ["kh?ng", "kh\u00f4ng"],
+  ["Kh?ng", "Kh\u00f4ng"],
+  ["chua", "ch\u01b0a"],
+  ["Chua", "Ch\u01b0a"],
+  ["gi?p m?nh", "gi\u00fap m\u00ecnh"],
+  ["Gi?p m?nh", "Gi\u00fap m\u00ecnh"],
+  ["th? l?i", "th\u1eed l\u1ea1i"],
+  ["Th? l?i", "Th\u1eed l\u1ea1i"],
+  ["th?ng k?", "th\u1ed1ng k\u00ea"],
+  ["Th?ng k?", "Th\u1ed1ng k\u00ea"],
+  ["c?p nh?t", "c\u1eadp nh\u1eadt"],
+  ["C?p nh?t", "C\u1eadp nh\u1eadt"],
+  ["nh?t k?", "nh\u1eadt k\u00fd"],
+  ["Nh?t k?", "Nh\u1eadt k\u00fd"],
+  ["li?t k?", "li\u1ec7t k\u00ea"],
+  ["Li?t k?", "Li\u1ec7t k\u00ea"],
+  ["to?n b?", "to\u00e0n b\u1ed9"],
+  ["To?n b?", "To\u00e0n b\u1ed9"],
+  ["g?n nh?t", "g\u1ea7n nh\u1ea5t"],
+  ["G?n nh?t", "G\u1ea7n nh\u1ea5t"],
+  ["ph?n h?i", "ph\u1ea3n h\u1ed3i"],
+  ["Ph?n h?i", "Ph\u1ea3n h\u1ed3i"],
+  ["x? l?", "x\u1eed l\u00fd"],
+  ["X? l?", "X\u1eed l\u00fd"],
+  ["d? li?u", "d\u1eef li\u1ec7u"],
+  ["D? li?u", "D\u1eef li\u1ec7u"],
+  ["ho?n t?t", "ho\u00e0n t\u1ea5t"],
+  ["Ho?n t?t", "Ho\u00e0n t\u1ea5t"],
+  ["thao t?c", "thao t\u00e1c"],
+  ["Thao t?c", "Thao t\u00e1c"],
+  ["k?t n?i", "k\u1ebft n\u1ed1i"],
+  ["K?t n?i", "K\u1ebft n\u1ed1i"],
+  ["t?i kho?n", "t\u00e0i kho\u1ea3n"],
+  ["T?i kho?n", "T\u00e0i kho\u1ea3n"],
+  ["s?n s?ng", "s\u1eb5n s\u00e0ng"],
+  ["S?n s?ng", "S\u1eb5n s\u00e0ng"],
+  ["b?t ??u", "b\u1eaft \u0111\u1ea7u"],
+  ["B?t ??u", "B\u1eaft \u0111\u1ea7u"],
+  ["??n", "\u0111\u01a1n"],
+  ["??c", "\u0111\u1ecdc"],
+  ["t?ng h?p", "t\u1ed5ng h\u1ee3p"],
+  ["T?ng h?p", "T\u1ed5ng h\u1ee3p"],
+  ["T?ng", "T\u1ed5ng"],
+  ["Nh?n nhanh", "Nh\u00ecn nhanh"],
+  ["Vi?c n?n l?m", "Vi\u1ec7c n\u00ean l\u00e0m"],
+  ["c? l?u", "c\u00f3 l\u01b0u"],
+  ["kh?ng l?u", "kh\u00f4ng l\u01b0u"],
+  ["D? b?t d?u dăng CaloTrack trăn Zalo, bạn căn x?c th?c s? diăn tho?i tru?c.", "\u0110\u1ec3 b\u1eaft \u0111\u1ea7u d\u00f9ng CaloTrack tr\u00ean Zalo, b\u1ea1n c\u1ea7n x\u00e1c th\u1ef1c s\u1ed1 \u0111i\u1ec7n tho\u1ea1i tr\u01b0\u1edbc."],
+  ["M? portal:", "M\u1edf portal:"],
+  ["X?c th?c OTP xong h? thăng s? m? trial 7 ng?y, rồi bạn quay l?i chat n?y d? dăng ti?p.", "X\u00e1c th\u1ef1c OTP xong h\u1ec7 th\u1ed1ng s\u1ebd m\u1edf trial 7 ng\u00e0y, r\u1ed3i b\u1ea1n quay l\u1ea1i chat n\u00e0y \u0111\u1ec3 d\u00f9ng ti\u1ebfp."],
+  ["D? ghi v?n d?ng cho bạn rồi nh?!", "\u0110\u00e3 ghi v\u1eadn \u0111\u1ed9ng cho b\u1ea1n r\u1ed3i nh\u00e9!"],
+  ["- Ho?t d?ng: Ch?y b?", "- Ho\u1ea1t \u0111\u1ed9ng: Ch\u1ea1y b\u1ed9"],
+  ["- Calories d?t:", "- Calories \u0111\u1ed1t:"],
+  ["- Th?i l??ng:", "- Th\u1eddi l\u01b0\u1ee3ng:"],
+  ["- Qu?ng ???ng:", "- Qu\u00e3ng \u0111\u01b0\u1eddng:"],
+  ["Gi? nh?p t?t l?m bạn! Mu?n xem l?i tăng hôm nay th? nh?n /stats nha.", "Gi\u1edd nh\u1eadp t\u1ed1t l\u1eafm b\u1ea1n! Mu\u1ed1n xem l\u1ea1i t\u1ed5ng h\u00f4m nay th\u00ec nh\u1eafn /stats nha."],
+  ["??", ""],
+];
+
+function repairLatin1Mojibake(value: string) {
+  if (!/[ÃÂÄ]/.test(value)) return value;
+  try {
+    return Buffer.from(value, "latin1").toString("utf8");
+  } catch {
+    return value;
+  }
+}
+
+function repairQuestionMarkMojibake(value: string) {
+  let next = value;
+  for (const [from, to] of QUESTION_MARK_MOJIBAKE_REPLACEMENTS) {
+    next = next.split(from).join(to);
+  }
+  return next;
+}
+
+function sanitizeOutgoingString(value: string) {
+  return repairQuestionMarkMojibake(repairLatin1Mojibake(value));
+}
+
+function sanitizeOutgoingPayload<T>(value: T): T {
+  if (typeof value === "string") {
+    return sanitizeOutgoingString(value) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeOutgoingPayload(item)) as T;
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const clone: AnyRecord = {};
+  for (const [key, rawValue] of Object.entries(value as AnyRecord)) {
+    clone[key] = sanitizeOutgoingPayload(rawValue);
+  }
+  return clone as T;
+}
+
 function shouldRefresh(state: ZaloTokenState, leadSeconds: number, forceRefresh = false) {
   if (forceRefresh) return true;
   if (!state.access_token) return true;
@@ -727,6 +868,7 @@ export async function sendZaloTemplateMessage(
 ): Promise<ZaloSendResult> {
   const appId = getZaloOaAppId();
   const endpoint = "https://business.openapi.zalo.me/message/template";
+  const outgoingPayload = sanitizeOutgoingPayload(payload);
   let tokenState = await refreshZaloOaToken(admin, { appId });
   let refreshedDuringSend = false;
   let retryCount = 0;
@@ -740,8 +882,8 @@ export async function sendZaloTemplateMessage(
       providerStatus: "failed",
       providerError: safeString(tokenState.last_error) || "Missing usable Zalo access token",
       providerMsgId: null,
-      trackingId: safeString(payload.tracking_id),
-      requestPayload: sanitizePayload(payload),
+      trackingId: safeString(outgoingPayload.tracking_id),
+      requestPayload: sanitizePayload(outgoingPayload),
       responsePayload: {},
       httpStatus: null,
       providerErrorCode: null,
@@ -751,9 +893,9 @@ export async function sendZaloTemplateMessage(
       appId,
       channel: "template",
       endpoint,
-      target: safeString(payload.phone) || "",
-      templateId: safeString(payload.template_id),
-      trackingId: safeString(payload.tracking_id),
+      target: safeString(outgoingPayload.phone) || "",
+      templateId: safeString(outgoingPayload.template_id),
+      trackingId: safeString(outgoingPayload.tracking_id),
       status: failure.reason,
       httpStatus: null,
       providerErrorCode: null,
@@ -766,13 +908,13 @@ export async function sendZaloTemplateMessage(
     return failure;
   }
 
-  let transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, payload);
+  let transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, outgoingPayload);
   if (needsTokenRetry(transport.httpStatus, transport.responsePayload)) {
     tokenState = await refreshZaloOaToken(admin, { appId, forceRefresh: true });
     refreshedDuringSend = true;
     retryCount = 1;
     if (safeString(tokenState.access_token)) {
-      transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, payload);
+      transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, outgoingPayload);
     }
   }
 
@@ -788,8 +930,8 @@ export async function sendZaloTemplateMessage(
     providerStatus: accepted ? "accepted" : "failed",
     providerError,
     providerMsgId: extractProviderMessageId(transport.responsePayload),
-    trackingId: safeString(payload.tracking_id),
-    requestPayload: sanitizePayload(payload),
+    trackingId: safeString(outgoingPayload.tracking_id),
+    requestPayload: sanitizePayload(outgoingPayload),
     responsePayload: transport.responsePayload,
     httpStatus: transport.httpStatus,
     providerErrorCode,
@@ -800,9 +942,9 @@ export async function sendZaloTemplateMessage(
     appId,
     channel: "template",
     endpoint,
-    target: safeString(payload.phone) || "",
-    templateId: safeString(payload.template_id),
-    trackingId: safeString(payload.tracking_id),
+    target: safeString(outgoingPayload.phone) || "",
+    templateId: safeString(outgoingPayload.template_id),
+    trackingId: safeString(outgoingPayload.tracking_id),
     status: result.reason,
     httpStatus: result.httpStatus,
     providerErrorCode: result.providerErrorCode,
@@ -819,9 +961,11 @@ export async function sendZaloTemplateMessage(
 export async function sendZaloCsMessage(
   admin: ReturnType<typeof createServiceRoleClient>,
   payload: AnyRecord,
+  options: { skipDeliveryLog?: boolean } = {},
 ): Promise<ZaloSendResult> {
   const appId = getZaloOaAppId();
   const endpoint = "https://openapi.zalo.me/v3.0/oa/message/cs";
+  const outgoingPayload = sanitizeOutgoingPayload(payload);
   let tokenState = await refreshZaloOaToken(admin, { appId });
   let refreshedDuringSend = false;
   let retryCount = 0;
@@ -835,38 +979,40 @@ export async function sendZaloCsMessage(
       providerStatus: "failed",
       providerError: safeString(tokenState.last_error) || "Missing usable Zalo access token",
       providerMsgId: null,
-      trackingId: safeString(payload.tracking_id || payload.client_msg_id),
-      requestPayload: sanitizePayload(payload),
+      trackingId: safeString(outgoingPayload.tracking_id || outgoingPayload.client_msg_id),
+      requestPayload: sanitizePayload(outgoingPayload),
       responsePayload: {},
       httpStatus: null,
       providerErrorCode: null,
       refreshedDuringSend,
     };
-    await logDelivery(admin, {
-      appId,
-      channel: "oa_cs",
-      endpoint,
-      target: safeString(payload.recipient?.user_id || payload.user_id || payload.target) || "",
-      trackingId: failure.trackingId,
-      status: failure.reason,
-      httpStatus: null,
-      providerErrorCode: null,
-      providerMessage: failure.providerError,
-      retryCount,
-      refreshedDuringSend,
-      requestPayload: failure.requestPayload,
-      responsePayload: {},
-    });
+    if (!options.skipDeliveryLog) {
+      await logDelivery(admin, {
+        appId,
+        channel: "oa_cs",
+        endpoint,
+        target: safeString(outgoingPayload.recipient?.user_id || outgoingPayload.user_id || outgoingPayload.target) || "",
+        trackingId: failure.trackingId,
+        status: failure.reason,
+        httpStatus: null,
+        providerErrorCode: null,
+        providerMessage: failure.providerError,
+        retryCount,
+        refreshedDuringSend,
+        requestPayload: failure.requestPayload,
+        responsePayload: {},
+      });
+    }
     return failure;
   }
 
-  let transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, payload);
+  let transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, outgoingPayload);
   if (needsTokenRetry(transport.httpStatus, transport.responsePayload)) {
     tokenState = await refreshZaloOaToken(admin, { appId, forceRefresh: true });
     refreshedDuringSend = true;
     retryCount = 1;
     if (safeString(tokenState.access_token)) {
-      transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, payload);
+      transport = await sendWithToken(safeString(tokenState.access_token) || "", endpoint, outgoingPayload);
     }
   }
 
@@ -882,29 +1028,31 @@ export async function sendZaloCsMessage(
     providerStatus: accepted ? "accepted" : "failed",
     providerError,
     providerMsgId: extractProviderMessageId(transport.responsePayload),
-    trackingId: safeString(payload.tracking_id || payload.client_msg_id),
-    requestPayload: sanitizePayload(payload),
+    trackingId: safeString(outgoingPayload.tracking_id || outgoingPayload.client_msg_id),
+    requestPayload: sanitizePayload(outgoingPayload),
     responsePayload: transport.responsePayload,
     httpStatus: transport.httpStatus,
     providerErrorCode,
     refreshedDuringSend,
   };
 
-  await logDelivery(admin, {
-    appId,
-    channel: "oa_cs",
-    endpoint,
-    target: safeString(payload.recipient?.user_id || payload.user_id || payload.target) || "",
-    trackingId: result.trackingId,
-    status: result.reason,
-    httpStatus: result.httpStatus,
-    providerErrorCode: result.providerErrorCode,
-    providerMessage: result.providerError,
-    retryCount,
-    refreshedDuringSend,
-    requestPayload: result.requestPayload,
-    responsePayload: result.responsePayload,
-  });
+  if (!options.skipDeliveryLog) {
+    await logDelivery(admin, {
+      appId,
+      channel: "oa_cs",
+      endpoint,
+      target: safeString(outgoingPayload.recipient?.user_id || outgoingPayload.user_id || outgoingPayload.target) || "",
+      trackingId: result.trackingId,
+      status: result.reason,
+      httpStatus: result.httpStatus,
+      providerErrorCode: result.providerErrorCode,
+      providerMessage: result.providerError,
+      retryCount,
+      refreshedDuringSend,
+      requestPayload: result.requestPayload,
+      responsePayload: result.responsePayload,
+    });
+  }
 
   return result;
 }
