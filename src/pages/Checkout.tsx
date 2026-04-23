@@ -364,8 +364,7 @@ export default function Checkout() {
               Thanh toán & Kích hoạt an toàn
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 lg:text-4xl">
-              Chọn gói huấn luyện <br className="hidden lg:block"/>
-              <span className="text-primary">của riêng bạn.</span>
+              Chọn gói huấn luyện <span className="text-primary">của riêng bạn.</span>
             </h1>
           </div>
 
@@ -539,7 +538,7 @@ export default function Checkout() {
                   <Button
                     className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-all active:scale-[0.98]"
                     onClick={needsPhoneVerification ? () => navigate(loginTarget) : handleContinue}
-                    disabled={loadingCheckout || snapshotLoading || (currentCard.plan !== "free" && !checkoutEligible)}
+                    disabled={loadingCheckout || snapshotLoading || (!needsPhoneVerification && currentCard.plan !== "free" && !checkoutEligible)}
                   >
                     {loadingCheckout ? (
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -549,24 +548,24 @@ export default function Checkout() {
                       <Lock className="mr-2 h-5 w-5" />
                     )}
                     {needsPhoneVerification
-                      ? "Xác thực số điện thoại"
+                      ? "Xác thực số điện thoại để tiếp tục"
                       : currentCard.plan === "free"
                         ? "Đến Dashboard"
                         : "Thanh Toán Ngay"}
                   </Button>
                   
-                  <Button
-                    variant="ghost"
-                    className="h-12 w-full rounded-xl text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                    onClick={() => navigate(user ? siteConfig.dashboardPath : loginTarget)}
-                    disabled={currentCard.plan === "free" && needsPhoneVerification}
-                  >
-                    {currentCard.plan === "free"
-                      ? "Đến Dashboard"
-                      : user
-                        ? "Quay lại Dashboard"
-                        : "Xác thực số điện thoại"}
-                  </Button>
+                  {!needsPhoneVerification && (
+                    <Button
+                      variant="ghost"
+                      className="h-12 w-full rounded-xl text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                      onClick={() => navigate(user ? siteConfig.dashboardPath : loginTarget)}
+                      disabled={currentCard.plan === "free"}
+                    >
+                      {currentCard.plan === "free"
+                        ? "Đến Dashboard"
+                        : "Quay lại Dashboard"}
+                    </Button>
+                  )}
                 </div>
               </div>
               

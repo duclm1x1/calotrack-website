@@ -170,7 +170,7 @@ export const PUBLIC_PRO_CADENCE_OPTIONS: PublicProCadenceOption[] = [
     sku: "quarterly_promo",
     label: "3 tháng",
     priceLabel: formatBillingPriceVnd(BILLING_OFFERS.quarterly_promo.priceVnd),
-    helper: "Lần đầu (mua kích cầu).",
+    helper: "First-time pass.",
     badge: "Khuyên dùng",
   },
   {

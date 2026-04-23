@@ -41,10 +41,10 @@ const BASE_SITE_CONFIG = {
   productName: "CaloTrack",
   primaryChannelLabel: "Zalo",
   secondaryChannelLabel: "Telegram",
-  secondaryChannelStatus: "Chat tracking vÃ  activation Ä‘Ã£ sáºµn sÃ ng",
+  secondaryChannelStatus: "Chat tracking và activation đã sẵn sàng",
   webPortalLabel: "Portal web",
-  webPortalStatus: "Trung tÃ¢m quáº£n lÃ½ táº­p luyá»‡n vÃ  thanh toÃ¡n chuyÃªn nghiá»‡p.",
-  productStageLabel: "Há»‡ thá»‘ng huáº¥n luyá»‡n AI Ä‘a ná»n táº£ng",
+  webPortalStatus: "Trung tâm quản lý tập luyện và thanh toán chuyên nghiệp.",
+  productStageLabel: "Hệ thống huấn luyện AI đa nền tảng",
   freeDailyLimit: 5,
   freeImageDailyLimit: 2,
   loginPath: "/login",
@@ -147,7 +147,7 @@ export function buildZaloOauthCallbackApiUrl(): string {
 }
 
 export function formatVnd(value: number): string {
-  return `${value.toLocaleString("vi-VN")}Ä‘`;
+  return `${value.toLocaleString("vi-VN")}đ`;
 }
 
 export function hasConfiguredZaloOa(): boolean {
@@ -167,13 +167,13 @@ export function getPrimaryChannelHref(): string {
 }
 
 export function getPrimaryChannelCta(): string {
-  return `Má»Ÿ ${SITE_CONFIG.primaryChannelLabel}`;
+  return `Mở ${SITE_CONFIG.primaryChannelLabel}`;
 }
 
 export function getSecondaryChannelCta(): string {
   return hasConfiguredZaloOa()
-    ? `Má»Ÿ ${SITE_CONFIG.secondaryChannelLabel}`
-    : `${SITE_CONFIG.secondaryChannelLabel} sáº¯p má»Ÿ`;
+    ? `Mở ${SITE_CONFIG.secondaryChannelLabel}`
+    : `${SITE_CONFIG.secondaryChannelLabel} sắp mở`;
 }
 
 export function getTelegramLinkHref(linkToken?: string | null): string {
