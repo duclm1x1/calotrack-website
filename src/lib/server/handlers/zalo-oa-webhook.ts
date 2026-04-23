@@ -1883,6 +1883,8 @@ function getSenderDisplayName(body: any) {
   const isPlaceholder = (value: unknown) => {
     const raw = safeString(value).trim();
     if (!raw || /^\d+$/.test(raw)) return true;
+    if (/^phone\.\d+@/i.test(raw)) return true;
+    if (/^phone[._\s-]*\d+/i.test(raw)) return true;
     const normalized = normalizeNameCandidate(raw);
     if (!normalized) return true;
     return (
@@ -1894,6 +1896,9 @@ function getSenderDisplayName(body: any) {
       normalized.includes("canary") ||
       normalized.includes("fixture") ||
       normalized.includes("sandbox") ||
+      normalized.startsWith("phone 84") ||
+      normalized.startsWith("phone 0") ||
+      normalized.startsWith("phone 9") ||
       normalized === "guest" ||
       normalized === "unknown" ||
       normalized === "user"

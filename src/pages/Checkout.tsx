@@ -512,6 +512,9 @@ export default function Checkout() {
                       <><ShieldCheck className="h-3.5 w-3.5 text-amber-500" /> Vui lòng đăng nhập & xác thực</>
                     )}
                   </div>
+                  <div className="mt-2 text-xs leading-5 text-zinc-500">
+                    Xác thực số điện thoại sẽ mở Pro dùng thử 7 ngày ngay. Sau đó account vẫn về Free linh hoạt nếu chưa nâng cấp.
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-primary/15 bg-white p-4 shadow-sm">

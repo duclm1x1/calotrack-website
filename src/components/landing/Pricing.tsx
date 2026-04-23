@@ -17,13 +17,13 @@ const plans = [
   {
     name: "Free",
     price: 0,
-    period: "7 ngày",
-    description: "Bắt đầu miễn phí để làm quen với việc theo dõi bữa ăn nhanh chóng trong 7 ngày đầu.",
+    period: "sau trial",
+    description: "Sau khi kết thúc Pro dùng thử 7 ngày, account vẫn giữ được các flow cốt lõi để dùng hằng ngày.",
     icon: Clock3,
     features: [
-      "Trải nghiệm AI miễn phí trong 7 ngày",
-      "Giới hạn 2 lượt phân tích ảnh mỗi ngày",
-      "Giới hạn 5 lượt tin nhắn mỗi ngày",
+      "4 lượt phân tích ảnh mỗi ngày",
+      "20 lượt tin nhắn mỗi ngày",
+      "Log món, dashboard, water, weight và chat cơ bản",
     ],
     cta: "Bắt đầu Chat ngay",
     href: getPrimaryChannelHref(),
@@ -195,7 +195,7 @@ export const Pricing = () => {
             Chuyển khoản đúng nội dung → SePay phát hiện → hệ thống kích hoạt gói ngay, không cần chờ admin.
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-            <span>✓ Miễn phí 7 ngày thử</span>
+            <span>✓ Xác thực số điện thoại để mở Pro dùng thử 7 ngày</span>
             <span>✓ Không cần thẻ tín dụng</span>
             <span>✓ Chuyển khoản VietinBank</span>
             <span>✓ {getBillingProviderSummary()}</span>

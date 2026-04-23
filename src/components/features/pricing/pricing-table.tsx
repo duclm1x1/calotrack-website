@@ -52,9 +52,11 @@ export function PricingTable() {
               <CardHeader className="pt-8">
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
                 <CardDescription>
-                  {plan.duration === -1 
-                    ? "Trả 1 lần - Dùng mãi mãi" 
-                    : `${plan.duration} ngày sử dụng`
+                  {plan.id === "free"
+                    ? "Free linh hoạt sau giai đoạn trial"
+                    : plan.duration === -1
+                      ? "Trả 1 lần - Dùng mãi mãi"
+                      : `${plan.duration} ngày sử dụng`
                   }
                 </CardDescription>
               </CardHeader>
@@ -82,7 +84,7 @@ export function PricingTable() {
                   className="w-full" 
                   variant={plan.highlighted ? "default" : "outline"}
                 >
-                  {plan.id === 'trial' ? 'Dùng thử ngay' : 'Mua ngay'}
+                  {plan.id === "free" ? "Mở Free linh hoạt" : "Mua ngay"}
                 </Button>
               </CardFooter>
             </Card>

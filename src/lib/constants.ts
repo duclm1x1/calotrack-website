@@ -12,9 +12,9 @@ export const PLANS = {
     features: [
       `${getFreeImageDailyLimit()} lượt ảnh mỗi ngày`,
       `${getFreeDailyLimit()} lượt tin nhắn mỗi ngày`,
-      "Giữ mở log món, dashboard, water, weight và chat cơ bản",
+      "Giữ mở log món, dashboard, water, weight và chat cơ bản sau giai đoạn trial",
     ],
-    badge: "Dùng thử",
+    badge: "Free linh hoạt",
     highlighted: false,
   },
   PRO: {

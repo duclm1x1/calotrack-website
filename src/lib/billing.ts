@@ -121,13 +121,12 @@ export const PUBLIC_PLAN_CARDS: PublicPlanCard[] = [
     plan: "free",
     label: "Free",
     priceLabel: "0đ",
-    helper: "Dùng hằng ngày với logging, dashboard và quota AI vừa đủ trước khi cần nâng cấp sâu hơn.",
+    helper: "Sau 7 ngày Pro dùng thử, account vẫn mở log món, dashboard, water, weight và chat cơ bản mỗi ngày.",
     defaultSku: null,
-    badge: "Dùng thử",
     features: [
       "4 lượt phân tích ảnh mỗi ngày",
       "20 lượt tin nhắn mỗi ngày",
-      "Giữ đủ flow cốt lõi: log món, stats, water, weight và chat cơ bản",
+      "Giữ mở các flow cốt lõi: log món, stats, water, weight và chat cơ bản",
     ],
   },
   {

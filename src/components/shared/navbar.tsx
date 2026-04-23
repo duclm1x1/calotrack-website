@@ -50,7 +50,7 @@ export function Navbar() {
           </Link>
           <Link href={ROUTES.REGISTER}>
             <Button size="sm">
-              Dùng thử miễn phí
+              Mở trial 7 ngày
             </Button>
           </Link>
         </div>

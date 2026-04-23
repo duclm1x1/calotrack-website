@@ -941,7 +941,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <div className="rounded-2xl border border-white/60 bg-white/60 p-4 text-sm text-muted-foreground shadow-sm backdrop-blur-md">
-                    Bạn chưa có giao dịch nào, hoặc đang dùng gói Dùng thử.
+                    Bạn chưa có giao dịch trả phí nào, hoặc đang dùng Pro trial / Free linh hoạt.
                   </div>
                 )}
               </div>
