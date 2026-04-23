@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowUpRight,
   CheckCircle2,
-  Link2,
   Loader2,
   MessageCircle,
   ShieldCheck,
@@ -14,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchPortalSnapshot,
-  portalCreateTelegramLinkToken,
   portalCreateZaloLinkToken,
   portalGetOrderStatus,
   type PortalOrderStatus,
@@ -23,18 +21,7 @@ import {
 import {
   SITE_CONFIG,
   getPrimaryChannelHref,
-  getTelegramLinkHref,
 } from "@/lib/siteConfig";
-
-function shouldFallbackTelegram(error: unknown): boolean {
-  const message = String((error as Error)?.message || error || "").toLowerCase();
-  return (
-    message.includes("customer_not_linked") ||
-    message.includes("not authenticated") ||
-    message.includes("jwt") ||
-    message.includes("permission denied")
-  );
-}
 
 export default function Activate() {
   const { user } = useAuth();
@@ -43,7 +30,6 @@ export default function Activate() {
   const [snapshot, setSnapshot] = useState<PortalSnapshot | null>(null);
   const [orderStatus, setOrderStatus] = useState<PortalOrderStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [telegramLoading, setTelegramLoading] = useState(false);
   const [zaloLoading, setZaloLoading] = useState(false);
 
   const orderId = searchParams.get("order");
@@ -51,7 +37,6 @@ export default function Activate() {
   const orderCode = searchParams.get("orderCode") || orderId;
   const transferNote = searchParams.get("note") || orderCode || "";
   const phoneParam = searchParams.get("phone");
-  const orderBoundTelegramToken = searchParams.get("tg");
   const linkedCount = snapshot?.linkedChannels.filter((item) => item.linkStatus === "linked").length ?? 0;
 
   useEffect(() => {
@@ -98,43 +83,6 @@ export default function Activate() {
   const displayPhone =
     snapshot?.phoneDisplay || snapshot?.phoneE164 || user?.phone || phoneParam || "Chưa có";
 
-  async function handleTelegramLink() {
-    setTelegramLoading(true);
-    try {
-      const publicBuyerTelegramUrl = getTelegramLinkHref(
-        orderBoundTelegramToken || orderStatus?.telegramLinkToken || null,
-      );
-
-      if (!user && (orderBoundTelegramToken || orderStatus?.telegramLinkToken)) {
-        window.open(publicBuyerTelegramUrl, "_blank", "noopener,noreferrer");
-        toast.success("Đã mở Telegram bot với mã link của đơn hàng. Bạn có thể dùng ngay sau khi payment được xác nhận.");
-        return;
-      }
-
-      if (user) {
-        const result = await portalCreateTelegramLinkToken();
-        window.open(result.url, "_blank", "noopener,noreferrer");
-        toast.success(
-          result.status === "ready"
-            ? "Đã tạo Telegram link token. Mở bot để hoàn tất liên kết."
-            : "Đã mở Telegram bot. Bạn có thể bắt đầu flow chat ngay.",
-        );
-      } else {
-        window.open(getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
-        toast.success("Đã mở Telegram bot. Sau khi thanh toán, bạn có thể bắt đầu dùng ngay trên bot.");
-      }
-    } catch (error) {
-      if (shouldFallbackTelegram(error)) {
-        window.open(getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
-        toast.success("Đã mở Telegram bot. Portal link đầy đủ sẽ rõ hơn sau khi đăng nhập lại.");
-      } else {
-        toast.error(String((error as Error)?.message || "Không thể mở Telegram lúc này."));
-      }
-    } finally {
-      setTelegramLoading(false);
-    }
-  }
-
   async function handleZaloLink() {
     setZaloLoading(true);
     try {
@@ -177,8 +125,7 @@ export default function Activate() {
             Bắt đầu theo dõi dinh dưỡng đa nền tảng
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-            Quyền sử dụng được gắn trực tiếp vào số điện thoại của bạn. Bạn mở phiên chat với bot bằng Telegram hoặc Zalo
-            để bắt đầu, còn portal web là nơi quản lý cấu hình, payment và entitlement.
+            Tài khoản của bạn đã được gắn với số điện thoại này. Hãy làm quen với Trợ lý AI trên Zalo hoặc Telegram để bắt đầu ghi nhận bữa ăn. Trang web này sẽ giúp bạn quản lý gói cước và tài khoản.
           </p>
           {!user ? (
             <div className="mt-5 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
@@ -192,7 +139,7 @@ export default function Activate() {
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Plan hiện tại</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Gói dịch vụ</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">
                   {snapshot ? snapshot.plan.toUpperCase() : orderStatus?.entitlementActive ? "PRO" : "Đang tải"}
                 </div>
@@ -202,13 +149,13 @@ export default function Activate() {
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">SĐT đăng ký</div>
-                <div className="mt-3 text-2xl font-semibold text-foreground">{displayPhone}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Số điện thoại canonical dùng để quản lý gói cước.</div>
+                <div className="mt-3 text-2xl font-semibold text-foreground truncate break-all">{displayPhone}</div>
+                <div className="mt-2 text-sm text-muted-foreground">Số điện thoại chính dùng để bảo mật và quản lý tài khoản trong dashboard.</div>
               </div>
               <div className="rounded-[28px] border border-primary/10 bg-white/85 p-5 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Web & chat</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Nền tảng kết nối</div>
                 <div className="mt-3 text-2xl font-semibold text-foreground">{linkedCount}</div>
-                <div className="mt-2 text-sm text-muted-foreground">Số kênh đã liên kết vào customer truth của bạn.</div>
+                <div className="mt-2 text-sm text-muted-foreground">Số lượng ứng dụng chat đã được đồng bộ với hồ sơ của bạn.</div>
               </div>
             </div>
 
@@ -226,8 +173,8 @@ export default function Activate() {
                   </div>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {orderStatus
-                      ? `Order ${orderStatus.orderId} hiện ở trạng thái ${orderStatus.status}. Khi thanh toán thành công, hệ thống sẽ tự động kích hoạt entitlement của bạn.`
-                      : "Nếu bạn vừa thanh toán, website đang đợi đối soát từ giao dịch chuyển khoản hoặc callback của provider."}
+                      ? orderStatus.entitlementActive ? "Thanh toán xác nhận thành công. Toàn bộ tính năng cao cấp của gói Pro đã sẵn sàng để sử dụng." : `Đơn hàng ${orderStatus.orderId} đang được xử lý. Ngay khi xác nhận giao dịch chuyển khoản, hệ thống sẽ tự động kích hoạt toàn bộ quyền lợi huấn luyện của bạn.`
+                      : "Đang đối soát giao dịch để mở khóa đầy đủ tính năng ưu việt của gói Pro."}
                   </p>
                 </div>
               </div>
@@ -266,35 +213,29 @@ export default function Activate() {
 
           <div className="space-y-6">
             <div className="rounded-[32px] border border-primary/10 bg-white/90 p-6 shadow-md backdrop-blur">
-              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Bắt đầu sử dụng ngay</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">BƯỚC TIẾP THEO</div>
               <h2 className="mt-3 text-2xl font-semibold text-foreground">Kết nối nền tảng chat yêu thích của bạn</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Khuyến nghị nên mở Telegram bot theo nút bấm bên dưới sau khi kích hoạt xong. Nền tảng chat là nơi AI
-                CaloTrack đồng hành cùng bữa ăn mỗi ngày của bạn.
+                AI CaloTrack đã sẵn sàng đồng hành cùng bữa ăn của bạn mỗi ngày. Hãy chọn ứng dụng bạn thường xuyên sử dụng nhất để bắt đầu.
               </p>
 
               <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-                Trình tự khuyến nghị:{" "}
                 <span className="font-medium text-foreground">
-                  Thanh toán thành công → mở Telegram → bắt đầu tracking → quay lại portal khi cần xem billing hoặc support.
+                  💡 Gợi ý: Mở ứng dụng chat 👉 Gửi bức ảnh bữa ăn đầu tiên 👉 Quay lại trang này bất cứ khi nào bạn cần hỗ trợ hoặc gia hạn nhé
                 </span>
               </div>
 
               <div className="mt-5 grid gap-3">
-                <Button onClick={handleTelegramLink} disabled={telegramLoading}>
-                  {telegramLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
-                  Dùng ngay trên Telegram
-                </Button>
-                <Button variant="outline" onClick={handleZaloLink} disabled={zaloLoading}>
-                  {zaloLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
-                  Tạo yêu cầu kết nối Zalo
+                <Button className="bg-[#0068FF] hover:bg-[#005AE0] text-white" onClick={handleZaloLink} disabled={zaloLoading}>
+                  {zaloLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageCircle className="mr-2 h-4 w-4" />}
+                  Mở Zalo sử dụng ngay
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => navigate(user ? SITE_CONFIG.dashboardPath : SITE_CONFIG.loginPath)}
                 >
                   <ArrowUpRight className="mr-2 h-4 w-4" />
-                  {user ? "Mở customer portal" : "Đăng nhập portal"}
+                  {user ? "Mở Dashboard" : "Đăng nhập Dashboard"}
                 </Button>
               </div>
             </div>
@@ -304,9 +245,9 @@ export default function Activate() {
                 <ShieldCheck className="mt-1 h-5 w-5 text-accent" />
                 <div>
                   <div className="text-sm font-semibold text-foreground">Bảo mật tài khoản</div>
-                  <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                    <li>1 số điện thoại = 1 quyền sở hữu canonical.</li>
-                    <li>Mỗi tài khoản Telegram và Zalo chỉ được liên kết với 1 customer truth.</li>
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground list-disc pl-5">
+                    <li>1 số điện thoại = 1 cá nhân sở hữu</li>
+                    <li>Mỗi tài khoản Telegram và Zalo chỉ được liên kết với 1 tài khoản chính</li>
                     <li>Thông tin đăng ký sẽ không bị ảnh hưởng nếu bạn đổi tài khoản mạng xã hội.</li>
                   </ul>
                 </div>
