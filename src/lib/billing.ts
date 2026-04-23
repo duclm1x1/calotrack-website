@@ -76,11 +76,11 @@ export const BILLING_OFFERS: Record<BillingSku, BillingOffer> = {
     tier: "pro",
     days: 90,
     priceVnd: 89000,
-    label: "Pro 3 tháng (Lần đầu)",
+    label: "Pro 3 tháng",
     shortLabel: "Pro 3 tháng",
-    description: "Gói ưu đãi lần đầu cho người dùng mới để kích cầu.",
+    description: "First-time pass cho người dùng mới muốn vào Pro ngay với mức mở đầu nhẹ.",
     highlighted: true,
-    badge: "Mua lần đầu",
+    badge: "First-time pass",
   },
   four_months: {
     sku: "four_months",
@@ -170,7 +170,7 @@ export const PUBLIC_PRO_CADENCE_OPTIONS: PublicProCadenceOption[] = [
     sku: "quarterly_promo",
     label: "3 tháng",
     priceLabel: formatBillingPriceVnd(BILLING_OFFERS.quarterly_promo.priceVnd),
-    helper: "Lần đầu (mua kích cầu).",
+    helper: "First-time pass.",
     badge: "Khuyên dùng",
   },
   {

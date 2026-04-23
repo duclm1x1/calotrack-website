@@ -43,7 +43,7 @@ export function getPortalSiteConfigDefaults(): PublicPortalSiteSettings {
     zaloOaUrl: cleanEnv(process.env.VITE_ZALO_OA_URL) || "https://zalo.me/4423588403113387176",
     supportEmail: cleanEnv(process.env.VITE_SUPPORT_EMAIL) || "support@calotrack.vn",
     productStageLabel:
-      cleanEnv(process.env.VITE_PRODUCT_STAGE_LABEL) || "Phone-first portal • Zalo & Telegram",
+      cleanEnv(process.env.VITE_PRODUCT_STAGE_LABEL) || "Hệ thống huấn luyện AI đa nền tảng",
     bankName: cleanEnv(process.env.VITE_BANK_NAME) || "VietinBank",
     bankCode: cleanEnv(process.env.VITE_BANK_CODE) || "vietinbank",
     bankAccountNumber: cleanEnv(process.env.VITE_BANK_ACCOUNT_NUMBER) || "109884289129",

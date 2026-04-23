@@ -156,7 +156,7 @@ export default function Activate() {
       window.open(result.zaloUrl || getPrimaryChannelHref(), "_blank", "noopener,noreferrer");
       toast.success(
         result.linkCode
-          ? `${result.helperText} MÃ£ Ä‘Ã£ Ä‘Æ°á»£c copy: ${result.linkCode}`
+          ? `${result.helperText} Mã đã được copy: ${result.linkCode}`
           : result.helperText,
       );
     } catch (error) {

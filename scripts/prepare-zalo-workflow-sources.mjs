@@ -339,6 +339,70 @@ function patchGatekeeper(workflow) {
   const node = requireNode(workflow, "Gatekeeper V18");
   let code = String(node.parameters?.jsCode || "");
 
+  if ((code.match(/const directGymTargetKey =/g) || []).length > 1) {
+    code = code.replace(
+      /  const directGymTargetKey = \(\(\) => \{\r?\n    const targetText = directGymNormalized\.replace\(\/\\b\(20\|30\|40\|45\|50\|60\|75\|90\)\\b\/g, ""\)\.replace\(\/\\b\(phut\|plan\)\\b\/g, ""\)\.trim\(\);\r?\n    if \(!targetText\) return "";\r?\n    if \(\/\\b\(nguc\|chest\)\\b\/\.test\(targetText\)\) return "chest";\r?\n    if \(\/\\b\(vai\\s\+xo\|vai\\s\+loi\|vai\\s\+lung\|shoulders\\s\+back\|shoulders\\s\+lats\)\\b\/\.test\(targetText\)\) return "shoulders_lats";\r?\n    if \(\/\\b\(xo\|xô\|lung\|back\|lat\|lats\)\\b\/\.test\(targetText\)\) return "lats_back";\r?\n    if \(\/\\b\(vai\|shoulder\|shoulders\)\\b\/\.test\(targetText\)\) return "shoulders";\r?\n    if \(\/\\b\(chan\|leg\|legs\)\\b\/\.test\(targetText\)\) return "legs";\r?\n    if \(\/\\b\(tay\|arm\|arms\|tay\\s\+truoc\|tay\\s\+sau\)\\b\/\.test\(targetText\)\) return "arms";\r?\n    if \(\/\\b\(full\\s\*body\|toan\\s\*than\|ca\\s\*nguoi\|co\)\\b\/\.test\(targetText\)\) return "full_body";\r?\n    return "";\r?\n  \}\)\(\);\r?\n(?=  const directGymTargets =)/,
+      "",
+    );
+  }
+
+  if (!code.includes("function buildRecentContextMessages(")) {
+    code = replaceRegex(
+      code,
+      /function normalizeHistory\(items\) \{\r?\n  return items\.slice\(0, 15\)\.map\(\(item\) => \(\{\r?\n    text: String\(item\.message_text \|\| item\.text \|\| ""\)\.trim\(\)\.slice\(0, 2400\),\r?\n    message_type: String\(item\.message_type \|\| "unknown"\),\r?\n    source: String\(item\.source \|\| "unknown"\),\r?\n    created_at: item\.created_at \|\| null,\r?\n  \}\)\);\r?\n\}\r?\n\r?\nfunction recentConversationWindow\(history, maxCount = 7\) \{\r?\n  return Array\.isArray\(history\) \? history\.slice\(0, maxCount\) : \[\];\r?\n\}\r?\n/,
+      `function normalizeHistory(items) {
+  return (Array.isArray(items) ? items : [])
+    .slice(0, 15)
+    .map((item) => ({
+      text: String(item.message_text || item.text || item.reply_text || "").trim().slice(0, 2400),
+      message_type: String(item.message_type || item.role || "unknown"),
+      source: String(item.source || "unknown"),
+      created_at: item.created_at || null,
+    }))
+    .filter((item) => item.text);
+}
+
+function recentConversationWindow(history, maxCount = 7) {
+  return Array.isArray(history) ? history.slice(0, maxCount) : [];
+}
+
+function buildRecentContextMessages(history, maxCount = 10) {
+  return Array.isArray(history) ? [...history.slice(0, maxCount)].reverse() : [];
+}
+
+function buildRecentContextSummary(history, context, pendingState, userRecord) {
+  const recentMessages = buildRecentContextMessages(history, 10);
+  const recentBotMessages = [...recentMessages].reverse().filter(
+    (item) => String(item.message_type || "").toLowerCase() === "bot",
+  );
+  const pendingSurface =
+    (context.recent_food_prompt && "food_confirm") ||
+    (context.recent_image_prompt && "image_review") ||
+    context.image_followup_kind ||
+    context.menu_origin ||
+    context.active_surface ||
+    null;
+
+  return {
+    last_resolved_action: context.last_non_fallback_bot_surface || context.active_surface || null,
+    pending_surface: pendingSurface,
+    recent_food_reference: context.recent_food_reference || false,
+    recent_search_result:
+      context.has_search_prefix || context.recent_food_prompt
+        ? context.recent_food_prompt_preview || recentBotMessages[0]?.text || null
+        : null,
+    recent_review_bundle: context.recent_image_prompt_preview || null,
+    goal_mode: userRecord?.goal_mode || pendingState?.goal_mode || null,
+    onboarding_state:
+      userRecord?.onboarding_status ||
+      (userRecord?.profile_completed ? "completed" : userRecord?.profile_ready ? "profile_ready" : "unknown"),
+  };
+}
+`,
+      "gatekeeper_recent_context_helpers",
+    );
+  }
+
   code = replaceRegex(
     code,
     /  const normalizedRaw = normalizeCompare\(rawText\);\r?\n/,
@@ -348,27 +412,6 @@ function patchGatekeeper(workflow) {
   }
 `,
     "gatekeeper_image_size_clarification",
-  );
-
-  code = replaceRegex(
-    code,
-    /  const directGymDurationMatch = directGymPayload\.match\(\/\\b\(20\|30\|40\|45\|50\|60\|75\|90\)\\b\/\);\r?\n  const directGymDurationMinutes = directGymDurationMatch \? Number\.parseInt\(directGymDurationMatch\[1\], 10\) : null;\r?\n/,
-    `  const directGymDurationMatch = directGymPayload.match(/\\b(20|30|40|45|50|60|75|90)\\b/);
-  const directGymDurationMinutes = directGymDurationMatch ? Number.parseInt(directGymDurationMatch[1], 10) : null;
-  const directGymTargetKey = (() => {
-    const targetText = directGymNormalized.replace(/\\b(20|30|40|45|50|60|75|90)\\b/g, "").replace(/\\b(phut|plan)\\b/g, "").trim();
-    if (!targetText) return "";
-    if (/\\b(nguc|chest)\\b/.test(targetText)) return "chest";
-    if (/\\b(vai\\s+xo|vai\\s+loi|vai\\s+lung|shoulders\\s+back|shoulders\\s+lats)\\b/.test(targetText)) return "shoulders_lats";
-    if (/\\b(xo|xô|lung|back|lat|lats)\\b/.test(targetText)) return "lats_back";
-    if (/\\b(vai|shoulder|shoulders)\\b/.test(targetText)) return "shoulders";
-    if (/\\b(chan|leg|legs)\\b/.test(targetText)) return "legs";
-    if (/\\b(tay|arm|arms|tay\\s+truoc|tay\\s+sau)\\b/.test(targetText)) return "arms";
-    if (/\\b(full\\s*body|toan\\s*than|ca\\s*nguoi|co)\\b/.test(targetText)) return "full_body";
-    return "";
-  })();
-`,
-    "gatekeeper_gym_target_key",
   );
 
   code = replaceRegex(
@@ -400,6 +443,35 @@ function patchGatekeeper(workflow) {
     "gatekeeper_gym_target_branch",
   );
 
+  if (!code.includes("const recentContext = {")) {
+    code = replaceRegex(
+      code,
+      /  const context = \{\r?\n([\s\S]*?)  \};\r?\n\r?\n  let route = "CHAT";/m,
+      `  const context = {
+$1  };
+
+  const recentContext = {
+    messages: buildRecentContextMessages(history, 10),
+    summary: buildRecentContextSummary(history, context, pendingGymModeState.pending_state, userRecord),
+  };
+
+  let route = "CHAT";`,
+      "gatekeeper_recent_context_object",
+    );
+  }
+
+  if (!code.includes("recent_context: recentContext")) {
+    code = replaceRegex(
+      code,
+      /      reasoning: `gatekeeper_v18_v2:\$\{intent\}:\$\{action\}`,\r?\n      conversation_history: history,\r?\n/,
+      `      reasoning: \`gatekeeper_v18_v2:\${intent}:\${action}\`,
+      conversation_history: history,
+      recent_context: recentContext,
+`,
+      "gatekeeper_recent_context_return",
+    );
+  }
+
   node.parameters.jsCode = code;
 }
 
@@ -407,16 +479,19 @@ function patchPrepareDirectResponse(workflow) {
   const node = requireNode(workflow, "Prepare_Direct_Response");
   let code = String(node.parameters?.jsCode || "");
 
-  code = replaceRegex(
-    code,
-    /if \(!\["image_subset_estimate", "image_correction"\]\.includes\(imageFollowupKind\)\) return null;/g,
-    'if (!["image_subset_estimate", "image_correction", "image_size_clarification"].includes(imageFollowupKind)) return null;',
-    "prepare_direct_response_followup_lists",
-  );
-  code = replaceRegex(
-    code,
-    /  if \(\/\\b\(vai mieng\|it it\|mot it\|an chut\|few bites\|few pieces\)\\b\/\.test\(normalized\)\) \{\r?\n    return 0\.25;\r?\n  \}\r?\n/,
-    `  if (/\\b(vai mieng|it it|mot it|an chut|few bites|few pieces)\\b/.test(normalized)) {
+  if (!code.includes('"image_size_clarification"')) {
+    code = replaceRegex(
+      code,
+      /if \(!\["image_subset_estimate", "image_correction"\]\.includes\(imageFollowupKind\)\) return null;/g,
+      'if (!["image_subset_estimate", "image_correction", "image_size_clarification"].includes(imageFollowupKind)) return null;',
+      "prepare_direct_response_followup_lists",
+    );
+  }
+  if (!code.includes('if (/\\b(co\\\\s+)?nho\\\\b/.test(normalized))')) {
+    code = replaceRegex(
+      code,
+      /  if \(\/\\b\(vai mieng\|it it\|mot it\|an chut\|few bites\|few pieces\)\\b\/\.test\(normalized\)\) \{\r?\n    return 0\.25;\r?\n  \}\r?\n/,
+      `  if (/\\b(vai mieng|it it|mot it|an chut|few bites|few pieces)\\b/.test(normalized)) {
     return 0.25;
   }
   if (/\\b(co\\s+)?nho\\b/.test(normalized)) {
@@ -429,20 +504,23 @@ function patchPrepareDirectResponse(workflow) {
     return 1.25;
   }
 `,
-    "prepare_direct_response_size_scale",
-  );
-  code = replaceRegex(
-    code,
-    /  if \(imageFollowupKind === "image_correction"\) \{\r?\n    return buildImageCorrectionReply\(payload, recentBotTexts\);\r?\n  \}\r?\n/,
-    `  if (imageFollowupKind === "image_correction") {
+      "prepare_direct_response_size_scale",
+    );
+  }
+  if (!code.includes('if (imageFollowupKind === "image_size_clarification")')) {
+    code = replaceRegex(
+      code,
+      /  if \(imageFollowupKind === "image_correction"\) \{\r?\n    return buildImageCorrectionReply\(payload, recentBotTexts\);\r?\n  \}\r?\n/,
+      `  if (imageFollowupKind === "image_correction") {
     return buildImageCorrectionReply(payload, recentBotTexts);
   }
   if (imageFollowupKind === "image_size_clarification") {
     return buildImageCorrectionReply(payload, recentBotTexts);
   }
 `,
-    "prepare_direct_response_size_fallback",
-  );
+      "prepare_direct_response_size_fallback",
+    );
+  }
 
   node.parameters.jsCode = code;
 }
@@ -525,12 +603,58 @@ function patchChatWorkflow(workflow, shared) {
   patchParseImageAnalysis(next);
   patchGatekeeper(next);
   patchPrepareDirectResponse(next);
+  patchAiGatekeeperPrompt(next);
+  patchRecentContextPassThrough(next);
   return next;
 }
 
+function patchAiGatekeeperPrompt(workflow) {
+  const node = requireNode(workflow, "AI Gatekeeper1");
+  const responses = node.parameters?.responses?.values || [];
+  const userMessage = responses.find((item) => String(item.role || "").toLowerCase() !== "system");
+  if (!userMessage || typeof userMessage.content !== "string") {
+    throw new Error("ai_gatekeeper_prompt_missing");
+  }
+  if (userMessage.content.includes("Conversation history (10 visible messages, oldest -> newest):")) {
+    return;
+  }
+  if (!userMessage.content.includes("Conversation history:")) {
+    throw new Error("ai_gatekeeper_prompt_history_marker_missing");
+  }
+  userMessage.content = userMessage.content.replace(
+    `Conversation history:
+{{ $json.conversation_history ? JSON.stringify($json.conversation_history.slice(0,3)) : 'No history' }}
+`,
+    `Recent context summary:
+- Last resolved action: {{ $json.recent_context?.summary?.last_resolved_action || 'unknown' }}
+- Pending surface: {{ $json.recent_context?.summary?.pending_surface || 'none' }}
+- Recent food reference: {{ $json.recent_context?.summary?.recent_food_reference || false }}
+- Recent search result: {{ $json.recent_context?.summary?.recent_search_result || 'none' }}
+- Recent review bundle: {{ $json.recent_context?.summary?.recent_review_bundle || 'none' }}
+- Goal mode: {{ $json.recent_context?.summary?.goal_mode || 'unknown' }}
+- Onboarding state: {{ $json.recent_context?.summary?.onboarding_state || 'unknown' }}
+
+Conversation history (10 visible messages, oldest -> newest):
+{{ $json.recent_context?.messages ? JSON.stringify($json.recent_context.messages) : 'No history' }}
+`,
+  );
+}
+
+function patchRecentContextPassThrough(workflow) {
+  const returnComplexData = requireNode(workflow, "Return Complex Data");
+  if (!String(returnComplexData.parameters.jsCode).includes("recent_context: routerData.recent_context || null")) {
+    returnComplexData.parameters.jsCode = replaceRegex(
+      String(returnComplexData.parameters.jsCode),
+      /conversation_history: ([^,\r\n]+),\r?\n/,
+      `conversation_history: $1,\n      recent_context: routerData.recent_context || null,\n`,
+      "Return Complex Data_recent_context",
+    );
+  }
+}
+
 function main() {
-  const rawMain = readJson(rawMainPath);
-  const rawChat = readJson(rawChatPath);
+  const rawMain = readJson(fs.existsSync(rawMainPath) ? rawMainPath : rootMainPath);
+  const rawChat = readJson(fs.existsSync(rawChatPath) ? rawChatPath : rootChatPath);
   const shared = {
     internalKey: extractInternalKey(rawMain),
     aiAuth: extractAiAuth(rawMain),
